@@ -248,6 +248,12 @@
   .status-school{background:var(--blue)}
   .status-poland{background:var(--red)}
   .capacity-note{font-size:12px;color:var(--muted);margin-top:10px}
+  .integration-grid{display:grid;grid-template-columns:1.2fr 1fr;gap:16px}
+  .integration-status{
+    border:1px solid var(--line);border-radius:8px;background:#f8fafc;
+    padding:12px;font-size:13px;white-space:pre-wrap;
+  }
+  .integration-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
 
   /* Email inbox */
   .inbox-layout{
@@ -777,6 +783,28 @@
     <div class="panel-hd">
       <h2>Marginer — estimat inden start · faktisk efter aflevering</h2>
       <div style="font-size:12px;color:var(--muted)">Standard timepris: 650 kr./t</div>
+    </div>
+    <div class="panel" style="padding:14px;margin-bottom:16px;background:#f8fafc">
+      <div class="panel-hd">
+        <h2>Minuba integration</h2>
+        <span class="dim" style="font-size:12px">Backend proxy via Netlify Functions</span>
+      </div>
+      <div class="integration-grid">
+        <div>
+          <div id="minubaStatus" class="integration-status">Ikke testet endnu.</div>
+          <div class="integration-actions">
+            <button class="btn" onclick="checkMinuba()">Test forbindelse</button>
+            <button class="btn" onclick="fetchMinubaResource('filapi')">Hent FilAPI preview</button>
+            <button class="btn" onclick="fetchMinubaResource('cases')">Hent sager</button>
+            <button class="btn" onclick="fetchMinubaResource('time')">Hent timer</button>
+            <button class="btn" onclick="fetchMinubaResource('materials')">Hent materialer</button>
+          </div>
+        </div>
+        <div class="status-note" style="margin-top:0">
+          Minuba-nøgler skal ligge som environment variables i Netlify, ikke i HTML-filen.
+          Første version tester dataflowet; næste version mapper data til sager og DB.
+        </div>
+      </div>
     </div>
     <div class="kpi-grid" id="marginSummary" style="grid-template-columns:repeat(3,1fr);margin-bottom:16px"></div>
     <table>
@@ -1669,6 +1697,32 @@ document.querySelectorAll('.inbox-tab').forEach(b=>{
   });
 });
 renderInbox('alle');
+
+async function checkMinuba(){
+  const el = document.getElementById('minubaStatus');
+  if(!el) return;
+  el.textContent = 'Tester Minuba backend...';
+  try{
+    const res = await fetch('/api/minuba?resource=status');
+    const data = await res.json();
+    el.textContent = JSON.stringify(data, null, 2);
+  }catch(err){
+    el.textContent = 'Kunne ikke kontakte /api/minuba. Kører du lokalt via file://, virker Netlify Functions først efter deploy eller netlify dev.\\n\\n' + err.message;
+  }
+}
+
+async function fetchMinubaResource(resource){
+  const el = document.getElementById('minubaStatus');
+  if(!el) return;
+  el.textContent = `Henter ${resource} fra Minuba...`;
+  try{
+    const res = await fetch(`/api/minuba?resource=${encodeURIComponent(resource)}`);
+    const data = await res.json();
+    el.textContent = JSON.stringify(data, null, 2);
+  }catch(err){
+    el.textContent = 'Kunne ikke hente Minuba-data. Funktionen kræver deploy på Netlify og korrekte environment variables.\\n\\n' + err.message;
+  }
+}
 
 // === Marginer ===
 const margins = [
