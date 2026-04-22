@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="da">
 <head>
@@ -121,6 +122,18 @@
     font-size:12px;background:#fff;cursor:pointer;min-width:180px;
     font-weight:500;
   }
+  select.kategori.kat-1{background:var(--green-soft);color:var(--green);border-color:#b7dcc9}
+  select.kategori.kat-2{background:var(--brand-soft);color:var(--brand);border-color:#bdd0e3}
+  select.kategori.kat-3{background:var(--amber-soft);color:var(--amber);border-color:#efd28f}
+  select.kategori.kat-4{background:var(--blue-soft);color:var(--blue);border-color:#bfd0e5}
+  select.kategori.kat-5{background:var(--gray-soft);color:#555;border-color:#cbd3dc}
+  select.kategori.kat-6{background:var(--red-soft);color:var(--red);border-color:#efc3ba}
+  select.kategori option[value="1"]{background:var(--green-soft);color:var(--green)}
+  select.kategori option[value="2"]{background:var(--brand-soft);color:var(--brand)}
+  select.kategori option[value="3"]{background:var(--amber-soft);color:var(--amber)}
+  select.kategori option[value="4"]{background:var(--blue-soft);color:var(--blue)}
+  select.kategori option[value="5"]{background:var(--gray-soft);color:#555}
+  select.kategori option[value="6"]{background:var(--red-soft);color:var(--red)}
   select.ansvarlig{
     border:1px solid var(--line);border-radius:6px;padding:4px 8px;
     font-size:12px;background:#fff;cursor:pointer;min-width:90px;
@@ -155,6 +168,35 @@
   #sagerTable th{white-space:nowrap;font-size:10px;padding:10px 8px}
   #sagerTable td{font-size:12px;padding:7px 8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:220px}
   #sagerTable td.wrap{white-space:normal;max-width:260px}
+  .kunde-link{
+    border:none;background:transparent;color:var(--brand);font-weight:600;
+    cursor:pointer;padding:0;text-align:left;font:inherit;
+  }
+  .kunde-link:hover{text-decoration:underline}
+  .case-detail{
+    border-top:1px solid var(--line);background:#f8fafc;padding:18px 20px;
+    display:none;
+  }
+  .case-detail.active{display:block}
+  .case-grid{display:grid;grid-template-columns:1.1fr 1fr;gap:16px}
+  .case-card{background:#fff;border:1px solid var(--line);border-radius:8px;padding:14px}
+  .case-card h3{margin-bottom:12px}
+  .doc-list{display:grid;gap:8px}
+  .doc-item{
+    display:flex;justify-content:space-between;gap:12px;align-items:center;
+    padding:9px 10px;border:1px solid #e3e9f1;border-radius:7px;background:#fff;
+  }
+  .doc-item .doc-meta{font-size:11px;color:var(--muted);margin-top:2px}
+  .doc-item a{font-size:12px;color:var(--brand);font-weight:600;text-decoration:none}
+  .doc-item a:hover{text-decoration:underline}
+  .doc-empty{font-size:12px;color:var(--muted);padding:10px;border:1px dashed #cbd3dc;border-radius:7px;background:#fff}
+  .pay-status{
+    border:1px solid var(--line);border-radius:6px;padding:4px 8px;
+    font-size:12px;background:#fff;cursor:pointer;min-width:105px;font-weight:500;
+  }
+  .pay-status.betalt{background:var(--green-soft);color:var(--green);border-color:#b7dcc9}
+  .pay-status.udestaaende{background:var(--red-soft);color:var(--red);border-color:#efc3ba}
+  .pay-note{font-size:12px;color:var(--muted);margin-top:10px}
 
   /* Email inbox */
   .inbox-layout{
@@ -435,7 +477,7 @@
         <thead>
           <tr>
             <th>Kategori</th>
-            <th>Kundenr.</th>
+            <th>Sagsnr.</th>
             <th>Kundenavn</th>
             <th>Adresse</th>
             <th class="wrap">Opgave</th>
@@ -443,13 +485,13 @@
             <th class="num">Udestående</th>
             <th>Betalingsdato</th>
             <th>Fin. status</th>
-            <th class="num">Est. timer</th>
             <th>Fakturanr.</th>
           </tr>
         </thead>
         <tbody id="sagerBody"></tbody>
       </table>
     </div>
+    <div class="case-detail" id="caseDetail"></div>
   </div>
 
 </section>
@@ -631,19 +673,9 @@
           <th>Status</th>
         </tr>
       </thead>
-      <tbody>
-        <tr><td>215</td><td>Lise Galskov</td><td>Udestående betaling</td><td>01. Apr 2026</td><td class="num">80.000 kr.</td><td>1132</td><td><span class="chip chip-red">Nej</span></td></tr>
-        <tr><td class="dim">—</td><td>DKE v. Charlotte <span class="chip tag-dke">DKE</span></td><td>Udestående betaling</td><td>05. Mar 2026</td><td class="num">15.000 kr.</td><td class="dim">—</td><td><span class="chip chip-red">Nej</span></td></tr>
-        <tr><td class="dim">—</td><td>DKE v. Charlotte <span class="chip tag-dke">DKE</span></td><td>Udestående betaling</td><td>05. Mar 2026</td><td class="num">32.000 kr.</td><td class="dim">—</td><td><span class="chip chip-red">Nej</span></td></tr>
-        <tr><td>218</td><td>Helle Fortland</td><td>Udestående betaling</td><td>29. Mar 2026</td><td class="num">87.625 kr.</td><td class="dim">—</td><td><span class="chip chip-red">Nej</span></td></tr>
-        <tr><td class="dim">—</td><td>DKE v. Charlotte <span class="chip tag-dke">DKE</span></td><td>Udestående betaling</td><td>24. Dec 2025</td><td class="num">114.000 kr.</td><td class="dim">—</td><td><span class="chip chip-red">Nej</span></td></tr>
-        <tr><td class="dim">—</td><td>DKE v. Charlotte <span class="chip tag-dke">DKE</span></td><td>Udestående betaling</td><td>17. Apr 2026</td><td class="num">273.000 kr.</td><td class="dim">—</td><td><span class="chip chip-red">Nej</span></td></tr>
-        <tr><td>214</td><td>DKE v. Charlotte <span class="chip tag-dke">DKE</span></td><td>Udestående betaling</td><td>19. May 2026</td><td class="num">286.502 kr.</td><td>1142</td><td><span class="chip chip-red">Nej</span></td></tr>
-        <tr><td class="dim">—</td><td>Niels &amp; Vibeke</td><td>Udestående betaling</td><td>01. May 2026</td><td class="num">178.000 kr.</td><td class="dim">—</td><td><span class="chip chip-red">Nej</span></td></tr>
-        <tr><td class="dim">—</td><td>DKE v. Lars <span class="chip tag-dke">DKE</span></td><td>Udestående betaling</td><td>01. Jun 2026</td><td class="num">80.000 kr.</td><td class="dim">—</td><td><span class="chip chip-red">Nej</span></td></tr>
-        <tr><td class="dim">—</td><td>DKE v. Charlotte <span class="chip tag-dke">DKE</span></td><td>Udestående betaling</td><td class="dim">—</td><td class="num">25.000 kr.</td><td class="dim">—</td><td><span class="chip chip-red">Nej</span></td></tr>
-      </tbody>
+      <tbody id="betalingBody"></tbody>
     </table>
+    <div class="pay-note">Skift status til "Betalt" for at fjerne en rate fra oversigten over udestående rater. Den bliver i data, men skjules her.</div>
   </div>
 </section>
 
@@ -654,6 +686,7 @@
       <h2>Marginer — estimat inden start · faktisk efter aflevering</h2>
       <div style="font-size:12px;color:var(--muted)">Standard timepris: 650 kr./t</div>
     </div>
+    <div class="kpi-grid" id="marginSummary" style="grid-template-columns:repeat(3,1fr);margin-bottom:16px"></div>
     <table>
       <thead>
         <tr>
@@ -684,6 +717,15 @@
 const KAT = {
   1:"01. Arbejde udført", 2:"02. Aktive kunder", 3:"03. Tilbud sendt",
   4:"04. Pipeline", 5:"05. Afsluttet", 6:"06. Ikke relevant"
+};
+
+const docDemo = {
+  byggereferater:[
+    {titel:"Byggereferat fra seneste møde", dato:"Afventer upload", url:""},
+  ],
+  transkripter:[
+    {titel:"Gemini transkript", dato:"Afventer upload", url:""},
+  ]
 };
 
 const sager = [
@@ -724,9 +766,60 @@ const sager = [
   {k:6,nr:"",kunde:"Jacob Frandsen",adr:"Fredensborg",opg:"Indretning af hus",b:"1.000.000",u:"0",dato:"01. Aug 2026",status:"Semi-godkendt",timer:"",fak:""},
   {k:6,nr:"",kunde:"Rikke Jepp Safai",adr:"Mindevej 10",opg:"Fuld renovering af hus",b:"0",u:"0",dato:"01. May 2026",status:"—",timer:"",fak:""}
 ];
+sager.forEach((s, i)=>{
+  s.sort = i;
+  s.docs = {
+    drive:"", // Indsæt Google Drive-mappe-URL her, når mappestrukturen er klar.
+    byggereferater:docDemo.byggereferater,
+    transkripter:docDemo.transkripter
+  };
+});
+
+const betalinger = [
+  {nr:"215", kunde:"Lise Galskov", milepael:"Udestående betaling", dato:"01. Apr 2026", beloeb:"80.000", fak:"1132", status:"udestaaende"},
+  {nr:"", kunde:"DKE v. Charlotte", milepael:"Udestående betaling", dato:"05. Mar 2026", beloeb:"15.000", fak:"", status:"udestaaende"},
+  {nr:"", kunde:"DKE v. Charlotte", milepael:"Udestående betaling", dato:"05. Mar 2026", beloeb:"32.000", fak:"", status:"udestaaende"},
+  {nr:"218", kunde:"Helle Fortland", milepael:"Udestående betaling", dato:"29. Mar 2026", beloeb:"87.625", fak:"", status:"udestaaende"},
+  {nr:"", kunde:"DKE v. Charlotte", milepael:"Udestående betaling", dato:"24. Dec 2025", beloeb:"114.000", fak:"", status:"udestaaende"},
+  {nr:"", kunde:"DKE v. Charlotte", milepael:"Udestående betaling", dato:"17. Apr 2026", beloeb:"273.000", fak:"", status:"udestaaende"},
+  {nr:"214", kunde:"DKE v. Charlotte", milepael:"Udestående betaling", dato:"19. May 2026", beloeb:"286.502", fak:"1142", status:"udestaaende"},
+  {nr:"", kunde:"Niels & Vibeke", milepael:"Udestående betaling", dato:"01. May 2026", beloeb:"178.000", fak:"", status:"udestaaende"},
+  {nr:"", kunde:"DKE v. Lars", milepael:"Udestående betaling", dato:"01. Jun 2026", beloeb:"80.000", fak:"", status:"udestaaende"},
+  {nr:"", kunde:"DKE v. Charlotte", milepael:"Udestående betaling", dato:"", beloeb:"25.000", fak:"", status:"udestaaende"}
+];
+
+const STORAGE_KEY = 'nstsf-dashboard-state-v1';
+function loadState(){
+  try{
+    const state = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
+    if(Array.isArray(state.sager)){
+      state.sager.forEach((saved, i)=>{
+        if(!sager[i]) return;
+        if(saved.k) sager[i].k = +saved.k;
+        if(saved.status) sager[i].status = saved.status;
+      });
+    }
+    if(Array.isArray(state.betalinger)){
+      state.betalinger.forEach((saved, i)=>{
+        if(betalinger[i] && saved.status) betalinger[i].status = saved.status;
+      });
+    }
+  }catch(e){}
+}
+function saveState(){
+  try{
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({
+      sager:sager.map(s=>({k:s.k,status:s.status})),
+      betalinger:betalinger.map(b=>({status:b.status}))
+    }));
+  }catch(e){}
+}
+loadState();
 
 // === Render sager table ===
 const tbody = document.getElementById('sagerBody');
+const caseDetail = document.getElementById('caseDetail');
+let activeSag = null;
 
 function render(){
   const q = (document.getElementById('sagerSoeg').value || '').toLowerCase();
@@ -738,7 +831,7 @@ function render(){
       if(!hay.includes(q)) return false;
     }
     return true;
-  });
+  }).sort((a,b)=>a.k-b.k || a.sort-b.sort);
   tbody.innerHTML = rows.map(s=>{
     const idx = sager.indexOf(s);
     const isDke = s.kunde.toLowerCase().includes('dke');
@@ -748,12 +841,12 @@ function render(){
     return `
     <tr data-kat="${s.k}">
       <td>
-        <select class="kategori" onchange="changeKat(${idx}, this.value)">
+        <select class="kategori kat-${s.k}" onchange="changeKat(${idx}, this.value)">
           ${Object.entries(KAT).map(([k,v])=>`<option value="${k}"${+k===s.k?' selected':''}>${v}</option>`).join('')}
         </select>
       </td>
       <td>${s.nr || '—'}</td>
-      <td title="${s.kunde}">${kundeCell}</td>
+      <td title="${s.kunde}"><button class="kunde-link" onclick="openSag(${idx})">${kundeCell}</button></td>
       <td title="${s.adr}" class="dim">${s.adr || '—'}</td>
       <td class="wrap" title="${s.opg}">${s.opg || '—'}</td>
       <td class="num">${s.b && s.b !== '0' ? s.b + ' kr.' : '—'}</td>
@@ -768,19 +861,119 @@ function render(){
           <option${s.status==='Afsendt'?' selected':''}>Afsendt</option>
         </select>
       </td>
-      <td class="num dim">${s.timer || '—'}</td>
       <td class="dim">${s.fak || '—'}</td>
     </tr>
   `;}).join('');
   document.getElementById('count').textContent = `${rows.length} af ${sager.length} sager`;
+  if(activeSag !== null) renderSagDetail(activeSag);
 }
-function changeKat(i,v){ sager[i].k = +v; render(); }
-function changeStatus(i,v){ sager[i].status = v; render(); }
+function changeKat(i,v){ sager[i].k = +v; saveState(); render(); }
+function changeStatus(i,v){ sager[i].status = v; saveState(); render(); }
+
+function openSag(i){
+  activeSag = i;
+  renderSagDetail(i);
+}
+
+function renderDocs(items){
+  if(!items || !items.length) return '<div class="doc-empty">Ingen dokumenter registreret endnu.</div>';
+  return items.map(d=>`
+    <div class="doc-item">
+      <div>
+        <strong>${d.titel}</strong>
+        <div class="doc-meta">${d.dato || 'Dato mangler'}</div>
+      </div>
+      ${d.url ? `<a href="${d.url}" target="_blank" rel="noopener">Åbn</a>` : '<span class="dim">Mangler link</span>'}
+    </div>
+  `).join('');
+}
+
+function renderSagDetail(i){
+  const s = sager[i];
+  if(!s) return;
+  const driveLink = s.docs.drive
+    ? `<a class="btn primary" href="${s.docs.drive}" target="_blank" rel="noopener">Åbn Drive-mappe</a>`
+    : '<button class="btn" disabled>Drive-mappe mangler</button>';
+  caseDetail.classList.add('active');
+  caseDetail.innerHTML = `
+    <div class="panel-hd">
+      <div>
+        <h2>${s.kunde}</h2>
+        <div class="dim">${s.nr ? 'Sag ' + s.nr + ' · ' : ''}${s.adr || 'Adresse mangler'} · ${KAT[s.k]}</div>
+      </div>
+      <button class="btn ghost" onclick="closeSag()">Luk</button>
+    </div>
+    <div class="case-grid">
+      <div class="case-card">
+        <h3>Sagsinfo</h3>
+        <table>
+          <tbody>
+            <tr><td>Sagsnr.</td><td>${s.nr || '—'}</td></tr>
+            <tr><td>Opgave</td><td>${s.opg || '—'}</td></tr>
+            <tr><td>Est. beløb</td><td class="num">${s.b && s.b !== '0' ? s.b + ' kr.' : '—'}</td></tr>
+            <tr><td>Udestående</td><td class="num">${s.u && s.u !== '0' ? s.u + ' kr.' : '—'}</td></tr>
+            <tr><td>Fin. status</td><td>${s.status || '—'}</td></tr>
+            <tr><td>Fakturanr.</td><td>${s.fak || '—'}</td></tr>
+          </tbody>
+        </table>
+        <div style="margin-top:12px">${driveLink}</div>
+      </div>
+      <div class="case-card">
+        <h3>Mødenoter og referater</h3>
+        <div class="doc-list">
+          <strong>Byggereferater fra SMG</strong>
+          ${renderDocs(s.docs.byggereferater)}
+          <strong style="margin-top:6px">Gemini transkripter</strong>
+          ${renderDocs(s.docs.transkripter)}
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function closeSag(){
+  activeSag = null;
+  caseDetail.classList.remove('active');
+  caseDetail.innerHTML = '';
+}
+
+function renderBetalinger(){
+  const body = document.getElementById('betalingBody');
+  const rows = betalinger.filter(b=>b.status !== 'betalt');
+  body.innerHTML = rows.map(b=>{
+    const idx = betalinger.indexOf(b);
+    const isDke = b.kunde.toLowerCase().includes('dke');
+    const kunde = isDke ? `${b.kunde} <span class="chip tag-dke">DKE</span>` : b.kunde;
+    return `
+      <tr>
+        <td>${b.nr || '<span class="dim">—</span>'}</td>
+        <td>${kunde}</td>
+        <td>${b.milepael}</td>
+        <td>${b.dato || '<span class="dim">—</span>'}</td>
+        <td class="num">${b.beloeb} kr.</td>
+        <td>${b.fak || '<span class="dim">—</span>'}</td>
+        <td>
+          <select class="pay-status udestaaende" onchange="changeBetaling(${idx}, this.value)">
+            <option value="udestaaende" selected>Udestående</option>
+            <option value="betalt">Betalt</option>
+          </select>
+        </td>
+      </tr>
+    `;
+  }).join('') || '<tr><td colspan="7" class="dim">Ingen udestående rater.</td></tr>';
+}
+
+function changeBetaling(i,v){
+  betalinger[i].status = v;
+  saveState();
+  renderBetalinger();
+}
 
 document.getElementById('sagerSoeg').addEventListener('input',render);
 document.getElementById('filterKat').addEventListener('change',render);
 
 render();
+renderBetalinger();
 
 // === Konverteringsrate slider ===
 const formatKr = n => Math.round(n).toLocaleString('da-DK') + ' kr.';
@@ -1134,6 +1327,26 @@ const margins = [
   {nr:"",    k:"Mikkel Munkholm",       o:"Tilbygning · Frederikssund",         t:"", omk:"—",      pris:"1.100.000", marg:"—",       pct:"—"},
   {nr:"",    k:"Jacob Frandsen",        o:"Indretning af hus · Fredensborg",    t:"", omk:"—",      pris:"1.000.000", marg:"—",       pct:"—"}
 ];
+const knownHours = margins.reduce((sum,m)=>sum + (+m.t || 0), 0);
+const estimatedCost = knownHours * 650;
+const marginCasesWithHours = margins.filter(m=>+m.t).length;
+document.getElementById('marginSummary').innerHTML = `
+  <div class="kpi blue">
+    <div class="lbl">Estimerede timer</div>
+    <div class="val">${knownHours.toLocaleString('da-DK')} t</div>
+    <div class="sub">${marginCasesWithHours} sager med timeestimat</div>
+  </div>
+  <div class="kpi brand">
+    <div class="lbl">Est. timeomkostning</div>
+    <div class="val">${estimatedCost.toLocaleString('da-DK')} kr.</div>
+    <div class="sub">650 kr./t standard</div>
+  </div>
+  <div class="kpi amber">
+    <div class="lbl">Mangler timeestimat</div>
+    <div class="val">${(margins.length - marginCasesWithHours).toLocaleString('da-DK')}</div>
+    <div class="sub">bruges til marginopfølgning</div>
+  </div>
+`;
 document.getElementById('marginBody').innerHTML = margins.map(m=>{
   const isDke = m.k.toLowerCase().includes('dke');
   const knavn = isDke ? `${m.k} <span class="chip tag-dke" style="font-size:10px">DKE</span>` : m.k;
