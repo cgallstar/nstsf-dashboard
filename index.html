@@ -1,0 +1,1158 @@
+<!DOCTYPE html>
+<html lang="da">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Nordsjællands Tømrer- & Snedkerfirma — Dashboard</title>
+<style>
+  :root{
+    --bg:#eef2f7;
+    --ink:#0f1e2e;
+    --muted:#6b7a8a;
+    --card:#ffffff;
+    --line:#d7dfea;
+    --brand:#1d4e7c;
+    --brand-dark:#143753;
+    --brand-soft:#dde8f2;
+    --green:#2a7d5a;
+    --green-soft:#dff0e8;
+    --red:#b0341d;
+    --red-soft:#fbe4de;
+    --amber:#b47a16;
+    --amber-soft:#faeac7;
+    --blue:#3a6fa8;
+    --blue-soft:#dde6f3;
+    --gray-soft:#e6ebf1;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+    background:var(--bg);
+    color:var(--ink);
+    font-size:14px;
+    line-height:1.45;
+  }
+  header{
+    background:var(--brand-dark);
+    color:#fff;
+    padding:22px 32px;
+    border-bottom:3px solid var(--green);
+  }
+  header h1{margin:0;font-size:22px;font-weight:600;letter-spacing:-.01em}
+  header .sub{color:#c2d2e1;font-size:13px;margin-top:4px}
+  .topbar{display:flex;justify-content:space-between;align-items:center}
+  .logo{display:flex;align-items:center;gap:14px}
+  .logo .mark{
+    width:44px;height:44px;border-radius:8px;
+    background:var(--brand);display:flex;align-items:center;justify-content:center;
+    font-weight:700;color:#fff;font-size:13px;letter-spacing:-.02em;
+    border:2px solid var(--green);
+  }
+  .tabs{
+    display:flex;gap:0;padding:0 32px;background:#1a2d43;
+    border-bottom:1px solid #25405c;
+  }
+  .tabs button{
+    background:transparent;color:#b9c7d6;border:none;padding:14px 20px;
+    font-size:13px;font-weight:500;cursor:pointer;
+    border-bottom:2px solid transparent;
+  }
+  .tabs button:hover{color:#fff}
+  .tabs button.active{color:#fff;border-bottom-color:var(--green)}
+
+  main{padding:28px 32px;max-width:1600px;margin:0 auto}
+  .section{display:none}
+  .section.active{display:block}
+
+  h2{font-size:15px;font-weight:600;margin:0 0 14px;letter-spacing:.02em;text-transform:uppercase;color:#3b4a5c}
+  h3{font-size:13px;font-weight:600;margin:0 0 10px;color:#4a5968}
+
+  /* KPI Cards */
+  .kpi-grid{
+    display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:24px;
+  }
+  .kpi{
+    background:var(--card);border:1px solid var(--line);border-radius:10px;
+    padding:18px 20px;
+  }
+  .kpi .lbl{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:600}
+  .kpi .val{font-size:24px;font-weight:700;margin-top:6px;letter-spacing:-.01em}
+  .kpi .sub{font-size:12px;color:var(--muted);margin-top:2px}
+  .kpi.brand{border-top:3px solid var(--brand)}
+  .kpi.green{border-top:3px solid var(--green)}
+  .kpi.amber{border-top:3px solid var(--amber)}
+  .kpi.blue{border-top:3px solid var(--blue)}
+
+  /* Panels */
+  .panel{
+    background:var(--card);border:1px solid var(--line);border-radius:10px;
+    padding:18px 20px;margin-bottom:20px;
+  }
+  .panel-hd{
+    display:flex;justify-content:space-between;align-items:center;
+    margin-bottom:12px;
+  }
+  .panel-hd h2{margin:0}
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  th{
+    text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);
+    font-weight:600;color:var(--muted);text-transform:uppercase;font-size:11px;letter-spacing:.04em;
+  }
+  td{padding:9px 10px;border-bottom:1px solid #eef2f7;vertical-align:middle}
+  tr:last-child td{border-bottom:none}
+  .num{text-align:right;font-variant-numeric:tabular-nums}
+  .dim{color:var(--muted)}
+
+  /* Parameter box */
+  .param-box{
+    background:var(--brand-soft);border:1px solid #c1d3e5;border-radius:10px;
+    padding:16px 20px;margin-bottom:20px;display:flex;justify-content:space-between;align-items:center;
+  }
+  .param-box label{font-weight:600;font-size:13px;margin-right:12px}
+  .param-box input[type="number"]{
+    width:70px;padding:6px 8px;border:1px solid var(--line);border-radius:6px;
+    font-size:14px;text-align:right;
+  }
+
+  /* Status pills & dropdowns */
+  select.kategori{
+    border:1px solid var(--line);border-radius:6px;padding:4px 8px;
+    font-size:12px;background:#fff;cursor:pointer;min-width:180px;
+    font-weight:500;
+  }
+  select.ansvarlig{
+    border:1px solid var(--line);border-radius:6px;padding:4px 8px;
+    font-size:12px;background:#fff;cursor:pointer;min-width:90px;
+  }
+  select.status-sel{
+    border:1px solid var(--line);border-radius:6px;padding:4px 8px;
+    font-size:12px;background:#fff;cursor:pointer;min-width:120px;
+  }
+  /* Kategori-farver */
+  tr[data-kat="1"] td:first-child{border-left:3px solid var(--green)}
+  tr[data-kat="2"] td:first-child{border-left:3px solid var(--brand)}
+  tr[data-kat="3"] td:first-child{border-left:3px solid var(--amber)}
+  tr[data-kat="4"] td:first-child{border-left:3px solid var(--blue)}
+  tr[data-kat="5"] td:first-child{border-left:3px solid #888}
+  tr[data-kat="6"] td:first-child{border-left:3px solid var(--red)}
+
+  /* Sager table */
+  .sager-wrap{overflow-x:auto;background:var(--card);border:1px solid var(--line);border-radius:10px}
+  .sager-tools{
+    padding:12px 16px;border-bottom:1px solid var(--line);
+    display:flex;gap:10px;align-items:center;flex-wrap:wrap;
+  }
+  .sager-tools input[type="search"]{
+    padding:6px 10px;border:1px solid var(--line);border-radius:6px;
+    font-size:13px;width:240px;
+  }
+  .sager-tools select{
+    padding:6px 10px;border:1px solid var(--line);border-radius:6px;
+    font-size:13px;background:#fff;
+  }
+  .sager-tools .count{margin-left:auto;font-size:12px;color:var(--muted)}
+  #sagerTable th{white-space:nowrap;font-size:10px;padding:10px 8px}
+  #sagerTable td{font-size:12px;padding:7px 8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:220px}
+  #sagerTable td.wrap{white-space:normal;max-width:260px}
+
+  /* Email inbox */
+  .inbox-layout{
+    display:grid;grid-template-columns:380px 1fr;gap:16px;
+    background:var(--card);border:1px solid var(--line);border-radius:10px;
+    overflow:hidden;min-height:600px;
+  }
+  .inbox-list{border-right:1px solid var(--line);overflow-y:auto;max-height:720px}
+  .inbox-hd{
+    padding:14px 18px;border-bottom:1px solid var(--line);
+    display:flex;justify-content:space-between;align-items:center;
+    background:#f6f9fc;
+  }
+  .inbox-hd .title{font-weight:600;font-size:14px}
+  .inbox-hd .addr{font-size:11px;color:var(--muted)}
+  .inbox-tabs{
+    display:flex;border-bottom:1px solid var(--line);font-size:12px;
+    background:#f6f9fc;
+  }
+  .inbox-tabs button{
+    flex:1;padding:10px;border:none;background:transparent;cursor:pointer;
+    color:var(--muted);font-weight:500;border-bottom:2px solid transparent;
+  }
+  .inbox-tabs button.active{color:var(--brand);border-bottom-color:var(--brand);background:#fff}
+  .inbox-tabs .badge{
+    display:inline-block;background:var(--red);color:#fff;
+    font-size:10px;padding:1px 6px;border-radius:8px;margin-left:4px;
+    font-weight:600;
+  }
+  .email-item{
+    padding:12px 16px;border-bottom:1px solid #eef2f7;cursor:pointer;
+    position:relative;
+  }
+  .email-item:hover{background:#f6f9fc}
+  .email-item.active{background:var(--brand-soft);border-left:3px solid var(--brand);padding-left:13px}
+  .email-item.unread{font-weight:600}
+  .email-item.unread:before{
+    content:"";position:absolute;left:6px;top:18px;
+    width:6px;height:6px;border-radius:50%;background:var(--brand);
+  }
+  .email-item .from{font-size:13px;margin-bottom:2px}
+  .email-item .subj{font-size:13px;color:#333}
+  .email-item .preview{font-size:12px;color:var(--muted);margin-top:3px;
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  }
+  .email-item .meta{
+    display:flex;justify-content:space-between;font-size:11px;color:var(--muted);
+    margin-bottom:4px;
+  }
+  .email-item .tag{
+    display:inline-block;font-size:10px;padding:1px 7px;border-radius:4px;
+    font-weight:600;margin-right:4px;text-transform:uppercase;letter-spacing:.03em;
+  }
+  .tag-new{background:var(--red-soft);color:var(--red)}
+  .tag-tilbud{background:var(--amber-soft);color:var(--amber)}
+  .tag-sag{background:var(--green-soft);color:var(--green)}
+  .tag-opfoelg{background:var(--blue-soft);color:var(--blue)}
+  .tag-faktura{background:var(--gray-soft);color:#555}
+  .tag-dke{background:#e6ecf5;color:var(--brand)}
+
+  .inbox-view{padding:24px 32px;overflow-y:auto;max-height:720px}
+  .email-view .subject{font-size:20px;font-weight:600;margin-bottom:14px}
+  .email-view .meta-row{
+    display:flex;justify-content:space-between;align-items:center;
+    padding:12px 0;border-bottom:1px solid var(--line);margin-bottom:20px;
+  }
+  .email-view .meta-row .who{font-size:13px}
+  .email-view .meta-row .who strong{font-weight:600}
+  .email-view .meta-row .who .addr{color:var(--muted);font-size:12px}
+  .email-view .meta-row .date{font-size:12px;color:var(--muted)}
+  .email-view .body{font-size:14px;line-height:1.6;color:#222;white-space:pre-wrap}
+  .email-view .actions{
+    margin-top:28px;padding-top:20px;border-top:1px solid var(--line);
+    display:flex;gap:8px;flex-wrap:wrap;
+  }
+  .btn{
+    padding:8px 14px;border:1px solid var(--line);border-radius:6px;
+    background:#fff;cursor:pointer;font-size:12px;font-weight:500;
+  }
+  .btn:hover{background:#f6f9fc}
+  .btn.primary{background:var(--brand);color:#fff;border-color:var(--brand)}
+  .btn.primary:hover{background:var(--brand-dark)}
+  .btn.ghost{background:transparent}
+
+  .status-note{
+    margin-top:16px;padding:12px 14px;background:#f6f9fc;border-radius:8px;
+    font-size:12px;border-left:3px solid var(--amber);
+  }
+  .status-note strong{color:var(--amber)}
+
+  /* Chips */
+  .chip{
+    display:inline-block;padding:2px 8px;border-radius:12px;font-size:11px;
+    font-weight:600;letter-spacing:.02em;
+  }
+  .chip-green{background:var(--green-soft);color:var(--green)}
+  .chip-red{background:var(--red-soft);color:var(--red)}
+  .chip-amber{background:var(--amber-soft);color:var(--amber)}
+  .chip-blue{background:var(--blue-soft);color:var(--blue)}
+  .chip-brand{background:var(--brand-soft);color:var(--brand)}
+
+  footer{padding:20px 32px;text-align:center;color:var(--muted);font-size:12px}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="topbar">
+    <div class="logo">
+      <div class="mark">NSTSF</div>
+      <div>
+        <h1>Nordsjællands Tømrer- &amp; Snedkerfirma · Dashboard</h1>
+        <div class="sub">Pipeline, sager og økonomi — opdateret 21. apr 2026</div>
+      </div>
+    </div>
+    <div style="font-size:12px;color:#c2d2e1;text-align:right">
+      <div>Christian · cgallstar@gmail.com</div>
+      <div style="color:#8fa3b8">SMG · Ejer · smg@nstsf.dk</div>
+    </div>
+  </div>
+</header>
+
+<nav class="tabs">
+  <button class="tab-btn active" data-tab="dashboard">Dashboard</button>
+  <button class="tab-btn" data-tab="sager">Sager <span style="opacity:.6">(25)</span></button>
+  <button class="tab-btn" data-tab="indbakke">Indbakke <span class="badge" style="background:var(--green);color:#fff;font-size:10px;padding:1px 6px;border-radius:8px;margin-left:4px;font-weight:600">8</span></button>
+  <button class="tab-btn" data-tab="likviditet">Likviditet</button>
+  <button class="tab-btn" data-tab="betalinger">Betalinger</button>
+  <button class="tab-btn" data-tab="marginer">Marginer</button>
+</nav>
+
+<main>
+
+<!-- ============ DASHBOARD ============ -->
+<section id="dashboard" class="section active">
+
+  <div class="kpi-grid">
+    <div class="kpi green">
+      <div class="lbl">Arbejde udført</div>
+      <div class="val">4 sager</div>
+      <div class="sub">431.387 kr. udestående</div>
+    </div>
+    <div class="kpi brand">
+      <div class="lbl">Aktive kunder</div>
+      <div class="val">8 sager</div>
+      <div class="sub">792.000 kr. udestående</div>
+    </div>
+    <div class="kpi amber">
+      <div class="lbl">Tilbud sendt</div>
+      <div class="val">4 sager</div>
+      <div class="sub">4.762.000 kr. i pipeline</div>
+    </div>
+    <div class="kpi blue">
+      <div class="lbl">Total pipeline</div>
+      <div class="val">15.088.387 kr.</div>
+      <div class="sub">"samlet eksponering"</div>
+    </div>
+  </div>
+
+  <div class="param-box">
+    <div>
+      <label>Konverteringsrate tilbud + pipeline</label>
+      <span class="dim" style="font-size:12px">Aktive kunder + arbejde udført bruger betalingsdato fra Sager (100%)</span>
+    </div>
+    <div>
+      <input type="number" id="konv" value="60" min="0" max="100" step="1"> %
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-hd">
+      <h2>Omsætningsprognose — rullende 30 / 60 / 90 dage</h2>
+      <span class="dim" style="font-size:12px">Opdateret fra Beregninger-arket</span>
+    </div>
+    <table>
+      <thead>
+        <tr>
+          <th>Metrik</th>
+          <th class="num">Næste 30 dage</th>
+          <th class="num">Næste 60 dage</th>
+          <th class="num">Næste 90 dage</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Aktive kunder + arbejde udført — bekræftet (100%)</td>
+          <td class="num">195.387 kr.</td>
+          <td class="num">478.387 kr.</td>
+          <td class="num">478.387 kr.</td>
+        </tr>
+        <tr>
+          <td>Tilbud + pipeline — lineært periodiseret</td>
+          <td class="num">677.848 kr.</td>
+          <td class="num">1.942.617 kr.</td>
+          <td class="num">3.007.387 kr.</td>
+        </tr>
+        <tr style="background:#f6f9fc">
+          <td><strong>Vægtet omsætning</strong> <span class="dim">(aktive + udført 100% + tilbud/pipeline × rate)</span></td>
+          <td class="num"><strong id="vaegt30">602.096 kr.</strong></td>
+          <td class="num"><strong id="vaegt60">1.643.957 kr.</strong></td>
+          <td class="num"><strong id="vaegt90">2.282.819 kr.</strong></td>
+        </tr>
+        <tr>
+          <td class="dim">Budget</td>
+          <td class="num dim">800.000 kr.</td>
+          <td class="num dim">1.600.000 kr.</td>
+          <td class="num dim">2.400.000 kr.</td>
+        </tr>
+        <tr>
+          <td>Gap (vægtet vs. budget)</td>
+          <td class="num"><span id="gap30" class="chip chip-red">-197.904 kr.</span></td>
+          <td class="num"><span id="gap60" class="chip chip-green">+43.957 kr.</span></td>
+          <td class="num"><span id="gap90" class="chip chip-red">-117.181 kr.</span></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+    <div class="panel">
+      <h2>Fordeling pr. kategori</h2>
+      <table>
+        <tbody>
+          <tr><td><span class="chip chip-green">Arbejde udført</span></td><td class="num">4 sager</td><td class="num">431.387 kr.</td></tr>
+          <tr><td><span class="chip chip-brand">Aktive kunder</span></td><td class="num">8 sager</td><td class="num">792.000 kr.</td></tr>
+          <tr><td><span class="chip chip-amber">Tilbud sendt</span></td><td class="num">4 sager</td><td class="num">4.762.000 kr.</td></tr>
+          <tr><td><span class="chip chip-blue">Pipeline</span></td><td class="num">4 sager</td><td class="num">9.103.000 kr.</td></tr>
+          <tr><td><span class="chip" style="background:var(--gray-soft);color:#555">Afsluttet</span></td><td class="num">3 sager</td><td class="num">95.000 kr.</td></tr>
+          <tr><td><span class="chip chip-red">Ikke relevant</span></td><td class="num">2 sager</td><td class="num">1.000.000 kr.</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="panel">
+      <h2>Kundefordeling — top kunder</h2>
+      <table>
+        <tbody>
+          <tr><td><strong>DKE</strong> <span class="dim">(Charlotte · Lars · Nils)</span></td><td class="num">12 sager</td><td><span class="chip chip-brand">nøglekunde</span></td></tr>
+          <tr><td>Helle Fortland (+ kusine)</td><td class="num">2 sager</td><td></td></tr>
+          <tr><td>Brandskole, Helsingør</td><td class="num">1 sag</td><td><span class="chip chip-blue">storkunde</span></td></tr>
+          <tr><td>Henrik (nyt hus, Jyllinge)</td><td class="num">1 sag</td><td><span class="chip chip-amber">storsag</span></td></tr>
+          <tr><td>Øvrige privatkunder</td><td class="num">9 sager</td><td></td></tr>
+        </tbody>
+      </table>
+      <h3 style="margin-top:20px">DKE-kontakter</h3>
+      <table>
+        <tbody>
+          <tr><td>Charlotte</td><td class="num">8 sager</td><td class="dim">charlotte@dke.dk</td></tr>
+          <tr><td>Lars</td><td class="num">1 sag</td><td class="dim">lars@dke.dk</td></tr>
+          <tr><td>Nils</td><td class="num">1 sag</td><td class="dim">nils@dke.dk</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</section>
+
+<!-- ============ SAGER ============ -->
+<section id="sager" class="section">
+
+  <div class="sager-wrap">
+    <div class="sager-tools">
+      <input type="search" id="sagerSoeg" placeholder="Søg kunde, sagsnr., adresse…">
+      <select id="filterKat">
+        <option value="">Alle kategorier</option>
+        <option value="1">01. Arbejde udført</option>
+        <option value="2">02. Aktive kunder</option>
+        <option value="3">03. Tilbud sendt</option>
+        <option value="4">04. Pipeline</option>
+        <option value="5">05. Afsluttet</option>
+        <option value="6">06. Ikke relevant</option>
+      </select>
+      <span style="font-size:12px;color:var(--muted)">Skift kategori eller status direkte i tabellen</span>
+      <span class="count" id="count">—</span>
+    </div>
+    <div style="overflow-x:auto">
+      <table id="sagerTable">
+        <thead>
+          <tr>
+            <th>Kategori</th>
+            <th>Kundenr.</th>
+            <th>Kundenavn</th>
+            <th>Adresse</th>
+            <th class="wrap">Opgave</th>
+            <th class="num">Est. beløb</th>
+            <th class="num">Udestående</th>
+            <th>Betalingsdato</th>
+            <th>Fin. status</th>
+            <th class="num">Est. timer</th>
+            <th>Fakturanr.</th>
+          </tr>
+        </thead>
+        <tbody id="sagerBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+</section>
+
+<!-- ============ INDBAKKE ============ -->
+<section id="indbakke" class="section">
+  <div class="panel" style="margin-bottom:16px">
+    <div style="display:flex;justify-content:space-between;align-items:center">
+      <div>
+        <h2 style="margin-bottom:4px">smg@nstsf.dk — indbakke</h2>
+        <div style="font-size:12px;color:var(--muted)">Sådan ser mails ud, når de kommer ind. Klik på en mail for at læse den og se handlingsmuligheder.</div>
+      </div>
+      <div>
+        <button class="btn">Opdater</button>
+        <button class="btn primary">Ny mail</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="inbox-layout">
+    <div class="inbox-list">
+      <div class="inbox-hd">
+        <div>
+          <div class="title">Indbakke</div>
+          <div class="addr">smg@nstsf.dk</div>
+        </div>
+        <div style="font-size:11px;color:var(--muted)">12 mails</div>
+      </div>
+      <div class="inbox-tabs">
+        <button class="inbox-tab active" data-filter="alle">Alle</button>
+        <button class="inbox-tab" data-filter="uhaandteret">Uhåndteret <span class="badge">8</span></button>
+        <button class="inbox-tab" data-filter="haandteret">Håndteret</button>
+      </div>
+      <div id="emailList"></div>
+    </div>
+
+    <div class="inbox-view" id="emailView"></div>
+  </div>
+</section>
+
+<!-- ============ LIKVIDITET ============ -->
+<section id="likviditet" class="section">
+  <div class="panel">
+    <h2>Likviditetsbudget 2026</h2>
+    <div style="overflow-x:auto">
+      <table>
+        <thead>
+          <tr>
+            <th></th>
+            <th class="num">Jan</th><th class="num">Feb</th><th class="num">Mar</th><th class="num">Apr</th>
+            <th class="num">May</th><th class="num">Jun</th><th class="num">Jul</th><th class="num">Aug</th>
+            <th class="num">Sep</th><th class="num">Oct</th><th class="num">Nov</th><th class="num">Dec</th>
+            <th class="num">Fuld år</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr style="background:#f6f9fc"><td colspan="14"><strong>Indbetalinger</strong></td></tr>
+          <tr><td>Omsætningsbudget (manuel)</td>
+            <td class="num">800.000</td><td class="num">800.000</td><td class="num">800.000</td>
+            <td class="num">800.000</td><td class="num">800.000</td><td class="num">800.000</td>
+            <td class="num">800.000</td><td class="num">800.000</td><td class="num">800.000</td>
+            <td class="num">800.000</td><td class="num">800.000</td><td class="num">800.000</td>
+            <td class="num"><strong>9.600.000</strong></td>
+          </tr>
+          <tr><td>Bekræftede betalinger</td>
+            <td class="num dim">—</td><td class="num dim">—</td><td class="num">134.625</td>
+            <td class="num">353.000</td><td class="num">464.502</td><td class="num">80.000</td>
+            <td class="num dim">—</td><td class="num dim">—</td><td class="num dim">—</td>
+            <td class="num dim">—</td><td class="num dim">—</td><td class="num dim">—</td>
+            <td class="num"><strong>1.032.127</strong></td>
+          </tr>
+          <tr><td class="dim">Gap — bekræftede vs. budget</td>
+            <td class="num" style="color:var(--red)">(800.000)</td>
+            <td class="num" style="color:var(--red)">(800.000)</td>
+            <td class="num" style="color:var(--red)">(665.375)</td>
+            <td class="num" style="color:var(--red)">(447.000)</td>
+            <td class="num" style="color:var(--red)">(335.498)</td>
+            <td class="num" style="color:var(--red)">(720.000)</td>
+            <td class="num" style="color:var(--red)">(800.000)</td>
+            <td class="num" style="color:var(--red)">(800.000)</td>
+            <td class="num" style="color:var(--red)">(800.000)</td>
+            <td class="num" style="color:var(--red)">(800.000)</td>
+            <td class="num" style="color:var(--red)">(800.000)</td>
+            <td class="num" style="color:var(--red)">(800.000)</td>
+            <td class="num" style="color:var(--red)"><strong>(8.567.873)</strong></td>
+          </tr>
+
+          <tr style="background:#f6f9fc"><td colspan="14"><strong>Udgifter</strong></td></tr>
+          <tr><td>Løn — håndværkere</td>
+            <td class="num">360.000</td><td class="num">360.000</td><td class="num">360.000</td>
+            <td class="num">360.000</td><td class="num">360.000</td><td class="num">360.000</td>
+            <td class="num">360.000</td><td class="num">360.000</td><td class="num">360.000</td>
+            <td class="num">360.000</td><td class="num">360.000</td><td class="num">360.000</td>
+            <td class="num"><strong>4.320.000</strong></td>
+          </tr>
+          <tr><td>Husleje / lokaler</td>
+            <td class="num">10.000</td><td class="num">10.000</td><td class="num">10.000</td>
+            <td class="num">10.000</td><td class="num">10.000</td><td class="num">10.000</td>
+            <td class="num">10.000</td><td class="num">10.000</td><td class="num">10.000</td>
+            <td class="num">10.000</td><td class="num">10.000</td><td class="num">10.000</td>
+            <td class="num"><strong>120.000</strong></td>
+          </tr>
+          <tr><td>Firmabiler / transport</td>
+            <td class="num">60.000</td><td class="num">60.000</td><td class="num">60.000</td>
+            <td class="num">60.000</td><td class="num">60.000</td><td class="num">60.000</td>
+            <td class="num">60.000</td><td class="num">60.000</td><td class="num">60.000</td>
+            <td class="num">60.000</td><td class="num">60.000</td><td class="num">60.000</td>
+            <td class="num"><strong>720.000</strong></td>
+          </tr>
+          <tr><td>Moms — afregning (kvartal)</td>
+            <td class="num dim">—</td><td class="num dim">—</td><td class="num">530.000</td>
+            <td class="num dim">—</td><td class="num dim">—</td><td class="num dim">—</td>
+            <td class="num dim">—</td><td class="num dim">—</td><td class="num dim">—</td>
+            <td class="num dim">—</td><td class="num dim">—</td><td class="num dim">—</td>
+            <td class="num"><strong>530.000</strong></td>
+          </tr>
+          <tr style="background:#eef3f8;font-weight:600">
+            <td>Total udgifter</td>
+            <td class="num">430.000</td><td class="num">430.000</td><td class="num">960.000</td>
+            <td class="num">430.000</td><td class="num">430.000</td><td class="num">430.000</td>
+            <td class="num">430.000</td><td class="num">430.000</td><td class="num">430.000</td>
+            <td class="num">430.000</td><td class="num">430.000</td><td class="num">430.000</td>
+            <td class="num">5.690.000</td>
+          </tr>
+
+          <tr style="background:#f6f9fc"><td colspan="14"><strong>Likviditetsflow</strong></td></tr>
+          <tr><td>Netto pengestrøm</td>
+            <td class="num" style="color:var(--red)">(430.000)</td>
+            <td class="num" style="color:var(--red)">(430.000)</td>
+            <td class="num" style="color:var(--red)">(825.375)</td>
+            <td class="num" style="color:var(--red)">(77.000)</td>
+            <td class="num" style="color:var(--green)">34.502</td>
+            <td class="num" style="color:var(--red)">(350.000)</td>
+            <td class="num" style="color:var(--red)">(430.000)</td>
+            <td class="num" style="color:var(--red)">(430.000)</td>
+            <td class="num" style="color:var(--red)">(430.000)</td>
+            <td class="num" style="color:var(--red)">(430.000)</td>
+            <td class="num" style="color:var(--red)">(430.000)</td>
+            <td class="num" style="color:var(--red)">(430.000)</td>
+            <td class="num" style="color:var(--red)"><strong>(4.657.873)</strong></td>
+          </tr>
+          <tr><td>Akkumuleret saldo</td>
+            <td class="num" style="color:var(--red)">(330.000)</td>
+            <td class="num" style="color:var(--red)">(760.000)</td>
+            <td class="num" style="color:var(--red)">(1.585.375)</td>
+            <td class="num" style="color:var(--red)">(1.662.375)</td>
+            <td class="num" style="color:var(--red)">(1.627.873)</td>
+            <td class="num" style="color:var(--red)">(1.977.873)</td>
+            <td class="num" style="color:var(--red)">(2.407.873)</td>
+            <td class="num" style="color:var(--red)">(2.837.873)</td>
+            <td class="num" style="color:var(--red)">(3.267.873)</td>
+            <td class="num" style="color:var(--red)">(3.697.873)</td>
+            <td class="num" style="color:var(--red)">(4.127.873)</td>
+            <td class="num" style="color:var(--red)">(4.557.873)</td>
+            <td class="num" style="color:var(--red)"><strong>(4.557.873)</strong></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="status-note">
+      <strong>OBS:</strong> Buffer-underskud på -5.057.873 kr. for året. Primo saldo: 100.000 kr. · Minimum buffer: 500.000 kr. · Omsætningsbudgettet er sat til 800.000 kr./måned, men kun 1.032.127 kr. er bekræftet for hele året.
+    </div>
+  </div>
+</section>
+
+<!-- ============ BETALINGER ============ -->
+<section id="betalinger" class="section">
+  <div class="panel">
+    <h2>Betalingsplan — udestående rater</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Sagsnr.</th>
+          <th>Kunde</th>
+          <th>Milepæl</th>
+          <th>Forv. dato</th>
+          <th class="num">Beløb</th>
+          <th>Fakturanr.</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>215</td><td>Lise Galskov</td><td>Udestående betaling</td><td>01. Apr 2026</td><td class="num">80.000 kr.</td><td>1132</td><td><span class="chip chip-red">Nej</span></td></tr>
+        <tr><td class="dim">—</td><td>DKE v. Charlotte <span class="chip tag-dke">DKE</span></td><td>Udestående betaling</td><td>05. Mar 2026</td><td class="num">15.000 kr.</td><td class="dim">—</td><td><span class="chip chip-red">Nej</span></td></tr>
+        <tr><td class="dim">—</td><td>DKE v. Charlotte <span class="chip tag-dke">DKE</span></td><td>Udestående betaling</td><td>05. Mar 2026</td><td class="num">32.000 kr.</td><td class="dim">—</td><td><span class="chip chip-red">Nej</span></td></tr>
+        <tr><td>218</td><td>Helle Fortland</td><td>Udestående betaling</td><td>29. Mar 2026</td><td class="num">87.625 kr.</td><td class="dim">—</td><td><span class="chip chip-red">Nej</span></td></tr>
+        <tr><td class="dim">—</td><td>DKE v. Charlotte <span class="chip tag-dke">DKE</span></td><td>Udestående betaling</td><td>24. Dec 2025</td><td class="num">114.000 kr.</td><td class="dim">—</td><td><span class="chip chip-red">Nej</span></td></tr>
+        <tr><td class="dim">—</td><td>DKE v. Charlotte <span class="chip tag-dke">DKE</span></td><td>Udestående betaling</td><td>17. Apr 2026</td><td class="num">273.000 kr.</td><td class="dim">—</td><td><span class="chip chip-red">Nej</span></td></tr>
+        <tr><td>214</td><td>DKE v. Charlotte <span class="chip tag-dke">DKE</span></td><td>Udestående betaling</td><td>19. May 2026</td><td class="num">286.502 kr.</td><td>1142</td><td><span class="chip chip-red">Nej</span></td></tr>
+        <tr><td class="dim">—</td><td>Niels &amp; Vibeke</td><td>Udestående betaling</td><td>01. May 2026</td><td class="num">178.000 kr.</td><td class="dim">—</td><td><span class="chip chip-red">Nej</span></td></tr>
+        <tr><td class="dim">—</td><td>DKE v. Lars <span class="chip tag-dke">DKE</span></td><td>Udestående betaling</td><td>01. Jun 2026</td><td class="num">80.000 kr.</td><td class="dim">—</td><td><span class="chip chip-red">Nej</span></td></tr>
+        <tr><td class="dim">—</td><td>DKE v. Charlotte <span class="chip tag-dke">DKE</span></td><td>Udestående betaling</td><td class="dim">—</td><td class="num">25.000 kr.</td><td class="dim">—</td><td><span class="chip chip-red">Nej</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ============ MARGINER ============ -->
+<section id="marginer" class="section">
+  <div class="panel">
+    <div class="panel-hd">
+      <h2>Marginer — estimat inden start · faktisk efter aflevering</h2>
+      <div style="font-size:12px;color:var(--muted)">Standard timepris: 650 kr./t</div>
+    </div>
+    <table>
+      <thead>
+        <tr>
+          <th>Sagsnr.</th>
+          <th>Kunde</th>
+          <th class="wrap">Opgave</th>
+          <th class="num">Est. timer</th>
+          <th class="num">Est. omk.</th>
+          <th class="num">Tilbudspris</th>
+          <th class="num">Est. margin</th>
+          <th class="num">Est. margin %</th>
+          <th class="num">Faktisk margin</th>
+        </tr>
+      </thead>
+      <tbody id="marginBody"></tbody>
+    </table>
+  </div>
+</section>
+
+</main>
+
+<footer>
+  Nordsjællands Tømrer- &amp; Snedkerfirma · Pipeline dashboard · Skabt som overblik over Excel-arkene
+</footer>
+
+<script>
+// === DATA: Sager ===
+const KAT = {
+  1:"01. Arbejde udført", 2:"02. Aktive kunder", 3:"03. Tilbud sendt",
+  4:"04. Pipeline", 5:"05. Afsluttet", 6:"06. Ikke relevant"
+};
+
+const sager = [
+  // --- 01. Arbejde udført ---
+  {k:1,nr:"218",kunde:"Helle Fortland",adr:"Carl Baggers Allé 17",opg:"Småopgaver i huset",b:"87.625",u:"100.000",dato:"07. Apr 2026",status:"Ingen udeståender",timer:"35",fak:""},
+  {k:1,nr:"",kunde:"DKE v. Charlotte",adr:"Ryesgade 62, lejl. 48",opg:"Renovering af lejlighed",b:"273.000",u:"273.000",dato:"17. Apr 2026",status:"Faktura sendt",timer:"15",fak:""},
+  {k:1,nr:"",kunde:"DKE v. Charlotte",adr:"Ryesgade 62, lejl. 56",opg:"Afsluttet",b:"0",u:"41.000",dato:"29. Apr 2026",status:"Faktura sendt",timer:"20",fak:"1148"},
+  {k:1,nr:"",kunde:"Marie & Jørn",adr:"Slotsgade 9 st",opg:"Småopgaver i huset",b:"17.387",u:"17.387",dato:"28. Apr 2026",status:"Faktura sendt",timer:"",fak:"1149"},
+
+  // --- 02. Aktive kunder ---
+  {k:2,nr:"",kunde:"DKE v. Charlotte",adr:"Bülowsvej 9, 2. TH, Frederiksberg",opg:"Fakturering",b:"32.000",u:"32.000",dato:"21. Mar 2026",status:"Faktura sendt",timer:"55",fak:""},
+  {k:2,nr:"",kunde:"DKE v. Charlotte",adr:"Blågårdsgade 14, 2200 Kbh N.",opg:"Fakturering",b:"114.000",u:"114.000",dato:"26. Mar 2026",status:"Ingen udeståender",timer:"20",fak:""},
+  {k:2,nr:"214",kunde:"DKE v. Charlotte",adr:"Ryesgade 62, lejl. 30",opg:"Fakturering",b:"573.004",u:"283.000",dato:"22. May 2026",status:"Ingen udeståender",timer:"15",fak:"1142"},
+  {k:2,nr:"",kunde:"Niels & Vibeke",adr:"Villingebæk Strandvej 532, 3120 Dronningmølle",opg:"Vinduer",b:"178.000",u:"178.000",dato:"08. May 2026",status:"—",timer:"",fak:""},
+  {k:2,nr:"",kunde:"DKE v. Lars",adr:"Carit Etlers Vej",opg:"Fuld renovering",b:"874.587",u:"0",dato:"01. Jul 2026",status:"—",timer:"",fak:""},
+  {k:2,nr:"",kunde:"DKE v. Charlotte",adr:"Lykkeholms Allé 33",opg:"Pejs og ekstraarbejde",b:"25.000",u:"25.000",dato:"21. Mar 2026",status:"—",timer:"",fak:""},
+  {k:2,nr:"",kunde:"Henrik",adr:"Smedestræde 4, 4040 Jyllinge",opg:"Helt nyt hus",b:"5.995.000",u:"0",dato:"15. May 2026",status:"Semi-godkendt",timer:"",fak:""},
+  {k:2,nr:"",kunde:"Mathias & Anna",adr:"N.W. Gadesvej 12a 1",opg:"Fakturering",b:"446.250",u:"160.000",dato:"21. Apr 2026",status:"Faktura sendt",timer:"45",fak:"1137"},
+
+  // --- 03. Tilbud sendt ---
+  {k:3,nr:"",kunde:"Helle Fortlands kusine",adr:"—",opg:"Udskiftning af tag (afventer opkald fra dem)",b:"750.000",u:"0",dato:"01. Jun 2026",status:"Semi-godkendt",timer:"",fak:""},
+  {k:3,nr:"",kunde:"DKE v. Charlotte",adr:"Vordingborggade/Assensgade",opg:"Vinduer & udsk. hoveddør samt zink på 2 kviste",b:"4.000.000",u:"0",dato:"01. Aug 2026",status:"Afsendt",timer:"",fak:""},
+  {k:3,nr:"",kunde:"Frank Lyhne",adr:"Ellemosevej 9, Hellerup",opg:"Trappe. Mures.",b:"8.000",u:"0",dato:"05. Apr 2026",status:"Afsendt",timer:"",fak:""},
+  {k:3,nr:"",kunde:"Tina og Lars",adr:"Teglværksbakken (ish)",opg:"Afsluttet",b:"4.000",u:"0",dato:"06. Mar 2026",status:"Faktura sendt",timer:"20",fak:""},
+
+  // --- 04. Pipeline ---
+  {k:4,nr:"",kunde:"Brandskole",adr:"Helsingør",opg:"Totalentreprise (byggeri)",b:"8.000.000",u:"0",dato:"01. May 2026",status:"Faktura sendt",timer:"20",fak:""},
+  {k:4,nr:"",kunde:"Sortedamsdosering 25",adr:"Nils Lorenz",opg:"Projektering. Konsulentarbejde.",b:"3.000",u:"0",dato:"01. May 2026",status:"Faktura sendt",timer:"20",fak:""},
+  {k:4,nr:"",kunde:"DKE v. Nils",adr:"Kingosvej 1B",opg:"Fakturering",b:"0",u:"0",dato:"01. Mar 2026",status:"Faktura sendt",timer:"45",fak:"1137"},
+  {k:4,nr:"",kunde:"Mikkel Munkholm",adr:"Frederikssund",opg:"Tilbygning",b:"1.100.000",u:"0",dato:"01. Mar 2026",status:"Faktura sendt",timer:"45",fak:"1137"},
+
+  // --- 05. Afsluttet ---
+  {k:5,nr:"215",kunde:"Lise Galskov",adr:"Præstevejen 24, 3230 Græsted",opg:"Fuld renovering",b:"80.000",u:"0",dato:"21. Mar 2026",status:"Faktura sendt",timer:"30",fak:"1132"},
+  {k:5,nr:"",kunde:"DKE v. Charlotte",adr:"Guldborgvej 1, 4 th",opg:"Fakturering",b:"15.000",u:"0",dato:"21. Mar 2026",status:"Faktura sendt",timer:"40",fak:""},
+  {k:5,nr:"",kunde:"DKE v. Charlotte",adr:"Rosenørns Allé [DKE]",opg:"Fakturering",b:"0",u:"0",dato:"01. Mar 2026",status:"Faktura sendt",timer:"45",fak:"1137"},
+
+  // --- 06. Ikke relevant ---
+  {k:6,nr:"",kunde:"Jacob Frandsen",adr:"Fredensborg",opg:"Indretning af hus",b:"1.000.000",u:"0",dato:"01. Aug 2026",status:"Semi-godkendt",timer:"",fak:""},
+  {k:6,nr:"",kunde:"Rikke Jepp Safai",adr:"Mindevej 10",opg:"Fuld renovering af hus",b:"0",u:"0",dato:"01. May 2026",status:"—",timer:"",fak:""}
+];
+
+// === Render sager table ===
+const tbody = document.getElementById('sagerBody');
+
+function render(){
+  const q = (document.getElementById('sagerSoeg').value || '').toLowerCase();
+  const katF = document.getElementById('filterKat').value;
+  const rows = sager.filter(s=>{
+    if(katF && String(s.k)!==katF) return false;
+    if(q){
+      const hay = `${s.nr} ${s.kunde} ${s.adr} ${s.opg}`.toLowerCase();
+      if(!hay.includes(q)) return false;
+    }
+    return true;
+  });
+  tbody.innerHTML = rows.map(s=>{
+    const idx = sager.indexOf(s);
+    const isDke = s.kunde.toLowerCase().includes('dke');
+    const kundeCell = isDke
+      ? `${s.kunde} <span class="chip tag-dke" style="font-size:10px">DKE</span>`
+      : s.kunde;
+    return `
+    <tr data-kat="${s.k}">
+      <td>
+        <select class="kategori" onchange="changeKat(${idx}, this.value)">
+          ${Object.entries(KAT).map(([k,v])=>`<option value="${k}"${+k===s.k?' selected':''}>${v}</option>`).join('')}
+        </select>
+      </td>
+      <td>${s.nr || '—'}</td>
+      <td title="${s.kunde}">${kundeCell}</td>
+      <td title="${s.adr}" class="dim">${s.adr || '—'}</td>
+      <td class="wrap" title="${s.opg}">${s.opg || '—'}</td>
+      <td class="num">${s.b && s.b !== '0' ? s.b + ' kr.' : '—'}</td>
+      <td class="num">${s.u && s.u !== '0' ? '<span class="chip chip-amber">' + s.u + ' kr.</span>' : '—'}</td>
+      <td class="dim">${s.dato || '—'}</td>
+      <td>
+        <select class="status-sel" onchange="changeStatus(${idx}, this.value)">
+          <option${s.status==='—'?' selected':''}>—</option>
+          <option${s.status==='Faktura sendt'?' selected':''}>Faktura sendt</option>
+          <option${s.status==='Ingen udeståender'?' selected':''}>Ingen udeståender</option>
+          <option${s.status==='Semi-godkendt'?' selected':''}>Semi-godkendt</option>
+          <option${s.status==='Afsendt'?' selected':''}>Afsendt</option>
+        </select>
+      </td>
+      <td class="num dim">${s.timer || '—'}</td>
+      <td class="dim">${s.fak || '—'}</td>
+    </tr>
+  `;}).join('');
+  document.getElementById('count').textContent = `${rows.length} af ${sager.length} sager`;
+}
+function changeKat(i,v){ sager[i].k = +v; render(); }
+function changeStatus(i,v){ sager[i].status = v; render(); }
+
+document.getElementById('sagerSoeg').addEventListener('input',render);
+document.getElementById('filterKat').addEventListener('change',render);
+
+render();
+
+// === Konverteringsrate slider ===
+const formatKr = n => Math.round(n).toLocaleString('da-DK') + ' kr.';
+const bek30 = 195387, bek60 = 478387, bek90 = 478387;
+const tp30 = 677848, tp60 = 1942617, tp90 = 3007387;
+const budget30 = 800000, budget60 = 1600000, budget90 = 2400000;
+function updateKonv(){
+  const r = (+document.getElementById('konv').value)/100;
+  const v30 = bek30 + tp30*r, v60 = bek60 + tp60*r, v90 = bek90 + tp90*r;
+  document.getElementById('vaegt30').textContent = formatKr(v30);
+  document.getElementById('vaegt60').textContent = formatKr(v60);
+  document.getElementById('vaegt90').textContent = formatKr(v90);
+  const g30 = v30-budget30, g60 = v60-budget60, g90 = v90-budget90;
+  const style = (el,g)=>{
+    el.textContent = (g>=0?'+':'') + formatKr(g);
+    el.className = 'chip ' + (g>=0?'chip-green':'chip-red');
+  };
+  style(document.getElementById('gap30'),g30);
+  style(document.getElementById('gap60'),g60);
+  style(document.getElementById('gap90'),g90);
+}
+document.getElementById('konv').addEventListener('input',updateKonv);
+
+// === Tabs ===
+document.querySelectorAll('.tab-btn').forEach(b=>{
+  b.addEventListener('click',()=>{
+    document.querySelectorAll('.tab-btn').forEach(x=>x.classList.remove('active'));
+    document.querySelectorAll('.section').forEach(x=>x.classList.remove('active'));
+    b.classList.add('active');
+    document.getElementById(b.dataset.tab).classList.add('active');
+  });
+});
+
+// === Indbakke ===
+const emails = [
+  {
+    id:1, status:"ny", tag:"tag-dke", tagtxt:"DKE",
+    from:"Charlotte Holm · DKE", addr:"charlotte@dke.dk",
+    subj:"Ny lejlighed — Ryesgade 62, lejl. 72",
+    date:"21. apr 2026 · 10:14",
+    preview:"Hej Søren. Endnu en lejlighed i Ryesgade 62 skal istandsættes — kan I tage opgaven?",
+    body:`Hej Søren
+
+Endnu en lejlighed er blevet ledig i vores ejendom på Ryesgade 62 — denne gang lejlighed 72 (3. sal, t.v.).
+
+Som de øvrige skal den istandsættes før udlejning:
+- Male vægge, lofter og træværk
+- Udskifte 2 indv. døre
+- Udbedring af lille vandskade i badeværelse
+- Generel opretning / spartling
+
+Kan I kigge forbi i næste uge og give et overslag? Jeg regner med at det ligner omfanget på lejl. 48, som I netop har afleveret.
+
+PS: Faktura 1148 for lejl. 56 betaler vi fredag — beklager forsinkelsen.
+
+Mvh
+Charlotte Holm
+DKE A/S
+charlotte@dke.dk · 33 12 45 67`,
+    actions:["Opret sag i Aktive kunder","Svar Charlotte","Book besigtigelse","Arkivér"]
+  },
+  {
+    id:2, status:"ny", tag:"tag-new", tagtxt:"NY",
+    from:"Mikkel Munkholm", addr:"mikkel.munkholm@gmail.com",
+    subj:"Tilbygning Frederikssund — opfølgning",
+    date:"21. apr 2026 · 09:02",
+    preview:"Hej. Vi skrev sammen om en tilbygning i foråret. Er opgaven stadig mulig i maj?",
+    body:`Hej Søren
+
+Vi skrev sammen om tilbygningen på vores hus i Frederikssund tilbage i marts. I har sendt skitser, men jeg vil gerne høre om opgaven stadig er mulig at starte i maj som aftalt.
+
+Vi har fået byggetilladelsen i hus, og er klar til opstart.
+
+Samlet budget (jeres overslag): ca. 1,1 mio. kr.
+
+Mvh
+Mikkel Munkholm
+28 44 17 82`,
+    actions:["Ring Mikkel op","Flyt til Aktive kunder","Send opdateret tilbud","Arkivér"]
+  },
+  {
+    id:3, status:"ny", tag:"tag-dke", tagtxt:"DKE",
+    from:"Lars Grønbech · DKE", addr:"lars@dke.dk",
+    subj:"Re: Carit Etlers Vej — opstart",
+    date:"20. apr 2026 · 16:34",
+    preview:"Tak for tidsplanen. Én bemærkning: Kan gulvene leveres i uge 28 i stedet for 27?",
+    body:`Hej Søren
+
+Tak for den detaljerede tidsplan på fuldrenoveringen (Carit Etlers Vej). Den ser fornuftig ud.
+
+Én bemærkning: Kan I flytte leveringen af Dinesen-gulvene fra uge 27 til uge 28? Vi har et syn i fællesarealet ugen før, og det passer os dårligt med gulve stående i opgangen.
+
+Derudover: budget 874.587 kr. er OK — jeg har underskrevet kontrakten og sender den retur i dag.
+
+Vh
+Lars Grønbech
+DKE A/S
+lars@dke.dk · 40 22 78 91`,
+    actions:["Svar Lars","Opdater tidsplan","Bekræft kontrakt","Arkivér"]
+  },
+  {
+    id:4, status:"ny", tag:"tag-opfoelg", tagtxt:"OPFØLGNING",
+    from:"Helle Fortland", addr:"helle.fortland@mail.dk",
+    subj:"Betaling faktura 87.625 kr. — lidt forsinket",
+    date:"20. apr 2026 · 14:20",
+    preview:"Hej Søren. Undskyld forsinkelsen — beløbet overføres senest i morgen.",
+    body:`Kære Søren
+
+Jeg har lige set at jeg mangler at betale fakturaen på 87.625 kr. for småopgaverne (sag 218). Det var min fejl — den havnede i spam.
+
+Beløbet overføres i morgen senest.
+
+Og tak for det flotte arbejde — alt fungerer som det skal.
+
+PS: Min kusine ringer sandsynligvis til jer om tagudskiftning — hun har set jeres arbejde hos mig og er vild med kvaliteten.
+
+Mvh
+Helle Fortland
+26 11 84 32`,
+    actions:["Svar Helle","Marker faktura 218 som betalt","Arkivér"]
+  },
+  {
+    id:5, status:"ny", tag:"tag-dke", tagtxt:"DKE",
+    from:"Nils Krag · DKE", addr:"nils@dke.dk",
+    subj:"Kingosvej 1B — afslutning og faktura",
+    date:"20. apr 2026 · 11:07",
+    preview:"Sagen er færdig. Kan du bekræfte hvornår faktura 1137 sendes?",
+    body:`Hej Søren
+
+Lejligheden på Kingosvej 1B er godkendt ved syn i dag. Rigtig flot arbejde — kunden (ny lejer) flytter ind 1. maj.
+
+Kan du bekræfte:
+1. At faktura 1137 sendes denne uge?
+2. At beløbet modregnes i forskuddet på 0 kr. (ingen udestående, jf. aftale)?
+
+Vh
+Nils Krag
+DKE A/S
+nils@dke.dk · 22 74 31 09`,
+    actions:["Send faktura 1137","Svar Nils","Flyt sag til Afsluttet","Arkivér"]
+  },
+  {
+    id:6, status:"ny", tag:"tag-tilbud", tagtxt:"TILBUD",
+    from:"Brandskolen Helsingør · Thomas Vinther", addr:"tv@brandskolen-helsingor.dk",
+    subj:"Totalentreprise — kontrakt klar til underskrift",
+    date:"20. apr 2026 · 09:45",
+    preview:"Hej. Bestyrelsen har godkendt 8 mio. kr.-rammen. Kan vi mødes til underskrift?",
+    body:`Kære Søren
+
+Bestyrelsen har på mødet i går godkendt totalentreprise-rammen på 8.000.000 kr. for ombygningen af Brandskolen i Helsingør.
+
+Tidsplan: opstart 1. maj 2026, aflevering senest 1. marts 2027.
+
+Vi har forberedt kontrakten, og jeg vil meget gerne bede dig om at komme forbi til underskrift. Har du tid i næste uge?
+
+Forslag til møde:
+- Tirsdag 28. april kl. 10
+- Onsdag 29. april kl. 13
+
+Vh
+Thomas Vinther
+Projektleder, Brandskolen Helsingør
+49 28 31 55`,
+    actions:["Bekræft møde tirsdag","Bekræft møde onsdag","Flyt sag til Aktive kunder","Svar Thomas"]
+  },
+  {
+    id:7, status:"haandteret", tag:"tag-dke", tagtxt:"DKE",
+    from:"Charlotte Holm · DKE", addr:"charlotte@dke.dk",
+    subj:"Re: Faktura 1148 — betalt",
+    date:"18. apr 2026 · 15:28",
+    preview:"Beløbet på 41.000 kr. er overført. Tak for en perfekt aflevering.",
+    body:`Hej Søren
+
+Beløbet på 41.000 kr. (faktura 1148, Ryesgade 62 lejl. 56) er overført i dag.
+
+Som sagt: perfekt aflevering. Lejer flytter ind mandag.
+
+Mvh
+Charlotte
+DKE A/S`,
+    actions:["Arkivér","Marker sag som afsluttet"]
+  },
+  {
+    id:8, status:"ny", tag:"tag-new", tagtxt:"NY",
+    from:"Frank Lyhne", addr:"f.lyhne@mail.dk",
+    subj:"Tilbud på trappe — accepteret",
+    date:"18. apr 2026 · 10:12",
+    preview:"Hej Søren. Vi accepterer tilbuddet på 8.000 kr. — kan I komme i morgen?",
+    body:`Hej Søren
+
+Vi accepterer tilbuddet på 8.000 kr. for at mure trappen på Ellemosevej 9.
+
+Kan I komme allerede i morgen (onsdag)? Vi skal have den færdig inden næste weekend, hvor vi har gæster.
+
+Mvh
+Frank Lyhne
+40 18 44 91`,
+    actions:["Bekræft opstart","Flyt til Aktive kunder","Svar Frank","Arkivér"]
+  },
+  {
+    id:9, status:"haandteret", tag:"tag-faktura", tagtxt:"FAKTURA",
+    from:"Bogholderi · Dinero", addr:"noreply@dinero.dk",
+    subj:"Faktura 1149 sendt — Marie & Jørn",
+    date:"17. apr 2026 · 12:00",
+    preview:"Faktura 1149 på 17.387 kr. sendt til rikke_jm@hotmail.com",
+    body:`Faktura afsendt
+
+Fakturanr: 1149
+Kunde: Marie & Jørn, Slotsgade 9 st
+Beløb: 17.387 kr.
+Forfaldsdato: 28.04.2026
+Afsendt til: rikke_jm@hotmail.com`,
+    actions:["Arkivér","Opdater sag"]
+  },
+  {
+    id:10, status:"ny", tag:"tag-dke", tagtxt:"DKE",
+    from:"Charlotte Holm · DKE", addr:"charlotte@dke.dk",
+    subj:"Vordingborggade — opdaterede tegninger",
+    date:"16. apr 2026 · 14:40",
+    preview:"Arkitekten har lavet en ny version af facaderne. Vil det påvirke tilbudsprisen?",
+    body:`Hej Søren
+
+Arkitekten har leveret opdaterede tegninger til projektet på Vordingborggade/Assensgade. Der er mindre ændringer til facadeløsningen (mere zink, anderledes kvistdetalje).
+
+Spørgsmål:
+1. Vil disse ændringer påvirke tilbudsprisen på 4.000.000 kr.?
+2. Hvornår kan I komme med en opdateret pris?
+
+Vedhæftet: rev C-tegninger (PDF)
+
+Vh
+Charlotte
+DKE A/S
+charlotte@dke.dk`,
+    actions:["Læs tegninger","Opdater tilbud","Ring Charlotte","Arkivér"]
+  },
+  {
+    id:11, status:"haandteret", tag:"tag-sag", tagtxt:"SAG",
+    from:"Niels & Vibeke", addr:"niels.bach@hotmail.com",
+    subj:"Tak for vinduerne — alt ser fantastisk ud",
+    date:"14. apr 2026 · 18:02",
+    preview:"Vi er så glade for de nye vinduer — tusind tak til dig og drengene.",
+    body:`Kære Søren
+
+Tusind tak for de nye vinduer på Villingebæk Strandvej! Det blev virkelig flot, og vi kan mærke forskellen med det samme (ingen træk, bedre lys).
+
+Drengene arbejdede utroligt ordentligt — altid pæne og rydde op efter sig.
+
+Vi overfører beløbet 178.000 kr. som aftalt senest 1. maj.
+
+Mvh
+Niels og Vibeke
+21 44 38 09`,
+    actions:["Arkivér","Bed om anmeldelse","Send takkemail"]
+  },
+  {
+    id:12, status:"haandteret", tag:"tag-sag", tagtxt:"SAG",
+    from:"VELFAC Ordre", addr:"ordrer@velfac.dk",
+    subj:"Ordrebekræftelse #VF-2026-3391 — Niels & Vibeke",
+    date:"13. apr 2026 · 09:15",
+    preview:"Bekræftelse: 8 stk. VELFAC ribbon vinduer til Villingebæk Strandvej",
+    body:`Ordrebekræftelse
+
+Ordrenr: VF-2026-3391
+Kunde: Nordsjællands Tømrer- & Snedkerfirma
+Leveringsadresse: Villingebæk Strandvej 532, 3120 Dronningmølle
+
+8 stk. VELFAC Ribbon 200, hvide
+Leveringsdato: 15.05.2026
+Samlet: 71.400 kr. ekskl. moms`,
+    actions:["Arkivér","Videresend til projektansvarlig"]
+  }
+];
+
+function renderInbox(filter='alle'){
+  const list = document.getElementById('emailList');
+  const filtered = emails.filter(e=>{
+    if(filter==='uhaandteret') return e.status==='ny';
+    if(filter==='haandteret') return e.status==='haandteret';
+    return true;
+  });
+  list.innerHTML = filtered.map(e=>`
+    <div class="email-item ${e.status==='ny'?'unread':''}" onclick="showEmail(${e.id})" data-id="${e.id}">
+      <div class="meta">
+        <span><span class="tag ${e.tag}">${e.tagtxt}</span></span>
+        <span>${e.date.split(' · ')[1]}</span>
+      </div>
+      <div class="from">${e.from}</div>
+      <div class="subj">${e.subj}</div>
+      <div class="preview">${e.preview}</div>
+    </div>
+  `).join('');
+  if(filtered.length) showEmail(filtered[0].id);
+  else document.getElementById('emailView').innerHTML = '<div style="color:var(--muted);padding:40px 0;text-align:center">Ingen mails i denne visning</div>';
+}
+function showEmail(id){
+  const e = emails.find(x=>x.id===id);
+  document.querySelectorAll('.email-item').forEach(x=>x.classList.remove('active'));
+  const el = document.querySelector(`.email-item[data-id="${id}"]`);
+  if(el){ el.classList.add('active'); el.classList.remove('unread'); }
+  const isNy = e.status==='ny';
+  document.getElementById('emailView').innerHTML = `
+    <div class="email-view">
+      <div class="subject">${e.subj}</div>
+      <div class="meta-row">
+        <div class="who">
+          <strong>${e.from}</strong> <span class="addr">&lt;${e.addr}&gt;</span><br>
+          <span class="dim" style="font-size:12px">til: smg@nstsf.dk</span>
+        </div>
+        <div class="date">${e.date}</div>
+      </div>
+      <div class="body">${e.body}</div>
+      ${isNy ? `
+        <div class="status-note">
+          <strong>Uhåndteret</strong> — denne mail er ikke blevet besvaret eller arkiveret endnu.
+        </div>` : `
+        <div class="status-note" style="border-left-color:var(--green);background:#f2f9f4">
+          <strong style="color:var(--green)">Håndteret</strong> — mailen er besvaret / arkiveret.
+        </div>`}
+      <div class="actions">
+        ${e.actions.map((a,i)=>`<button class="btn ${i===0?'primary':''}">${a}</button>`).join('')}
+      </div>
+    </div>
+  `;
+}
+document.querySelectorAll('.inbox-tab').forEach(b=>{
+  b.addEventListener('click',()=>{
+    document.querySelectorAll('.inbox-tab').forEach(x=>x.classList.remove('active'));
+    b.classList.add('active');
+    renderInbox(b.dataset.filter);
+  });
+});
+renderInbox('alle');
+
+// === Marginer ===
+const margins = [
+  {nr:"215", k:"Lise Galskov",          o:"Fuld renovering",                    t:30, omk:"19.500", pris:"80.000",    marg:"60.500",  pct:"75.6%"},
+  {nr:"",    k:"DKE v. Charlotte",      o:"Guldborgvej 1 · Fakturering",        t:40, omk:"26.000", pris:"15.000",    marg:"-11.000", pct:"-73.3%"},
+  {nr:"",    k:"DKE v. Charlotte",      o:"Bülowsvej · Fakturering",            t:55, omk:"35.750", pris:"32.000",    marg:"-3.750",  pct:"-11.7%"},
+  {nr:"218", k:"Helle Fortland",        o:"Småopgaver i huset",                 t:35, omk:"22.750", pris:"87.625",    marg:"64.875",  pct:"74.0%"},
+  {nr:"",    k:"DKE v. Charlotte",      o:"Blågårdsgade 14 · Fakturering",      t:20, omk:"13.000", pris:"114.000",   marg:"101.000", pct:"88.6%"},
+  {nr:"",    k:"DKE v. Charlotte",      o:"Ryesgade 62 lejl. 48 · Renovering",  t:15, omk:"9.750",  pris:"273.000",   marg:"263.250", pct:"96.4%"},
+  {nr:"214", k:"DKE v. Charlotte",      o:"Ryesgade 62 lejl. 30 · Fakturering", t:15, omk:"9.750",  pris:"286.502",   marg:"276.752", pct:"96.6%"},
+  {nr:"",    k:"Niels & Vibeke",        o:"Vinduer",                            t:"", omk:"—",      pris:"178.000",   marg:"—",       pct:"—"},
+  {nr:"",    k:"DKE v. Lars",           o:"Carit Etlers Vej · Fuld renovering", t:"", omk:"—",      pris:"874.587",   marg:"—",       pct:"—"},
+  {nr:"",    k:"DKE v. Charlotte",      o:"Lykkeholms Allé · Pejs",             t:"", omk:"—",      pris:"25.000",    marg:"—",       pct:"—"},
+  {nr:"",    k:"Henrik",                o:"Smedestræde 4 · Helt nyt hus",       t:"", omk:"—",      pris:"5.995.000", marg:"—",       pct:"—"},
+  {nr:"",    k:"Helle Fortlands kusine",o:"Udskiftning af tag",                 t:"", omk:"—",      pris:"750.000",   marg:"—",       pct:"—"},
+  {nr:"",    k:"DKE v. Charlotte",      o:"Vordingborggade · Vinduer & zink",   t:"", omk:"—",      pris:"4.000.000", marg:"—",       pct:"—"},
+  {nr:"",    k:"Brandskole",            o:"Helsingør · Totalentreprise",        t:"", omk:"—",      pris:"8.000.000", marg:"—",       pct:"—"},
+  {nr:"",    k:"Mikkel Munkholm",       o:"Tilbygning · Frederikssund",         t:"", omk:"—",      pris:"1.100.000", marg:"—",       pct:"—"},
+  {nr:"",    k:"Jacob Frandsen",        o:"Indretning af hus · Fredensborg",    t:"", omk:"—",      pris:"1.000.000", marg:"—",       pct:"—"}
+];
+document.getElementById('marginBody').innerHTML = margins.map(m=>{
+  const isDke = m.k.toLowerCase().includes('dke');
+  const knavn = isDke ? `${m.k} <span class="chip tag-dke" style="font-size:10px">DKE</span>` : m.k;
+  const pctCls = m.pct.startsWith('-') ? 'chip-red' : (m.pct==='—' ? '' : 'chip-green');
+  const pctEl  = m.pct==='—' ? '<span class="dim">—</span>' : `<span class="chip ${pctCls}">${m.pct}</span>`;
+  return `
+  <tr>
+    <td>${m.nr || '—'}</td>
+    <td>${knavn}</td>
+    <td class="wrap">${m.o}</td>
+    <td class="num">${m.t || '—'}</td>
+    <td class="num">${m.omk} kr.</td>
+    <td class="num">${m.pris} kr.</td>
+    <td class="num">${m.marg==='—' ? '—' : m.marg + ' kr.'}</td>
+    <td class="num">${pctEl}</td>
+    <td class="num dim">—</td>
+  </tr>
+`;}).join('');
+</script>
+
+</body>
+</html>
