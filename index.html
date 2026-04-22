@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="da">
 <head>
@@ -126,14 +125,16 @@
   select.kategori.kat-2{background:var(--brand-soft);color:var(--brand);border-color:#bdd0e3}
   select.kategori.kat-3{background:var(--amber-soft);color:var(--amber);border-color:#efd28f}
   select.kategori.kat-4{background:var(--blue-soft);color:var(--blue);border-color:#bfd0e5}
-  select.kategori.kat-5{background:var(--gray-soft);color:#555;border-color:#cbd3dc}
-  select.kategori.kat-6{background:var(--red-soft);color:var(--red);border-color:#efc3ba}
+  select.kategori.kat-5{background:#edf0f5;color:#4f5b6b;border-color:#cbd3dc}
+  select.kategori.kat-6{background:var(--gray-soft);color:#555;border-color:#cbd3dc}
+  select.kategori.kat-7{background:var(--red-soft);color:var(--red);border-color:#efc3ba}
   select.kategori option[value="1"]{background:var(--green-soft);color:var(--green)}
   select.kategori option[value="2"]{background:var(--brand-soft);color:var(--brand)}
   select.kategori option[value="3"]{background:var(--amber-soft);color:var(--amber)}
   select.kategori option[value="4"]{background:var(--blue-soft);color:var(--blue)}
-  select.kategori option[value="5"]{background:var(--gray-soft);color:#555}
-  select.kategori option[value="6"]{background:var(--red-soft);color:var(--red)}
+  select.kategori option[value="5"]{background:#edf0f5;color:#4f5b6b}
+  select.kategori option[value="6"]{background:var(--gray-soft);color:#555}
+  select.kategori option[value="7"]{background:var(--red-soft);color:var(--red)}
   select.ansvarlig{
     border:1px solid var(--line);border-radius:6px;padding:4px 8px;
     font-size:12px;background:#fff;cursor:pointer;min-width:90px;
@@ -147,8 +148,9 @@
   tr[data-kat="2"] td:first-child{border-left:3px solid var(--brand)}
   tr[data-kat="3"] td:first-child{border-left:3px solid var(--amber)}
   tr[data-kat="4"] td:first-child{border-left:3px solid var(--blue)}
-  tr[data-kat="5"] td:first-child{border-left:3px solid #888}
-  tr[data-kat="6"] td:first-child{border-left:3px solid var(--red)}
+  tr[data-kat="5"] td:first-child{border-left:3px solid #687384}
+  tr[data-kat="6"] td:first-child{border-left:3px solid #888}
+  tr[data-kat="7"] td:first-child{border-left:3px solid var(--red)}
 
   /* Sager table */
   .sager-wrap{overflow-x:auto;background:var(--card);border:1px solid var(--line);border-radius:10px}
@@ -168,6 +170,7 @@
   #sagerTable th{white-space:nowrap;font-size:10px;padding:10px 8px}
   #sagerTable td{font-size:12px;padding:7px 8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:220px}
   #sagerTable td.wrap{white-space:normal;max-width:260px}
+  #sagerTable .date-cell{font-variant-numeric:tabular-nums}
   .kunde-link{
     border:none;background:transparent;color:var(--brand);font-weight:600;
     cursor:pointer;padding:0;text-align:left;font:inherit;
@@ -190,6 +193,20 @@
   .doc-item a{font-size:12px;color:var(--brand);font-weight:600;text-decoration:none}
   .doc-item a:hover{text-decoration:underline}
   .doc-empty{font-size:12px;color:var(--muted);padding:10px;border:1px dashed #cbd3dc;border-radius:7px;background:#fff}
+  .case-form{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+  .case-form label{display:grid;gap:5px;font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+  .case-form input,.case-form select,.case-form textarea{
+    border:1px solid var(--line);border-radius:6px;padding:7px 9px;
+    font:inherit;font-size:13px;background:#fff;color:var(--ink);
+  }
+  .case-form textarea{min-height:72px;resize:vertical}
+  .case-form .wide{grid-column:span 3}
+  .row-actions{display:flex;gap:6px;align-items:center}
+  .icon-btn{
+    border:1px solid var(--line);background:#fff;border-radius:6px;
+    padding:5px 8px;cursor:pointer;font-size:11px;font-weight:600;color:var(--brand);
+  }
+  .icon-btn:hover{background:#f6f9fc}
   .pay-status{
     border:1px solid var(--line);border-radius:6px;padding:4px 8px;
     font-size:12px;background:#fff;cursor:pointer;min-width:105px;font-weight:500;
@@ -197,6 +214,12 @@
   .pay-status.betalt{background:var(--green-soft);color:var(--green);border-color:#b7dcc9}
   .pay-status.udestaaende{background:var(--red-soft);color:var(--red);border-color:#efc3ba}
   .pay-note{font-size:12px;color:var(--muted);margin-top:10px}
+  .capacity-tools{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12px}
+  .capacity-tools input{width:80px;padding:6px 8px;border:1px solid var(--line);border-radius:6px;text-align:right}
+  .capacity-bar{height:9px;background:#edf1f6;border-radius:999px;overflow:hidden;min-width:120px}
+  .capacity-fill{height:100%;background:var(--green)}
+  .capacity-fill.warn{background:var(--amber)}
+  .capacity-fill.over{background:var(--red)}
 
   /* Email inbox */
   .inbox-layout{
@@ -321,7 +344,7 @@
 
 <nav class="tabs">
   <button class="tab-btn active" data-tab="dashboard">Dashboard</button>
-  <button class="tab-btn" data-tab="sager">Sager <span style="opacity:.6">(25)</span></button>
+  <button class="tab-btn" data-tab="sager">Sager <span style="opacity:.6">(29)</span></button>
   <button class="tab-btn" data-tab="indbakke">Indbakke <span class="badge" style="background:var(--green);color:#fff;font-size:10px;padding:1px 6px;border-radius:8px;margin-left:4px;font-weight:600">8</span></button>
   <button class="tab-btn" data-tab="likviditet">Likviditet</button>
   <button class="tab-btn" data-tab="betalinger">Betalinger</button>
@@ -335,18 +358,18 @@
 
   <div class="kpi-grid">
     <div class="kpi green">
-      <div class="lbl">Arbejde udført</div>
+      <div class="lbl">Arbejde færdigt</div>
       <div class="val">4 sager</div>
       <div class="sub">431.387 kr. udestående</div>
     </div>
     <div class="kpi brand">
       <div class="lbl">Aktive kunder</div>
-      <div class="val">8 sager</div>
+      <div class="val">5 sager</div>
       <div class="sub">792.000 kr. udestående</div>
     </div>
     <div class="kpi amber">
       <div class="lbl">Tilbud sendt</div>
-      <div class="val">4 sager</div>
+      <div class="val">5 sager</div>
       <div class="sub">4.762.000 kr. i pipeline</div>
     </div>
     <div class="kpi blue">
@@ -420,11 +443,12 @@
       <h2>Fordeling pr. kategori</h2>
       <table>
         <tbody>
-          <tr><td><span class="chip chip-green">Arbejde udført</span></td><td class="num">4 sager</td><td class="num">431.387 kr.</td></tr>
-          <tr><td><span class="chip chip-brand">Aktive kunder</span></td><td class="num">8 sager</td><td class="num">792.000 kr.</td></tr>
-          <tr><td><span class="chip chip-amber">Tilbud sendt</span></td><td class="num">4 sager</td><td class="num">4.762.000 kr.</td></tr>
-          <tr><td><span class="chip chip-blue">Pipeline</span></td><td class="num">4 sager</td><td class="num">9.103.000 kr.</td></tr>
-          <tr><td><span class="chip" style="background:var(--gray-soft);color:#555">Afsluttet</span></td><td class="num">3 sager</td><td class="num">95.000 kr.</td></tr>
+          <tr><td><span class="chip chip-green">Arbejde færdigt</span></td><td class="num">4 sager</td><td class="num">431.387 kr.</td></tr>
+          <tr><td><span class="chip chip-brand">Aktive kunder</span></td><td class="num">5 sager</td><td class="num">792.000 kr.</td></tr>
+          <tr><td><span class="chip chip-amber">Kunde (ikke startet)</span></td><td class="num">3 sager</td><td class="num">7.047.587 kr.</td></tr>
+          <tr><td><span class="chip chip-blue">Tilbud sendt</span></td><td class="num">5 sager</td><td class="num">4.987.000 kr.</td></tr>
+          <tr><td><span class="chip" style="background:#edf0f5;color:#4f5b6b">Pipeline</span></td><td class="num">6 sager</td><td class="num">9.103.000 kr.</td></tr>
+          <tr><td><span class="chip" style="background:var(--gray-soft);color:#555">Afsluttet</span></td><td class="num">4 sager</td><td class="num">95.000 kr.</td></tr>
           <tr><td><span class="chip chip-red">Ikke relevant</span></td><td class="num">2 sager</td><td class="num">1.000.000 kr.</td></tr>
         </tbody>
       </table>
@@ -452,6 +476,29 @@
     </div>
   </div>
 
+  <div class="panel">
+    <div class="panel-hd">
+      <h2>Kapacitetskalender — kommende 16 uger</h2>
+      <div class="capacity-tools">
+        <label style="font-size:12px;color:var(--muted)">100% kapacitet pr. uge</label>
+        <input type="number" id="capacityHours" value="160" min="1" step="1">
+        <span class="dim" style="font-size:12px">Timer fordeles lineært mellem start- og slutdato.</span>
+      </div>
+    </div>
+    <table>
+      <thead>
+        <tr>
+          <th>Uge</th>
+          <th class="num">Planlagte timer</th>
+          <th class="num">Kapacitet</th>
+          <th>Belægning</th>
+          <th>Primære sager</th>
+        </tr>
+      </thead>
+      <tbody id="capacityBody"></tbody>
+    </table>
+  </div>
+
 </section>
 
 <!-- ============ SAGER ============ -->
@@ -462,13 +509,15 @@
       <input type="search" id="sagerSoeg" placeholder="Søg kunde, sagsnr., adresse…">
       <select id="filterKat">
         <option value="">Alle kategorier</option>
-        <option value="1">01. Arbejde udført</option>
+        <option value="1">01. Arbejde færdigt</option>
         <option value="2">02. Aktive kunder</option>
-        <option value="3">03. Tilbud sendt</option>
-        <option value="4">04. Pipeline</option>
-        <option value="5">05. Afsluttet</option>
-        <option value="6">06. Ikke relevant</option>
+        <option value="3">03. Kunde (ikke startet)</option>
+        <option value="4">04. Tilbud sendt</option>
+        <option value="5">05. Pipeline</option>
+        <option value="6">06. Afsluttet</option>
+        <option value="7">07. Ikke relevant</option>
       </select>
+      <button class="btn primary" onclick="addSag()">Tilføj ny</button>
       <span style="font-size:12px;color:var(--muted)">Skift kategori eller status direkte i tabellen</span>
       <span class="count" id="count">—</span>
     </div>
@@ -484,8 +533,11 @@
             <th class="num">Est. beløb</th>
             <th class="num">Udestående</th>
             <th>Betalingsdato</th>
+            <th>Start</th>
+            <th>Slut</th>
             <th>Fin. status</th>
             <th>Fakturanr.</th>
+            <th></th>
           </tr>
         </thead>
         <tbody id="sagerBody"></tbody>
@@ -715,9 +767,11 @@
 <script>
 // === DATA: Sager ===
 const KAT = {
-  1:"01. Arbejde udført", 2:"02. Aktive kunder", 3:"03. Tilbud sendt",
-  4:"04. Pipeline", 5:"05. Afsluttet", 6:"06. Ikke relevant"
+  1:"01. Arbejde færdigt", 2:"02. Aktive kunder", 3:"03. Kunde (ikke startet)",
+  4:"04. Tilbud sendt", 5:"05. Pipeline", 6:"06. Afsluttet", 7:"07. Ikke relevant"
 };
+const DRIVE_ROOT = "https://drive.google.com/drive/folders/1Xf06EVUrNfQiS_pLMwOOTzhjq0Q3NC8K?usp=drive_link";
+const CUSTOMER_DRIVE_ROOT = "https://drive.google.com/drive/u/0/folders/16mPUBQntdRS0N65EmnigsyNesRz3bC-f";
 
 const docDemo = {
   byggereferater:[
@@ -729,47 +783,40 @@ const docDemo = {
 };
 
 const sager = [
-  // --- 01. Arbejde udført ---
-  {k:1,nr:"218",kunde:"Helle Fortland",adr:"Carl Baggers Allé 17",opg:"Småopgaver i huset",b:"87.625",u:"100.000",dato:"07. Apr 2026",status:"Ingen udeståender",timer:"35",fak:""},
-  {k:1,nr:"",kunde:"DKE v. Charlotte",adr:"Ryesgade 62, lejl. 48",opg:"Renovering af lejlighed",b:"273.000",u:"273.000",dato:"17. Apr 2026",status:"Faktura sendt",timer:"15",fak:""},
-  {k:1,nr:"",kunde:"DKE v. Charlotte",adr:"Ryesgade 62, lejl. 56",opg:"Afsluttet",b:"0",u:"41.000",dato:"29. Apr 2026",status:"Faktura sendt",timer:"20",fak:"1148"},
-  {k:1,nr:"",kunde:"Marie & Jørn",adr:"Slotsgade 9 st",opg:"Småopgaver i huset",b:"17.387",u:"17.387",dato:"28. Apr 2026",status:"Faktura sendt",timer:"",fak:"1149"},
-
-  // --- 02. Aktive kunder ---
-  {k:2,nr:"",kunde:"DKE v. Charlotte",adr:"Bülowsvej 9, 2. TH, Frederiksberg",opg:"Fakturering",b:"32.000",u:"32.000",dato:"21. Mar 2026",status:"Faktura sendt",timer:"55",fak:""},
-  {k:2,nr:"",kunde:"DKE v. Charlotte",adr:"Blågårdsgade 14, 2200 Kbh N.",opg:"Fakturering",b:"114.000",u:"114.000",dato:"26. Mar 2026",status:"Ingen udeståender",timer:"20",fak:""},
-  {k:2,nr:"214",kunde:"DKE v. Charlotte",adr:"Ryesgade 62, lejl. 30",opg:"Fakturering",b:"573.004",u:"283.000",dato:"22. May 2026",status:"Ingen udeståender",timer:"15",fak:"1142"},
-  {k:2,nr:"",kunde:"Niels & Vibeke",adr:"Villingebæk Strandvej 532, 3120 Dronningmølle",opg:"Vinduer",b:"178.000",u:"178.000",dato:"08. May 2026",status:"—",timer:"",fak:""},
-  {k:2,nr:"",kunde:"DKE v. Lars",adr:"Carit Etlers Vej",opg:"Fuld renovering",b:"874.587",u:"0",dato:"01. Jul 2026",status:"—",timer:"",fak:""},
-  {k:2,nr:"",kunde:"DKE v. Charlotte",adr:"Lykkeholms Allé 33",opg:"Pejs og ekstraarbejde",b:"25.000",u:"25.000",dato:"21. Mar 2026",status:"—",timer:"",fak:""},
-  {k:2,nr:"",kunde:"Henrik",adr:"Smedestræde 4, 4040 Jyllinge",opg:"Helt nyt hus",b:"5.995.000",u:"0",dato:"15. May 2026",status:"Semi-godkendt",timer:"",fak:""},
-  {k:2,nr:"",kunde:"Mathias & Anna",adr:"N.W. Gadesvej 12a 1",opg:"Fakturering",b:"446.250",u:"160.000",dato:"21. Apr 2026",status:"Faktura sendt",timer:"45",fak:"1137"},
-
-  // --- 03. Tilbud sendt ---
-  {k:3,nr:"",kunde:"Helle Fortlands kusine",adr:"—",opg:"Udskiftning af tag (afventer opkald fra dem)",b:"750.000",u:"0",dato:"01. Jun 2026",status:"Semi-godkendt",timer:"",fak:""},
-  {k:3,nr:"",kunde:"DKE v. Charlotte",adr:"Vordingborggade/Assensgade",opg:"Vinduer & udsk. hoveddør samt zink på 2 kviste",b:"4.000.000",u:"0",dato:"01. Aug 2026",status:"Afsendt",timer:"",fak:""},
-  {k:3,nr:"",kunde:"Frank Lyhne",adr:"Ellemosevej 9, Hellerup",opg:"Trappe. Mures.",b:"8.000",u:"0",dato:"05. Apr 2026",status:"Afsendt",timer:"",fak:""},
-  {k:3,nr:"",kunde:"Tina og Lars",adr:"Teglværksbakken (ish)",opg:"Afsluttet",b:"4.000",u:"0",dato:"06. Mar 2026",status:"Faktura sendt",timer:"20",fak:""},
-
-  // --- 04. Pipeline ---
-  {k:4,nr:"",kunde:"Brandskole",adr:"Helsingør",opg:"Totalentreprise (byggeri)",b:"8.000.000",u:"0",dato:"01. May 2026",status:"Faktura sendt",timer:"20",fak:""},
-  {k:4,nr:"",kunde:"Sortedamsdosering 25",adr:"Nils Lorenz",opg:"Projektering. Konsulentarbejde.",b:"3.000",u:"0",dato:"01. May 2026",status:"Faktura sendt",timer:"20",fak:""},
-  {k:4,nr:"",kunde:"DKE v. Nils",adr:"Kingosvej 1B",opg:"Fakturering",b:"0",u:"0",dato:"01. Mar 2026",status:"Faktura sendt",timer:"45",fak:"1137"},
-  {k:4,nr:"",kunde:"Mikkel Munkholm",adr:"Frederikssund",opg:"Tilbygning",b:"1.100.000",u:"0",dato:"01. Mar 2026",status:"Faktura sendt",timer:"45",fak:"1137"},
-
-  // --- 05. Afsluttet ---
-  {k:5,nr:"215",kunde:"Lise Galskov",adr:"Præstevejen 24, 3230 Græsted",opg:"Fuld renovering",b:"80.000",u:"0",dato:"21. Mar 2026",status:"Faktura sendt",timer:"30",fak:"1132"},
-  {k:5,nr:"",kunde:"DKE v. Charlotte",adr:"Guldborgvej 1, 4 th",opg:"Fakturering",b:"15.000",u:"0",dato:"21. Mar 2026",status:"Faktura sendt",timer:"40",fak:""},
-  {k:5,nr:"",kunde:"DKE v. Charlotte",adr:"Rosenørns Allé [DKE]",opg:"Fakturering",b:"0",u:"0",dato:"01. Mar 2026",status:"Faktura sendt",timer:"45",fak:"1137"},
-
-  // --- 06. Ikke relevant ---
-  {k:6,nr:"",kunde:"Jacob Frandsen",adr:"Fredensborg",opg:"Indretning af hus",b:"1.000.000",u:"0",dato:"01. Aug 2026",status:"Semi-godkendt",timer:"",fak:""},
-  {k:6,nr:"",kunde:"Rikke Jepp Safai",adr:"Mindevej 10",opg:"Fuld renovering af hus",b:"0",u:"0",dato:"01. May 2026",status:"—",timer:"",fak:""}
+  {"k":1,"nr":"218","kunde":"Helle Fortland","adr":"Carl Baggers Allé 17","opg":"Småopgaver i huset","b":"87.625","u":"128.000","dato":"2026-04-07","status":"Ingen udeståender","timer":"35","fak":"","start":"2026-03-24","slut":"2026-04-20","info":"","mail":"","tlf":"","drive":""},
+  {"k":1,"nr":"","kunde":"DKE v. Charlotte","adr":"Ryesgade 62, lejl. 48","opg":"Renovering af lejlighed","b":"273.000","u":"273.000","dato":"2026-04-17","status":"Faktura sendt","timer":"15","fak":"","start":"2026-03-01","slut":"2026-04-17","info":"","mail":"","tlf":"","drive":""},
+  {"k":1,"nr":"","kunde":"DKE v. Charlotte","adr":"Ryesgade 62, lejlighed 56","opg":"Afsluttet.","b":"0","u":"41.000","dato":"","status":"Faktura sendt","timer":"20","fak":"1148","start":"","slut":"2026-04-29","info":"","mail":"","tlf":"","drive":""},
+  {"k":1,"nr":"","kunde":"Marie & Jørn","adr":"Slotsgade 9 st","opg":"Småopgaver i huset","b":"17.387","u":"17.387","dato":"2026-04-28","status":"—","timer":"","fak":"1149","start":"2026-04-10","slut":"2026-04-20","info":"Link","mail":"rikke_jm@hotmail.com","tlf":"","drive":""},
+  {"k":2,"nr":"","kunde":"DKE v. Charlotte","adr":"Bülowsvej 9, 2. TH, Frederiksberg","opg":"Fakturering","b":"32.000","u":"32.000","dato":"2026-03-21","status":"Faktura sendt","timer":"55","fak":"","start":"","slut":"2026-05-01","info":"","mail":"","tlf":"","drive":""},
+  {"k":2,"nr":"","kunde":"DKE v. Charlotte","adr":"Blågårdsgade 14, 2200 Kbh N.","opg":"Fakturering","b":"114.000","u":"145.000","dato":"2026-03-26","status":"Ingen udeståender","timer":"20","fak":"","start":"","slut":"2026-04-27","info":"","mail":"","tlf":"","drive":""},
+  {"k":2,"nr":"214","kunde":"DKE v. Charlotte","adr":"Ryesgade 62, lejl. 30","opg":"Fakturering","b":"573.004","u":"283.000","dato":"2026-05-22","status":"Ingen udeståender","timer":"15","fak":"1142","start":"2026-03-24","slut":"2026-05-20","info":"","mail":"","tlf":"","drive":""},
+  {"k":3,"nr":"","kunde":"Niels & Vibeke","adr":"Villingebæk Strandvej 532, 3120 Dronningmølle","opg":"Vinduer","b":"178.000","u":"178.000","dato":"2026-05-08","status":"—","timer":"","fak":"","start":"2026-05-15","slut":"2026-05-19","info":"","mail":"","tlf":"","drive":""},
+  {"k":3,"nr":"","kunde":"DKE v. Lars","adr":"Carit Etlers Vej","opg":"Fuld renovering.","b":"874.587","u":"0","dato":"","status":"—","timer":"","fak":"","start":"2026-07-01","slut":"2026-09-01","info":"","mail":"","tlf":"","drive":""},
+  {"k":2,"nr":"","kunde":"DKE v. Charlotte","adr":"Lykkeholms Allé 33","opg":"Pejs og ekstraarbejde.","b":"25.000","u":"25.000","dato":"2026-03-21","status":"—","timer":"","fak":"","start":"","slut":"","info":"","mail":"","tlf":"","drive":""},
+  {"k":3,"nr":"","kunde":"Henrik","adr":"Smedestræde 4, 4040 Jyllinge","opg":"Helt nyt hus.","b":"5.995.000","u":"0","dato":"","status":"Semi-godkendt","timer":"","fak":"","start":"2026-05-15","slut":"2027-02-01","info":"","mail":"","tlf":"","drive":""},
+  {"k":2,"nr":"","kunde":"Mathias & Anna","adr":"N.V. Gadesvej 12a 1","opg":"Fakturering","b":"446.250","u":"160.000","dato":"","status":"Faktura sendt","timer":"45","fak":"1137","start":"2026-04-21","slut":"2026-05-21","info":"","mail":"","tlf":"","drive":""},
+  {"k":4,"nr":"","kunde":"Helle Fortlands kusine","adr":"—","opg":"Udskiftning af tag (afventer opkald fra dem).","b":"750.000","u":"0","dato":"","status":"Semi-godkendt","timer":"","fak":"","start":"2026-06-01","slut":"2026-07-01","info":"","mail":"","tlf":"","drive":""},
+  {"k":4,"nr":"","kunde":"DKE v. Charlotte","adr":"Vordingborggade/Assensgade","opg":"Vinduer & Udsk. hoveddør samt zink på 2 kviste","b":"4.000.000","u":"0","dato":"","status":"Afsendt","timer":"","fak":"","start":"2026-08-01","slut":"2026-10-01","info":"","mail":"","tlf":"","drive":""},
+  {"k":4,"nr":"","kunde":"Frank Lyhne","adr":"Ellemosevej 9, Hellerup","opg":"Trappe. Mures.","b":"8.000","u":"0","dato":"","status":"Afsendt","timer":"","fak":"","start":"2026-04-05","slut":"2026-04-27","info":"","mail":"","tlf":"","drive":""},
+  {"k":4,"nr":"","kunde":"Tina og Lars","adr":"Teglværksbakken (ish)","opg":"Afsluttet.","b":"4.000","u":"0","dato":"","status":"Faktura sendt","timer":"20","fak":"","start":"","slut":"2026-03-06","info":"","mail":"","tlf":"","drive":""},
+  {"k":4,"nr":"","kunde":"Niels-Jørgen","adr":"Vedbæk","opg":"Tagterrasse","b":"225.000","u":"0","dato":"","status":"Semi-godkendt","timer":"","fak":"","start":"2026-08-01","slut":"2026-10-01","info":"","mail":"","tlf":"","drive":""},
+  {"k":5,"nr":"","kunde":"Brandskole","adr":"Helsingør","opg":"","b":"8.000.000","u":"0","dato":"","status":"Faktura sendt","timer":"20","fak":"","start":"2026-05-01","slut":"2027-03-01","info":"","mail":"","tlf":"","drive":""},
+  {"k":5,"nr":"","kunde":"Sortedamsdosering 25","adr":"Nils Lorenz","opg":"Projektering. Konsulentarbejde.","b":"3.000","u":"0","dato":"","status":"Faktura sendt","timer":"20","fak":"","start":"2026-05-01","slut":"2027-03-01","info":"","mail":"","tlf":"","drive":""},
+  {"k":5,"nr":"","kunde":"DKE v. Nils","adr":"Kingosvej 1B","opg":"Fakturering","b":"0","u":"0","dato":"","status":"Faktura sendt","timer":"45","fak":"1137","start":"2026-03-01","slut":"2026-04-29","info":"","mail":"","tlf":"","drive":""},
+  {"k":5,"nr":"","kunde":"Mikkel Munkholm","adr":"Frederikssund","opg":"Tilbygning","b":"1.100.000","u":"0","dato":"","status":"Faktura sendt","timer":"45","fak":"1137","start":"2026-03-01","slut":"2026-04-29","info":"","mail":"","tlf":"","drive":""},
+  {"k":5,"nr":"","kunde":"Anna Andersens, far","adr":"Vedbæk","opg":"Kælder mv.  + sommerhus","b":"0","u":"0","dato":"","status":"—","timer":"","fak":"","start":"2026-05-01","slut":"2027-02-01","info":"Link","mail":"rikke_jm@hotmail.com","tlf":"","drive":""},
+  {"k":5,"nr":"","kunde":"via Anna","adr":"N. V. Gadesvej 10,","opg":"1. sal","b":"0","u":"0","dato":"","status":"—","timer":"","fak":"","start":"2026-05-01","slut":"2027-02-01","info":"Link","mail":"rikke_jm@hotmail.com","tlf":"","drive":""},
+  {"k":6,"nr":"215","kunde":"Lise Galskov","adr":"Præstevejen 24, 3230 Græsted","opg":"Fuld renovering.","b":"80.000","u":"0","dato":"2026-03-21","status":"Faktura sendt","timer":"30","fak":"1132","start":"2026-03-01","slut":"2026-04-20","info":"","mail":"","tlf":"41532001","drive":""},
+  {"k":6,"nr":"","kunde":"DKE v. Charlotte","adr":"Guldborgvej 1, 4 th","opg":"Fakturering","b":"15.000","u":"0","dato":"2026-03-21","status":"Faktura sendt","timer":"40","fak":"","start":"","slut":"2026-03-05","info":"","mail":"","tlf":"","drive":""},
+  {"k":6,"nr":"","kunde":"DKE v. Charlotte","adr":"Rosenørns Allé [DKE]","opg":"Fakturering","b":"0","u":"0","dato":"","status":"Faktura sendt","timer":"45","fak":"1137","start":"2026-03-01","slut":"2026-04-29","info":"","mail":"","tlf":"","drive":""},
+  {"k":6,"nr":"","kunde":"DKE v. Charlotte","adr":"Rosenørns Allé [DKE]","opg":"Fakturering","b":"0","u":"0","dato":"","status":"Faktura sendt","timer":"45","fak":"1137","start":"2026-03-01","slut":"2026-04-29","info":"","mail":"","tlf":"","drive":""},
+  {"k":7,"nr":"","kunde":"Jacob Frandsen","adr":"Fredensborg","opg":"Indretning af hus.","b":"1.000.000","u":"0","dato":"","status":"Semi-godkendt","timer":"","fak":"","start":"2026-08-01","slut":"2026-10-01","info":"","mail":"","tlf":"","drive":""},
+  {"k":7,"nr":"","kunde":"Rikke Jepp Safai","adr":"Mindevej 10","opg":"Fuld renovering af hus.","b":"0","u":"0","dato":"","status":"—","timer":"","fak":"","start":"2026-05-01","slut":"2027-02-01","info":"Link","mail":"rikke_jm@hotmail.com","tlf":"","drive":""},
 ];
 sager.forEach((s, i)=>{
   s.sort = i;
   s.docs = {
-    drive:"", // Indsæt Google Drive-mappe-URL her, når mappestrukturen er klar.
+    drive:s.drive || "",
     byggereferater:docDemo.byggereferater,
     transkripter:docDemo.transkripter
   };
@@ -788,16 +835,17 @@ const betalinger = [
   {nr:"", kunde:"DKE v. Charlotte", milepael:"Udestående betaling", dato:"", beloeb:"25.000", fak:"", status:"udestaaende"}
 ];
 
-const STORAGE_KEY = 'nstsf-dashboard-state-v1';
+const STORAGE_KEY = 'nstsf-dashboard-state-v2';
 function loadState(){
   try{
     const state = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
     if(Array.isArray(state.sager)){
-      state.sager.forEach((saved, i)=>{
-        if(!sager[i]) return;
-        if(saved.k) sager[i].k = +saved.k;
-        if(saved.status) sager[i].status = saved.status;
-      });
+      sager.splice(0, sager.length, ...state.sager.map((saved, i)=>({
+        ...saved,
+        k:+saved.k || 5,
+        sort: typeof saved.sort === 'number' ? saved.sort : i,
+        docs: saved.docs || {drive:saved.drive || "", byggereferater:docDemo.byggereferater, transkripter:docDemo.transkripter}
+      })));
     }
     if(Array.isArray(state.betalinger)){
       state.betalinger.forEach((saved, i)=>{
@@ -809,7 +857,7 @@ function loadState(){
 function saveState(){
   try{
     localStorage.setItem(STORAGE_KEY, JSON.stringify({
-      sager:sager.map(s=>({k:s.k,status:s.status})),
+      sager:sager,
       betalinger:betalinger.map(b=>({status:b.status}))
     }));
   }catch(e){}
@@ -820,6 +868,24 @@ loadState();
 const tbody = document.getElementById('sagerBody');
 const caseDetail = document.getElementById('caseDetail');
 let activeSag = null;
+let editSagIndex = null;
+
+function displayDate(value){
+  if(!value) return '—';
+  const d = new Date(value + 'T00:00:00');
+  if(Number.isNaN(d.getTime())) return value;
+  return d.toLocaleDateString('da-DK', {day:'2-digit', month:'short', year:'numeric'});
+}
+function parseNumber(value){
+  if(value === undefined || value === null || value === '') return 0;
+  return +String(value).replace(/\./g,'').replace(',', '.') || 0;
+}
+function escapeAttr(value){
+  return String(value || '').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');
+}
+function getSagDrive(s){
+  return (s.docs && s.docs.drive) || s.drive || '';
+}
 
 function render(){
   const q = (document.getElementById('sagerSoeg').value || '').toLowerCase();
@@ -851,7 +917,9 @@ function render(){
       <td class="wrap" title="${s.opg}">${s.opg || '—'}</td>
       <td class="num">${s.b && s.b !== '0' ? s.b + ' kr.' : '—'}</td>
       <td class="num">${s.u && s.u !== '0' ? '<span class="chip chip-amber">' + s.u + ' kr.</span>' : '—'}</td>
-      <td class="dim">${s.dato || '—'}</td>
+      <td class="dim date-cell">${displayDate(s.dato)}</td>
+      <td class="dim date-cell">${displayDate(s.start)}</td>
+      <td class="dim date-cell">${displayDate(s.slut)}</td>
       <td>
         <select class="status-sel" onchange="changeStatus(${idx}, this.value)">
           <option${s.status==='—'?' selected':''}>—</option>
@@ -862,10 +930,12 @@ function render(){
         </select>
       </td>
       <td class="dim">${s.fak || '—'}</td>
+      <td><button class="icon-btn" onclick="openEditSag(${idx})">Rediger</button></td>
     </tr>
   `;}).join('');
   document.getElementById('count').textContent = `${rows.length} af ${sager.length} sager`;
   if(activeSag !== null) renderSagDetail(activeSag);
+  renderCapacity();
 }
 function changeKat(i,v){ sager[i].k = +v; saveState(); render(); }
 function changeStatus(i,v){ sager[i].status = v; saveState(); render(); }
@@ -891,9 +961,10 @@ function renderDocs(items){
 function renderSagDetail(i){
   const s = sager[i];
   if(!s) return;
-  const driveLink = s.docs.drive
-    ? `<a class="btn primary" href="${s.docs.drive}" target="_blank" rel="noopener">Åbn Drive-mappe</a>`
-    : '<button class="btn" disabled>Drive-mappe mangler</button>';
+  const driveUrl = getSagDrive(s);
+  const driveLink = driveUrl
+    ? `<a class="btn primary" href="${driveUrl}" target="_blank" rel="noopener">Åbn kundemappe</a>`
+    : `<a class="btn" href="${CUSTOMER_DRIVE_ROOT}" target="_blank" rel="noopener">Find/opret kundemappe</a>`;
   caseDetail.classList.add('active');
   caseDetail.innerHTML = `
     <div class="panel-hd">
@@ -901,7 +972,10 @@ function renderSagDetail(i){
         <h2>${s.kunde}</h2>
         <div class="dim">${s.nr ? 'Sag ' + s.nr + ' · ' : ''}${s.adr || 'Adresse mangler'} · ${KAT[s.k]}</div>
       </div>
-      <button class="btn ghost" onclick="closeSag()">Luk</button>
+      <div style="display:flex;gap:8px">
+        <button class="btn" onclick="openEditSag(${i})">Rediger</button>
+        <button class="btn ghost" onclick="closeSag()">Luk</button>
+      </div>
     </div>
     <div class="case-grid">
       <div class="case-card">
@@ -912,11 +986,18 @@ function renderSagDetail(i){
             <tr><td>Opgave</td><td>${s.opg || '—'}</td></tr>
             <tr><td>Est. beløb</td><td class="num">${s.b && s.b !== '0' ? s.b + ' kr.' : '—'}</td></tr>
             <tr><td>Udestående</td><td class="num">${s.u && s.u !== '0' ? s.u + ' kr.' : '—'}</td></tr>
+            <tr><td>Startdato</td><td>${displayDate(s.start)}</td></tr>
+            <tr><td>Slutdato</td><td>${displayDate(s.slut)}</td></tr>
+            <tr><td>Mail</td><td>${s.mail || '—'}</td></tr>
+            <tr><td>Telefon</td><td>${s.tlf || '—'}</td></tr>
             <tr><td>Fin. status</td><td>${s.status || '—'}</td></tr>
             <tr><td>Fakturanr.</td><td>${s.fak || '—'}</td></tr>
           </tbody>
         </table>
-        <div style="margin-top:12px">${driveLink}</div>
+        <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap">
+          ${driveLink}
+          <a class="btn" href="${DRIVE_ROOT}" target="_blank" rel="noopener">Åbn fælles Drive-root</a>
+        </div>
       </div>
       <div class="case-card">
         <h3>Mødenoter og referater</h3>
@@ -931,10 +1012,147 @@ function renderSagDetail(i){
   `;
 }
 
+function addSag(){
+  const idx = sager.length;
+  sager.push({
+    k:3,nr:"",kunde:"Ny kunde",adr:"",opg:"",b:"0",u:"0",dato:"",
+    status:"—",timer:"",fak:"",start:"",slut:"",info:"",mail:"",tlf:"",
+    drive:"",sort:idx,docs:{drive:"",byggereferater:docDemo.byggereferater,transkripter:docDemo.transkripter}
+  });
+  saveState();
+  openEditSag(idx);
+  render();
+}
+
+function openEditSag(i){
+  const s = sager[i];
+  if(!s) return;
+  editSagIndex = i;
+  activeSag = i;
+  caseDetail.classList.add('active');
+  caseDetail.innerHTML = `
+    <div class="panel-hd">
+      <h2>Rediger sag</h2>
+      <button class="btn ghost" onclick="closeSag()">Luk</button>
+    </div>
+    <div class="case-form">
+      <label>Kategori<select id="edit-k">${Object.entries(KAT).map(([k,v])=>`<option value="${k}"${+k===s.k?' selected':''}>${v}</option>`).join('')}</select></label>
+      <label>Sagsnr.<input id="edit-nr" value="${escapeAttr(s.nr)}"></label>
+      <label>Kundenavn<input id="edit-kunde" value="${escapeAttr(s.kunde)}"></label>
+      <label class="wide">Adresse<input id="edit-adr" value="${escapeAttr(s.adr === '—' ? '' : s.adr)}"></label>
+      <label class="wide">Opgave<textarea id="edit-opg">${escapeAttr(s.opg)}</textarea></label>
+      <label>Est. beløb<input id="edit-b" value="${escapeAttr(s.b)}"></label>
+      <label>Udestående<input id="edit-u" value="${escapeAttr(s.u)}"></label>
+      <label>Betalingsdato<input id="edit-dato" type="date" value="${escapeAttr(s.dato)}"></label>
+      <label>Startdato<input id="edit-start" type="date" value="${escapeAttr(s.start)}"></label>
+      <label>Slutdato<input id="edit-slut" type="date" value="${escapeAttr(s.slut)}"></label>
+      <label>Fin. status<input id="edit-status" value="${escapeAttr(s.status)}"></label>
+      <label>Est. timer<input id="edit-timer" value="${escapeAttr(s.timer)}"></label>
+      <label>Fakturanr.<input id="edit-fak" value="${escapeAttr(s.fak)}"></label>
+      <label>Mail<input id="edit-mail" value="${escapeAttr(s.mail)}"></label>
+      <label>Telefon<input id="edit-tlf" value="${escapeAttr(s.tlf)}"></label>
+      <label class="wide">Google Drive-folder URL<input id="edit-drive" value="${escapeAttr(getSagDrive(s))}" placeholder="Indsæt link til kundens Drive-mappe"></label>
+      <label class="wide">Noter/info<textarea id="edit-info">${escapeAttr(s.info)}</textarea></label>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:14px">
+      <button class="btn primary" onclick="saveSagEdit()">Gem</button>
+      <button class="btn" onclick="renderSagDetail(${i})">Annuller</button>
+    </div>
+  `;
+}
+
+function readEdit(id){ return document.getElementById(id).value.trim(); }
+function saveSagEdit(){
+  if(editSagIndex === null || !sager[editSagIndex]) return;
+  const s = sager[editSagIndex];
+  Object.assign(s, {
+    k:+readEdit('edit-k'), nr:readEdit('edit-nr'), kunde:readEdit('edit-kunde') || 'Ny kunde',
+    adr:readEdit('edit-adr') || '—', opg:readEdit('edit-opg'), b:readEdit('edit-b') || '0',
+    u:readEdit('edit-u') || '0', dato:readEdit('edit-dato'), start:readEdit('edit-start'),
+    slut:readEdit('edit-slut'), status:readEdit('edit-status') || '—', timer:readEdit('edit-timer'),
+    fak:readEdit('edit-fak'), mail:readEdit('edit-mail'), tlf:readEdit('edit-tlf'),
+    info:readEdit('edit-info'), drive:readEdit('edit-drive')
+  });
+  s.docs = s.docs || {byggereferater:docDemo.byggereferater, transkripter:docDemo.transkripter};
+  s.docs.drive = s.drive;
+  saveState();
+  render();
+  renderSagDetail(editSagIndex);
+}
+
 function closeSag(){
   activeSag = null;
+  editSagIndex = null;
   caseDetail.classList.remove('active');
   caseDetail.innerHTML = '';
+}
+
+function startOfWeek(d){
+  const x = new Date(d);
+  const day = (x.getDay() + 6) % 7;
+  x.setDate(x.getDate() - day);
+  x.setHours(0,0,0,0);
+  return x;
+}
+function addDays(d, days){
+  const x = new Date(d);
+  x.setDate(x.getDate() + days);
+  return x;
+}
+function overlapDays(aStart, aEnd, bStart, bEnd){
+  const start = Math.max(aStart.getTime(), bStart.getTime());
+  const end = Math.min(aEnd.getTime(), bEnd.getTime());
+  return Math.max(0, Math.ceil((end - start) / 86400000) + 1);
+}
+function estimatedHours(s){
+  const explicit = parseNumber(s.timer);
+  if(explicit) return explicit;
+  const amount = parseNumber(s.b);
+  return amount ? amount / 650 : 0;
+}
+function renderCapacity(){
+  const body = document.getElementById('capacityBody');
+  const capacityInput = document.getElementById('capacityHours');
+  if(!body || !capacityInput) return;
+  const capacity = +capacityInput.value || 160;
+  const firstWeek = startOfWeek(new Date());
+  const rows = [];
+  for(let w=0; w<16; w++){
+    const weekStart = addDays(firstWeek, w*7);
+    const weekEnd = addDays(weekStart, 6);
+    const details = [];
+    let hours = 0;
+    sager.forEach(s=>{
+      if(![2,3,4,5].includes(+s.k) || !s.start || !s.slut) return;
+      const start = new Date(s.start + 'T00:00:00');
+      const end = new Date(s.slut + 'T00:00:00');
+      if(Number.isNaN(start.getTime()) || Number.isNaN(end.getTime()) || end < start) return;
+      const days = overlapDays(start, end, weekStart, weekEnd);
+      if(!days) return;
+      const totalDays = Math.max(1, overlapDays(start, end, start, end));
+      const h = estimatedHours(s) * days / totalDays;
+      if(!h) return;
+      hours += h;
+      details.push({kunde:s.kunde, hours:h});
+    });
+    details.sort((a,b)=>b.hours-a.hours);
+    rows.push({weekStart, hours, details});
+  }
+  body.innerHTML = rows.map(r=>{
+    const pct = capacity ? Math.round(r.hours / capacity * 100) : 0;
+    const cls = pct > 100 ? 'over' : (pct >= 85 ? 'warn' : '');
+    const label = `${displayDate(r.weekStart.toISOString().slice(0,10))}`;
+    const top = r.details.slice(0,3).map(d=>`${d.kunde} (${Math.round(d.hours)} t)`).join(', ') || '—';
+    return `
+      <tr>
+        <td>${label}</td>
+        <td class="num">${Math.round(r.hours)} t</td>
+        <td class="num">${capacity} t</td>
+        <td><div class="capacity-bar"><div class="capacity-fill ${cls}" style="width:${Math.min(100,pct)}%"></div></div><span class="dim">${pct}%</span></td>
+        <td>${top}</td>
+      </tr>
+    `;
+  }).join('');
 }
 
 function renderBetalinger(){
@@ -971,6 +1189,7 @@ function changeBetaling(i,v){
 
 document.getElementById('sagerSoeg').addEventListener('input',render);
 document.getElementById('filterKat').addEventListener('change',render);
+document.getElementById('capacityHours').addEventListener('input',renderCapacity);
 
 render();
 renderBetalinger();
