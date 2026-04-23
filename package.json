@@ -1,0 +1,8 @@
+{
+  "name": "nstsf-dashboard",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@netlify/blobs": "^9.1.0"
+  }
+}
