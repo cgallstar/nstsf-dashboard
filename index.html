@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="da">
 <head>
@@ -343,6 +342,28 @@
     font-size:12px;border-left:3px solid var(--amber);
   }
   .status-note strong{color:var(--amber)}
+  .sync-panel{
+    margin:0 0 18px;
+    background:#fff;
+    border:1px solid var(--line);
+    border-radius:8px;
+    padding:10px 12px;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    gap:12px;
+    font-size:12px;
+  }
+  .sync-panel .sync-title{font-weight:700;color:#3b4a5c}
+  .sync-panel .sync-state{color:var(--muted);margin-top:2px}
+  .sync-panel .sync-actions{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+  .sync-panel input{
+    border:1px solid var(--line);
+    border-radius:6px;
+    padding:7px 9px;
+    min-width:190px;
+    font-size:12px;
+  }
 
   /* Chips */
   .chip{
@@ -386,6 +407,19 @@
 </nav>
 
 <main>
+
+<div class="sync-panel">
+  <div>
+    <div class="sync-title">Central datalagring</div>
+    <div id="syncStatus" class="sync-state">Lokal browser-kopi aktiv. Forbind til Netlify backend for fælles data.</div>
+  </div>
+  <div class="sync-actions">
+    <input id="dashboardToken" type="password" placeholder="Dashboard adgangskode">
+    <button class="btn primary" onclick="connectDashboardStorage()">Forbind</button>
+    <button class="btn" onclick="loadRemoteState(true)">Hent fra backend</button>
+    <button class="btn" onclick="saveState(true)">Gem nu</button>
+  </div>
+</div>
 
 <!-- ============ DASHBOARD ============ -->
 <section id="dashboard" class="section active">
@@ -496,10 +530,10 @@
           <tr><td>Helle Fortland (+ kusine)</td><td class="num">2 sager</td><td></td></tr>
           <tr><td>Brandskole, Helsingør</td><td class="num">1 sag</td><td><span class="chip chip-blue">storkunde</span></td></tr>
           <tr><td>Henrik (nyt hus, Jyllinge)</td><td class="num">1 sag</td><td><span class="chip chip-amber">storsag</span></td></tr>
-          <tr><td>Øvrige privatkunder</td><td class="num">9 sager</td><td></td></tr>
+          <tr><td>Øvrige privatkunder</td><td class="num">13 sager</td><td></td></tr>
         </tbody>
       </table>
-      <h3 style="margin-top:20px">DKE-kontakter</h3>
+      <h3 style="margin-top:14px">DKE-kontakter</h3>
       <table>
         <tbody>
           <tr><td>Charlotte</td><td class="num">8 sager</td><td class="dim">charlotte@dke.dk</td></tr>
@@ -514,9 +548,9 @@
     <div class="panel-hd">
       <h2>Kapacitetskalender — resten af 2026</h2>
       <div class="capacity-tools">
-        <label style="font-size:12px;color:var(--muted)">Timer pr. medarbejder pr. uge</label>
+        <label for="capacityHours" class="dim" style="font-weight:600">Timer pr. medarbejder pr. uge</label>
         <input type="number" id="capacityHours" value="37" min="1" step="1">
-        <span class="dim" style="font-size:12px">Timer fordeles lineært mellem start- og slutdato.</span>
+        <span class="dim">Timer fordeles lineært mellem start- og slutdato.</span>
       </div>
     </div>
     <div class="capacity-layout">
@@ -525,17 +559,25 @@
         <div id="employeeList" class="employee-list"></div>
         <button class="btn" onclick="addEmployee()">Tilføj medarbejder</button>
         <div class="employee-status-editor">
-          <label>Medarbejder<select id="statusEmployee"></select></label>
-          <label>Uge<select id="statusWeek"></select></label>
-          <label>Status<select id="statusType">
-            <option value="work">På arbejde</option>
-            <option value="vacation">Ferie</option>
-            <option value="school">Skole</option>
-            <option value="poland">Polen</option>
-          </select></label>
-          <label>Timer override<input id="statusHours" type="number" min="0" step="1" placeholder="valgfri"></label>
+          <label>Medarbejder
+            <select id="statusEmployee"></select>
+          </label>
+          <label>Uge
+            <select id="statusWeek"></select>
+          </label>
+          <label>Status
+            <select id="statusType">
+              <option value="work">På arbejde</option>
+              <option value="vacation">Ferie</option>
+              <option value="school">Skole</option>
+              <option value="poland">Polen</option>
+            </select>
+          </label>
+          <label>Timer override
+            <input id="statusHours" type="number" min="0" placeholder="valgfri">
+          </label>
         </div>
-        <div style="display:flex;gap:8px;margin-top:10px">
+        <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">
           <button class="btn primary" onclick="setEmployeeWeekStatus()">Gem uge</button>
           <button class="btn" onclick="clearEmployeeWeekStatus()">Nulstil uge</button>
         </div>
@@ -554,7 +596,7 @@
     <div class="sager-tools">
       <input type="search" id="sagerSoeg" placeholder="Søg kunde, sagsnr., adresse…">
       <select id="filterKat">
-        <option value="">Alle kategorier</option>
+        <option value="all">Alle kategorier</option>
         <option value="1">01. Arbejde færdigt</option>
         <option value="2">02. Aktive kunder</option>
         <option value="3">03. Kunde (ikke startet)</option>
@@ -564,65 +606,52 @@
         <option value="7">07. Ikke relevant</option>
       </select>
       <button class="btn primary" onclick="addSag()">Tilføj ny</button>
-      <span style="font-size:12px;color:var(--muted)">Skift kategori eller status direkte i tabellen</span>
-      <span class="count" id="count">—</span>
+      <span class="count" id="count"></span>
     </div>
-    <div style="overflow-x:auto">
-      <table id="sagerTable">
-        <thead>
-          <tr>
-            <th>Kategori</th>
-            <th>Sagsnr.</th>
-            <th>Kundenavn</th>
-            <th>Adresse</th>
-            <th class="wrap">Opgave</th>
-            <th class="num">Est. beløb</th>
-            <th class="num">Udestående</th>
-            <th>Betalingsdato</th>
-            <th>Start</th>
-            <th>Slut</th>
-            <th>Fin. status</th>
-            <th>Fakturanr.</th>
-            <th></th>
-          </tr>
-        </thead>
-        <tbody id="sagerBody"></tbody>
-      </table>
-    </div>
-    <div class="case-detail" id="caseDetail"></div>
-  </div>
 
+    <table id="sagerTable">
+      <thead>
+        <tr>
+          <th>Kategori</th>
+          <th>Sagsnr.</th>
+          <th>Kundenavn</th>
+          <th>Adresse</th>
+          <th>Opgave</th>
+          <th class="num">Budget</th>
+          <th class="num">Est. timer</th>
+          <th>Betalingsdato</th>
+          <th>Start</th>
+          <th>Slut</th>
+          <th>Status</th>
+          <th>Ansvarlig</th>
+          <th>Faktura</th>
+          <th>Handling</th>
+        </tr>
+      </thead>
+      <tbody id="sagerBody"></tbody>
+    </table>
+
+    <div id="caseDetail" class="case-detail"></div>
+  </div>
 </section>
 
 <!-- ============ INDBAKKE ============ -->
 <section id="indbakke" class="section">
-  <div class="panel" style="margin-bottom:16px">
-    <div style="display:flex;justify-content:space-between;align-items:center">
-      <div>
-        <h2 style="margin-bottom:4px">smg@nstsf.dk — indbakke</h2>
-        <div style="font-size:12px;color:var(--muted)">Sådan ser mails ud, når de kommer ind. Klik på en mail for at læse den og se handlingsmuligheder.</div>
-      </div>
-      <div>
-        <button class="btn">Opdater</button>
-        <button class="btn primary">Ny mail</button>
-      </div>
-    </div>
-  </div>
-
   <div class="inbox-layout">
     <div class="inbox-list">
       <div class="inbox-hd">
         <div>
-          <div class="title">Indbakke</div>
-          <div class="addr">smg@nstsf.dk</div>
+          <div class="title">SMG / NSTSF indbakke</div>
+          <div class="addr">smg@nstsf.dk · kontakt@nstsf.dk · christian@nstsf.dk</div>
         </div>
-        <div style="font-size:11px;color:var(--muted)">12 mails</div>
       </div>
+
       <div class="inbox-tabs">
         <button class="inbox-tab active" data-filter="alle">Alle</button>
-        <button class="inbox-tab" data-filter="uhaandteret">Uhåndteret <span class="badge">8</span></button>
-        <button class="inbox-tab" data-filter="haandteret">Håndteret</button>
+        <button class="inbox-tab" data-filter="uhaandteret">Uhåndterede <span class="badge">8</span></button>
+        <button class="inbox-tab" data-filter="haandteret">Håndterede</button>
       </div>
+
       <div id="emailList"></div>
     </div>
 
@@ -633,147 +662,62 @@
 <!-- ============ LIKVIDITET ============ -->
 <section id="likviditet" class="section">
   <div class="panel">
-    <h2>Likviditetsbudget 2026</h2>
-    <div style="overflow-x:auto">
-      <table>
-        <thead>
-          <tr>
-            <th></th>
-            <th class="num">Jan</th><th class="num">Feb</th><th class="num">Mar</th><th class="num">Apr</th>
-            <th class="num">May</th><th class="num">Jun</th><th class="num">Jul</th><th class="num">Aug</th>
-            <th class="num">Sep</th><th class="num">Oct</th><th class="num">Nov</th><th class="num">Dec</th>
-            <th class="num">Fuld år</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr style="background:#f6f9fc"><td colspan="14"><strong>Indbetalinger</strong></td></tr>
-          <tr><td>Omsætningsbudget (manuel)</td>
-            <td class="num">800.000</td><td class="num">800.000</td><td class="num">800.000</td>
-            <td class="num">800.000</td><td class="num">800.000</td><td class="num">800.000</td>
-            <td class="num">800.000</td><td class="num">800.000</td><td class="num">800.000</td>
-            <td class="num">800.000</td><td class="num">800.000</td><td class="num">800.000</td>
-            <td class="num"><strong>9.600.000</strong></td>
-          </tr>
-          <tr><td>Bekræftede betalinger</td>
-            <td class="num dim">—</td><td class="num dim">—</td><td class="num">134.625</td>
-            <td class="num">353.000</td><td class="num">464.502</td><td class="num">80.000</td>
-            <td class="num dim">—</td><td class="num dim">—</td><td class="num dim">—</td>
-            <td class="num dim">—</td><td class="num dim">—</td><td class="num dim">—</td>
-            <td class="num"><strong>1.032.127</strong></td>
-          </tr>
-          <tr><td class="dim">Gap — bekræftede vs. budget</td>
-            <td class="num" style="color:var(--red)">(800.000)</td>
-            <td class="num" style="color:var(--red)">(800.000)</td>
-            <td class="num" style="color:var(--red)">(665.375)</td>
-            <td class="num" style="color:var(--red)">(447.000)</td>
-            <td class="num" style="color:var(--red)">(335.498)</td>
-            <td class="num" style="color:var(--red)">(720.000)</td>
-            <td class="num" style="color:var(--red)">(800.000)</td>
-            <td class="num" style="color:var(--red)">(800.000)</td>
-            <td class="num" style="color:var(--red)">(800.000)</td>
-            <td class="num" style="color:var(--red)">(800.000)</td>
-            <td class="num" style="color:var(--red)">(800.000)</td>
-            <td class="num" style="color:var(--red)">(800.000)</td>
-            <td class="num" style="color:var(--red)"><strong>(8.567.873)</strong></td>
-          </tr>
-
-          <tr style="background:#f6f9fc"><td colspan="14"><strong>Udgifter</strong></td></tr>
-          <tr><td>Løn — håndværkere</td>
-            <td class="num">360.000</td><td class="num">360.000</td><td class="num">360.000</td>
-            <td class="num">360.000</td><td class="num">360.000</td><td class="num">360.000</td>
-            <td class="num">360.000</td><td class="num">360.000</td><td class="num">360.000</td>
-            <td class="num">360.000</td><td class="num">360.000</td><td class="num">360.000</td>
-            <td class="num"><strong>4.320.000</strong></td>
-          </tr>
-          <tr><td>Husleje / lokaler</td>
-            <td class="num">10.000</td><td class="num">10.000</td><td class="num">10.000</td>
-            <td class="num">10.000</td><td class="num">10.000</td><td class="num">10.000</td>
-            <td class="num">10.000</td><td class="num">10.000</td><td class="num">10.000</td>
-            <td class="num">10.000</td><td class="num">10.000</td><td class="num">10.000</td>
-            <td class="num"><strong>120.000</strong></td>
-          </tr>
-          <tr><td>Firmabiler / transport</td>
-            <td class="num">60.000</td><td class="num">60.000</td><td class="num">60.000</td>
-            <td class="num">60.000</td><td class="num">60.000</td><td class="num">60.000</td>
-            <td class="num">60.000</td><td class="num">60.000</td><td class="num">60.000</td>
-            <td class="num">60.000</td><td class="num">60.000</td><td class="num">60.000</td>
-            <td class="num"><strong>720.000</strong></td>
-          </tr>
-          <tr><td>Moms — afregning (kvartal)</td>
-            <td class="num dim">—</td><td class="num dim">—</td><td class="num">530.000</td>
-            <td class="num dim">—</td><td class="num dim">—</td><td class="num dim">—</td>
-            <td class="num dim">—</td><td class="num dim">—</td><td class="num dim">—</td>
-            <td class="num dim">—</td><td class="num dim">—</td><td class="num dim">—</td>
-            <td class="num"><strong>530.000</strong></td>
-          </tr>
-          <tr style="background:#eef3f8;font-weight:600">
-            <td>Total udgifter</td>
-            <td class="num">430.000</td><td class="num">430.000</td><td class="num">960.000</td>
-            <td class="num">430.000</td><td class="num">430.000</td><td class="num">430.000</td>
-            <td class="num">430.000</td><td class="num">430.000</td><td class="num">430.000</td>
-            <td class="num">430.000</td><td class="num">430.000</td><td class="num">430.000</td>
-            <td class="num">5.690.000</td>
-          </tr>
-
-          <tr style="background:#f6f9fc"><td colspan="14"><strong>Likviditetsflow</strong></td></tr>
-          <tr><td>Netto pengestrøm</td>
-            <td class="num" style="color:var(--red)">(430.000)</td>
-            <td class="num" style="color:var(--red)">(430.000)</td>
-            <td class="num" style="color:var(--red)">(825.375)</td>
-            <td class="num" style="color:var(--red)">(77.000)</td>
-            <td class="num" style="color:var(--green)">34.502</td>
-            <td class="num" style="color:var(--red)">(350.000)</td>
-            <td class="num" style="color:var(--red)">(430.000)</td>
-            <td class="num" style="color:var(--red)">(430.000)</td>
-            <td class="num" style="color:var(--red)">(430.000)</td>
-            <td class="num" style="color:var(--red)">(430.000)</td>
-            <td class="num" style="color:var(--red)">(430.000)</td>
-            <td class="num" style="color:var(--red)">(430.000)</td>
-            <td class="num" style="color:var(--red)"><strong>(4.657.873)</strong></td>
-          </tr>
-          <tr><td>Akkumuleret saldo</td>
-            <td class="num" style="color:var(--red)">(330.000)</td>
-            <td class="num" style="color:var(--red)">(760.000)</td>
-            <td class="num" style="color:var(--red)">(1.585.375)</td>
-            <td class="num" style="color:var(--red)">(1.662.375)</td>
-            <td class="num" style="color:var(--red)">(1.627.873)</td>
-            <td class="num" style="color:var(--red)">(1.977.873)</td>
-            <td class="num" style="color:var(--red)">(2.407.873)</td>
-            <td class="num" style="color:var(--red)">(2.837.873)</td>
-            <td class="num" style="color:var(--red)">(3.267.873)</td>
-            <td class="num" style="color:var(--red)">(3.697.873)</td>
-            <td class="num" style="color:var(--red)">(4.127.873)</td>
-            <td class="num" style="color:var(--red)">(4.557.873)</td>
-            <td class="num" style="color:var(--red)"><strong>(4.557.873)</strong></td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-    <div class="status-note">
-      <strong>OBS:</strong> Buffer-underskud på -5.057.873 kr. for året. Primo saldo: 100.000 kr. · Minimum buffer: 500.000 kr. · Omsætningsbudgettet er sat til 800.000 kr./måned, men kun 1.032.127 kr. er bekræftet for hele året.
-    </div>
+    <h2>Likviditetsoversigt</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Periode</th>
+          <th class="num">Forventede indbetalinger</th>
+          <th class="num">Forventede udbetalinger</th>
+          <th class="num">Netto</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Næste 30 dage</td>
+          <td class="num">478.387 kr.</td>
+          <td class="num">241.000 kr.</td>
+          <td class="num"><span class="chip chip-green">+237.387 kr.</span></td>
+        </tr>
+        <tr>
+          <td>Næste 60 dage</td>
+          <td class="num">1.643.957 kr.</td>
+          <td class="num">818.000 kr.</td>
+          <td class="num"><span class="chip chip-green">+825.957 kr.</span></td>
+        </tr>
+        <tr>
+          <td>Næste 90 dage</td>
+          <td class="num">2.282.819 kr.</td>
+          <td class="num">1.420.000 kr.</td>
+          <td class="num"><span class="chip chip-green">+862.819 kr.</span></td>
+        </tr>
+      </tbody>
+    </table>
   </div>
 </section>
 
 <!-- ============ BETALINGER ============ -->
 <section id="betalinger" class="section">
   <div class="panel">
-    <h2>Betalingsplan — udestående rater</h2>
+    <div class="panel-hd">
+      <h2>Betalingsplan — udestående rater</h2>
+      <span class="dim">Marker en rate som betalt for at fjerne den fra listen.</span>
+    </div>
     <table>
       <thead>
         <tr>
           <th>Sagsnr.</th>
           <th>Kunde</th>
           <th>Milepæl</th>
-          <th>Forv. dato</th>
+          <th>Dato</th>
           <th class="num">Beløb</th>
-          <th>Fakturanr.</th>
+          <th>Faktura</th>
           <th>Status</th>
         </tr>
       </thead>
       <tbody id="betalingBody"></tbody>
     </table>
-    <div class="pay-note">Skift status til "Betalt" for at fjerne en rate fra oversigten over udestående rater. Den bliver i data, men skjules her.</div>
+    <div class="pay-note">Status styres direkte i dropdownen. Vælg <strong>Betalt</strong>, så forsvinder posten fra udestående oversigt.</div>
   </div>
 </section>
 
@@ -781,44 +725,47 @@
 <section id="marginer" class="section">
   <div class="panel">
     <div class="panel-hd">
-      <h2>Marginer — estimat inden start · faktisk efter aflevering</h2>
-      <div style="font-size:12px;color:var(--muted)">Standard timepris: 650 kr./t</div>
+      <h2>Marginer og timeforbrug</h2>
+      <span class="dim">Estimerede timer er flyttet hertil fra Sager.</span>
     </div>
-    <div class="panel" style="padding:14px;margin-bottom:16px;background:#f8fafc">
-      <div class="panel-hd">
-        <h2>Minuba integration</h2>
-        <span class="dim" style="font-size:12px">Backend proxy via Netlify Functions</span>
-      </div>
-      <div class="integration-grid">
-        <div>
-          <div id="minubaStatus" class="integration-status">Ikke testet endnu.</div>
-          <div class="integration-actions">
-            <button class="btn" onclick="checkMinuba()">Test forbindelse</button>
-            <button class="btn" onclick="fetchMinubaResource('filapi')">Hent FilAPI preview</button>
-            <button class="btn" onclick="fetchMinubaResource('cases')">Hent sager</button>
-            <button class="btn" onclick="fetchMinubaResource('time')">Hent timer</button>
-            <button class="btn" onclick="fetchMinubaResource('materials')">Hent materialer</button>
-          </div>
-        </div>
-        <div class="status-note" style="margin-top:0">
-          Minuba-nøgler skal ligge som environment variables i Netlify, ikke i HTML-filen.
-          Første version tester dataflowet; næste version mapper data til sager og DB.
+    <div id="marginSummary" class="kpi-grid" style="margin-top:0"></div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-hd">
+      <h2>Minuba integration</h2>
+      <span class="dim">Klar til API/FilAPI når nøgler er tilføjet i Netlify.</span>
+    </div>
+    <div class="integration-grid">
+      <div>
+        <div class="integration-status" id="minubaStatus">Tryk på “Test forbindelse” efter deploy for at se om Minuba backend og environment variables er sat korrekt.</div>
+        <div class="integration-actions">
+          <button class="btn" onclick="checkMinuba()">Test forbindelse</button>
+          <button class="btn" onclick="fetchMinubaResource('filapi')">Hent FilAPI preview</button>
+          <button class="btn" onclick="fetchMinubaResource('cases')">Hent sager</button>
+          <button class="btn" onclick="fetchMinubaResource('time')">Hent timer</button>
+          <button class="btn" onclick="fetchMinubaResource('materials')">Hent materialer</button>
         </div>
       </div>
+      <div class="integration-status">Minuba-nøgler skal ligge som environment variables i Netlify, ikke i HTML-filen.
+
+Første version tester dataflowet; næste version mapper data til sager og DB.</div>
     </div>
-    <div class="kpi-grid" id="marginSummary" style="grid-template-columns:repeat(3,1fr);margin-bottom:16px"></div>
+  </div>
+
+  <div class="panel">
     <table>
       <thead>
         <tr>
           <th>Sagsnr.</th>
           <th>Kunde</th>
-          <th class="wrap">Opgave</th>
-          <th class="num">Est. timer</th>
-          <th class="num">Est. omk.</th>
-          <th class="num">Tilbudspris</th>
-          <th class="num">Est. margin</th>
-          <th class="num">Est. margin %</th>
-          <th class="num">Faktisk margin</th>
+          <th>Opgave</th>
+          <th class="num">Timer</th>
+          <th class="num">Omkostning</th>
+          <th class="num">Pris</th>
+          <th class="num">Margin</th>
+          <th class="num">DB%</th>
+          <th class="num">Materialer</th>
         </tr>
       </thead>
       <tbody id="marginBody"></tbody>
@@ -828,75 +775,79 @@
 
 </main>
 
-<footer>
-  Nordsjællands Tømrer- &amp; Snedkerfirma · Pipeline dashboard · Skabt som overblik over Excel-arkene
-</footer>
+<footer>Nordsjællands Tømrer- &amp; Snedkerfirma · Pipeline dashboard · Skabt som overblik over Excel-arkene</footer>
 
 <script>
-// === DATA: Sager ===
-const KAT = {
-  1:"01. Arbejde færdigt", 2:"02. Aktive kunder", 3:"03. Kunde (ikke startet)",
-  4:"04. Tilbud sendt", 5:"05. Pipeline", 6:"06. Afsluttet", 7:"07. Ikke relevant"
-};
 const DRIVE_ROOT = "https://drive.google.com/drive/folders/1Xf06EVUrNfQiS_pLMwOOTzhjq0Q3NC8K?usp=drive_link";
 const CUSTOMER_DRIVE_ROOT = "https://drive.google.com/drive/u/0/folders/16mPUBQntdRS0N65EmnigsyNesRz3bC-f";
+const categories = {
+  1:"01. Arbejde færdigt",
+  2:"02. Aktive kunder",
+  3:"03. Kunde (ikke startet)",
+  4:"04. Tilbud sendt",
+  5:"05. Pipeline",
+  6:"06. Afsluttet",
+  7:"07. Ikke relevant"
+};
+const statusOptions = ["Afventer","I gang","Afsluttet","Tilbud sendt","Afventer kunde","Betalt"];
+const owners = ["SMG","Christian","Mikkel","TBD"];
 const employees = [
-  {id:"smg", name:"SMG", hours:37, type:"employee", overrides:{}},
-  {id:"svend-1", name:"Svend 1", hours:37, type:"employee", overrides:{}},
-  {id:"svend-2", name:"Svend 2", hours:37, type:"employee", overrides:{}},
-  {id:"laerling", name:"Lærling", hours:37, type:"apprentice", overrides:{}},
-  {id:"polen-1", name:"Udenlandsk 1", hours:37, type:"foreign", overrides:{}},
-  {id:"polen-2", name:"Udenlandsk 2", hours:37, type:"foreign", overrides:{}}
+  {id:'emp-smg', name:'SMG', hours:37, type:'employee', overrides:{}},
+  {id:'emp-svend1', name:'Svend 1', hours:37, type:'employee', overrides:{}},
+  {id:'emp-svend2', name:'Svend 2', hours:37, type:'employee', overrides:{}},
+  {id:'emp-apprentice', name:'Lærling', hours:37, type:'apprentice', overrides:{}},
+  {id:'emp-foreign1', name:'Udenlandsk 1', hours:37, type:'foreign', overrides:{}},
+  {id:'emp-foreign2', name:'Udenlandsk 2', hours:37, type:'foreign', overrides:{}}
 ];
-
 const docDemo = {
   byggereferater:[
     {titel:"Byggereferat fra seneste møde", dato:"Afventer upload", url:""},
+    {titel:"Mailudkast til referat", dato:"Automatiseres senere", url:"mailto:smg@nstsf.dk"}
   ],
   transkripter:[
     {titel:"Gemini transkript", dato:"Afventer upload", url:""},
+    {titel:"Mødenoter", dato:"Automatiseres senere", url:DRIVE_ROOT}
   ]
 };
-
 const sager = [
-  {"k":1,"nr":"218","kunde":"Helle Fortland","adr":"Carl Baggers Allé 17","opg":"Småopgaver i huset","b":"87.625","u":"128.000","dato":"2026-04-07","status":"Ingen udeståender","timer":"35","fak":"","start":"2026-03-24","slut":"2026-04-20","info":"","mail":"","tlf":"","drive":""},
-  {"k":1,"nr":"","kunde":"DKE v. Charlotte","adr":"Ryesgade 62, lejl. 48","opg":"Renovering af lejlighed","b":"273.000","u":"273.000","dato":"2026-04-17","status":"Faktura sendt","timer":"15","fak":"","start":"2026-03-01","slut":"2026-04-17","info":"","mail":"","tlf":"","drive":""},
-  {"k":1,"nr":"","kunde":"DKE v. Charlotte","adr":"Ryesgade 62, lejlighed 56","opg":"Afsluttet.","b":"0","u":"41.000","dato":"","status":"Faktura sendt","timer":"20","fak":"1148","start":"","slut":"2026-04-29","info":"","mail":"","tlf":"","drive":""},
-  {"k":1,"nr":"","kunde":"Marie & Jørn","adr":"Slotsgade 9 st","opg":"Småopgaver i huset","b":"17.387","u":"17.387","dato":"2026-04-28","status":"—","timer":"","fak":"1149","start":"2026-04-10","slut":"2026-04-20","info":"Link","mail":"rikke_jm@hotmail.com","tlf":"","drive":""},
-  {"k":2,"nr":"","kunde":"DKE v. Charlotte","adr":"Bülowsvej 9, 2. TH, Frederiksberg","opg":"Fakturering","b":"32.000","u":"32.000","dato":"2026-03-21","status":"Faktura sendt","timer":"55","fak":"","start":"","slut":"2026-05-01","info":"","mail":"","tlf":"","drive":""},
-  {"k":2,"nr":"","kunde":"DKE v. Charlotte","adr":"Blågårdsgade 14, 2200 Kbh N.","opg":"Fakturering","b":"114.000","u":"145.000","dato":"2026-03-26","status":"Ingen udeståender","timer":"20","fak":"","start":"","slut":"2026-04-27","info":"","mail":"","tlf":"","drive":""},
-  {"k":2,"nr":"214","kunde":"DKE v. Charlotte","adr":"Ryesgade 62, lejl. 30","opg":"Fakturering","b":"573.004","u":"283.000","dato":"2026-05-22","status":"Ingen udeståender","timer":"15","fak":"1142","start":"2026-03-24","slut":"2026-05-20","info":"","mail":"","tlf":"","drive":""},
-  {"k":3,"nr":"","kunde":"Niels & Vibeke","adr":"Villingebæk Strandvej 532, 3120 Dronningmølle","opg":"Vinduer","b":"178.000","u":"178.000","dato":"2026-05-08","status":"—","timer":"","fak":"","start":"2026-05-15","slut":"2026-05-19","info":"","mail":"","tlf":"","drive":""},
-  {"k":3,"nr":"","kunde":"DKE v. Lars","adr":"Carit Etlers Vej","opg":"Fuld renovering.","b":"874.587","u":"0","dato":"","status":"—","timer":"","fak":"","start":"2026-07-01","slut":"2026-09-01","info":"","mail":"","tlf":"","drive":""},
-  {"k":2,"nr":"","kunde":"DKE v. Charlotte","adr":"Lykkeholms Allé 33","opg":"Pejs og ekstraarbejde.","b":"25.000","u":"25.000","dato":"2026-03-21","status":"—","timer":"","fak":"","start":"","slut":"","info":"","mail":"","tlf":"","drive":""},
-  {"k":3,"nr":"","kunde":"Henrik","adr":"Smedestræde 4, 4040 Jyllinge","opg":"Helt nyt hus.","b":"5.995.000","u":"0","dato":"","status":"Semi-godkendt","timer":"","fak":"","start":"2026-05-15","slut":"2027-02-01","info":"","mail":"","tlf":"","drive":""},
-  {"k":2,"nr":"","kunde":"Mathias & Anna","adr":"N.V. Gadesvej 12a 1","opg":"Fakturering","b":"446.250","u":"160.000","dato":"","status":"Faktura sendt","timer":"45","fak":"1137","start":"2026-04-21","slut":"2026-05-21","info":"","mail":"","tlf":"","drive":""},
-  {"k":4,"nr":"","kunde":"Helle Fortlands kusine","adr":"—","opg":"Udskiftning af tag (afventer opkald fra dem).","b":"750.000","u":"0","dato":"","status":"Semi-godkendt","timer":"","fak":"","start":"2026-06-01","slut":"2026-07-01","info":"","mail":"","tlf":"","drive":""},
-  {"k":4,"nr":"","kunde":"DKE v. Charlotte","adr":"Vordingborggade/Assensgade","opg":"Vinduer & Udsk. hoveddør samt zink på 2 kviste","b":"4.000.000","u":"0","dato":"","status":"Afsendt","timer":"","fak":"","start":"2026-08-01","slut":"2026-10-01","info":"","mail":"","tlf":"","drive":""},
-  {"k":4,"nr":"","kunde":"Frank Lyhne","adr":"Ellemosevej 9, Hellerup","opg":"Trappe. Mures.","b":"8.000","u":"0","dato":"","status":"Afsendt","timer":"","fak":"","start":"2026-04-05","slut":"2026-04-27","info":"","mail":"","tlf":"","drive":""},
-  {"k":4,"nr":"","kunde":"Tina og Lars","adr":"Teglværksbakken (ish)","opg":"Afsluttet.","b":"4.000","u":"0","dato":"","status":"Faktura sendt","timer":"20","fak":"","start":"","slut":"2026-03-06","info":"","mail":"","tlf":"","drive":""},
-  {"k":4,"nr":"","kunde":"Niels-Jørgen","adr":"Vedbæk","opg":"Tagterrasse","b":"225.000","u":"0","dato":"","status":"Semi-godkendt","timer":"","fak":"","start":"2026-08-01","slut":"2026-10-01","info":"","mail":"","tlf":"","drive":""},
-  {"k":5,"nr":"","kunde":"Brandskole","adr":"Helsingør","opg":"","b":"8.000.000","u":"0","dato":"","status":"Faktura sendt","timer":"20","fak":"","start":"2026-05-01","slut":"2027-03-01","info":"","mail":"","tlf":"","drive":""},
-  {"k":5,"nr":"","kunde":"Sortedamsdosering 25","adr":"Nils Lorenz","opg":"Projektering. Konsulentarbejde.","b":"3.000","u":"0","dato":"","status":"Faktura sendt","timer":"20","fak":"","start":"2026-05-01","slut":"2027-03-01","info":"","mail":"","tlf":"","drive":""},
-  {"k":5,"nr":"","kunde":"DKE v. Nils","adr":"Kingosvej 1B","opg":"Fakturering","b":"0","u":"0","dato":"","status":"Faktura sendt","timer":"45","fak":"1137","start":"2026-03-01","slut":"2026-04-29","info":"","mail":"","tlf":"","drive":""},
-  {"k":5,"nr":"","kunde":"Mikkel Munkholm","adr":"Frederikssund","opg":"Tilbygning","b":"1.100.000","u":"0","dato":"","status":"Faktura sendt","timer":"45","fak":"1137","start":"2026-03-01","slut":"2026-04-29","info":"","mail":"","tlf":"","drive":""},
-  {"k":5,"nr":"","kunde":"Anna Andersens, far","adr":"Vedbæk","opg":"Kælder mv.  + sommerhus","b":"0","u":"0","dato":"","status":"—","timer":"","fak":"","start":"2026-05-01","slut":"2027-02-01","info":"Link","mail":"rikke_jm@hotmail.com","tlf":"","drive":""},
-  {"k":5,"nr":"","kunde":"via Anna","adr":"N. V. Gadesvej 10,","opg":"1. sal","b":"0","u":"0","dato":"","status":"—","timer":"","fak":"","start":"2026-05-01","slut":"2027-02-01","info":"Link","mail":"rikke_jm@hotmail.com","tlf":"","drive":""},
-  {"k":6,"nr":"215","kunde":"Lise Galskov","adr":"Præstevejen 24, 3230 Græsted","opg":"Fuld renovering.","b":"80.000","u":"0","dato":"2026-03-21","status":"Faktura sendt","timer":"30","fak":"1132","start":"2026-03-01","slut":"2026-04-20","info":"","mail":"","tlf":"41532001","drive":""},
-  {"k":6,"nr":"","kunde":"DKE v. Charlotte","adr":"Guldborgvej 1, 4 th","opg":"Fakturering","b":"15.000","u":"0","dato":"2026-03-21","status":"Faktura sendt","timer":"40","fak":"","start":"","slut":"2026-03-05","info":"","mail":"","tlf":"","drive":""},
-  {"k":6,"nr":"","kunde":"DKE v. Charlotte","adr":"Rosenørns Allé [DKE]","opg":"Fakturering","b":"0","u":"0","dato":"","status":"Faktura sendt","timer":"45","fak":"1137","start":"2026-03-01","slut":"2026-04-29","info":"","mail":"","tlf":"","drive":""},
-  {"k":6,"nr":"","kunde":"DKE v. Charlotte","adr":"Rosenørns Allé [DKE]","opg":"Fakturering","b":"0","u":"0","dato":"","status":"Faktura sendt","timer":"45","fak":"1137","start":"2026-03-01","slut":"2026-04-29","info":"","mail":"","tlf":"","drive":""},
-  {"k":7,"nr":"","kunde":"Jacob Frandsen","adr":"Fredensborg","opg":"Indretning af hus.","b":"1.000.000","u":"0","dato":"","status":"Semi-godkendt","timer":"","fak":"","start":"2026-08-01","slut":"2026-10-01","info":"","mail":"","tlf":"","drive":""},
-  {"k":7,"nr":"","kunde":"Rikke Jepp Safai","adr":"Mindevej 10","opg":"Fuld renovering af hus.","b":"0","u":"0","dato":"","status":"—","timer":"","fak":"","start":"2026-05-01","slut":"2027-02-01","info":"Link","mail":"rikke_jm@hotmail.com","tlf":"","drive":""},
+  {k:2, nr:"215", kunde:"Lise Galskov", adr:"Lise Galskov · Nordre Strandvej, Hellebæk", opg:"Fuld renovering", budget:"80.000", timer:"30", pay:"2026-04-01", start:"2026-03-03", slut:"2026-03-31", status:"Afsluttet", owner:"SMG", faktura:"1132", mail:"", tlf:"", drive:"", notes:"", docs:{drive:"", byggereferater:docDemo.byggereferater, transkripter:docDemo.transkripter}},
+  {k:6, nr:"", kunde:"DKE v. Charlotte", adr:"Guldborgvej 1", opg:"Fakturering", budget:"15.000", timer:"40", pay:"2026-03-05", start:"2025-11-01", slut:"2025-11-15", status:"Betalt", owner:"SMG", faktura:"", mail:"charlotte@dke.dk", tlf:"", drive:"", notes:"", docs:{drive:"", byggereferater:docDemo.byggereferater, transkripter:docDemo.transkripter}},
+  {k:6, nr:"", kunde:"DKE v. Charlotte", adr:"Bülowsvej", opg:"Fakturering", budget:"32.000", timer:"55", pay:"2026-03-05", start:"2025-12-01", slut:"2025-12-15", status:"Betalt", owner:"SMG", faktura:"", mail:"charlotte@dke.dk", tlf:"", drive:"", notes:"", docs:{drive:"", byggereferater:docDemo.byggereferater, transkripter:docDemo.transkripter}},
+  {k:1, nr:"218", kunde:"Helle Fortland", adr:"Helle Fortland · Kongevejen 9, Humlebæk", opg:"Småopgaver i huset", budget:"87.625", timer:"35", pay:"2026-03-29", start:"2026-03-03", slut:"2026-03-28", status:"Afsluttet", owner:"SMG", faktura:"", mail:"helle.fortland@mail.dk", tlf:"26118432", drive:"", notes:"", docs:{drive:"", byggereferater:docDemo.byggereferater, transkripter:docDemo.transkripter}},
+  {k:6, nr:"", kunde:"DKE v. Charlotte", adr:"Blågårdsgade 14", opg:"Fakturering", budget:"114.000", timer:"20", pay:"2025-12-24", start:"2025-12-01", slut:"2025-12-05", status:"Betalt", owner:"SMG", faktura:"", mail:"charlotte@dke.dk", tlf:"", drive:"", notes:"", docs:{drive:"", byggereferater:docDemo.byggereferater, transkripter:docDemo.transkripter}},
+  {k:1, nr:"", kunde:"DKE v. Charlotte", adr:"Ryesgade 62 lejl. 48", opg:"Renovering", budget:"273.000", timer:"15", pay:"2026-04-17", start:"2026-03-01", slut:"2026-03-21", status:"Afsluttet", owner:"SMG", faktura:"", mail:"charlotte@dke.dk", tlf:"", drive:"", notes:"", docs:{drive:"", byggereferater:docDemo.byggereferater, transkripter:docDemo.transkripter}},
+  {k:2, nr:"214", kunde:"DKE v. Charlotte", adr:"Ryesgade 62 lejl. 30", opg:"Fakturering", budget:"286.502", timer:"15", pay:"2026-05-19", start:"2026-04-20", slut:"2026-05-19", status:"I gang", owner:"SMG", faktura:"1142", mail:"charlotte@dke.dk", tlf:"", drive:"", notes:"", docs:{drive:"", byggereferater:docDemo.byggereferater, transkripter:docDemo.transkripter}},
+  {k:2, nr:"", kunde:"Niels & Vibeke", adr:"Villingebæk Strandvej 532, 3120 Dronningmølle", opg:"Vinduer", budget:"178.000", timer:"", pay:"2026-05-01", start:"2026-04-22", slut:"2026-05-15", status:"I gang", owner:"SMG", faktura:"", mail:"niels.bach@hotmail.com", tlf:"21443809", drive:"", notes:"", docs:{drive:"", byggereferater:docDemo.byggereferater, transkripter:docDemo.transkripter}},
+  {k:2, nr:"", kunde:"DKE v. Lars", adr:"Carit Etlers Vej 14, 1814 Frederiksberg", opg:"Fuld renovering", budget:"874.587", timer:"", pay:"2026-06-01", start:"2026-05-04", slut:"2026-08-14", status:"I gang", owner:"SMG", faktura:"", mail:"lars@dke.dk", tlf:"40227891", drive:"", notes:"", docs:{drive:"", byggereferater:docDemo.byggereferater, transkripter:docDemo.transkripter}},
+  {k:2, nr:"", kunde:"DKE v. Charlotte", adr:"Lykkeholms Allé 35, 1902 Frederiksberg C", opg:"Pejs", budget:"25.000", timer:"", pay:"", start:"2026-05-11", slut:"2026-05-15", status:"Afventer", owner:"SMG", faktura:"", mail:"charlotte@dke.dk", tlf:"", drive:"", notes:"", docs:{drive:"", byggereferater:docDemo.byggereferater, transkripter:docDemo.transkripter}},
+  {k:3, nr:"", kunde:"Henrik", adr:"Smedestræde 4, 4040 Jyllinge", opg:"Helt nyt hus", budget:"5.995.000", timer:"", pay:"", start:"2026-05-01", slut:"2027-06-30", status:"Afventer", owner:"SMG", faktura:"", mail:"", tlf:"", drive:"", notes:"", docs:{drive:"", byggereferater:docDemo.byggereferater, transkripter:docDemo.transkripter}},
+  {k:3, nr:"", kunde:"Helle Fortlands kusine", adr:"Kongevejen 1, Humlebæk", opg:"Udskiftning af tag", budget:"750.000", timer:"", pay:"", start:"2026-06-01", slut:"2026-07-31", status:"Afventer", owner:"SMG", faktura:"", mail:"", tlf:"", drive:"", notes:"", docs:{drive:"", byggereferater:docDemo.byggereferater, transkripter:docDemo.transkripter}},
+  {k:4, nr:"", kunde:"DKE v. Charlotte", adr:"Vordingborggade + Assensgade", opg:"Vinduer og zinkarbejde", budget:"4.000.000", timer:"", pay:"", start:"2026-07-01", slut:"2026-09-30", status:"Tilbud sendt", owner:"SMG", faktura:"", mail:"charlotte@dke.dk", tlf:"", drive:"", notes:"", docs:{drive:"", byggereferater:docDemo.byggereferater, transkripter:docDemo.transkripter}},
+  {k:4, nr:"", kunde:"Brandskole, Helsingør", adr:"Helsingør", opg:"Totalentreprise", budget:"8.000.000", timer:"", pay:"", start:"2026-05-01", slut:"2027-03-01", status:"Tilbud sendt", owner:"Christian", faktura:"", mail:"tv@brandskolen-helsingor.dk", tlf:"49283155", drive:"", notes:"", docs:{drive:"", byggereferater:docDemo.byggereferater, transkripter:docDemo.transkripter}},
+  {k:4, nr:"", kunde:"Mikkel Munkholm", adr:"Kornvænget 29, 3600 Frederikssund", opg:"Tilbygning", budget:"1.100.000", timer:"", pay:"", start:"2026-05-01", slut:"2026-08-31", status:"Tilbud sendt", owner:"SMG", faktura:"", mail:"mikkel.munkholm@gmail.com", tlf:"28441782", drive:"", notes:"", docs:{drive:"", byggereferater:docDemo.byggereferater, transkripter:docDemo.transkripter}},
+  {k:5, nr:"", kunde:"Jacob Frandsen", adr:"Kovangen 503, 3480 Fredensborg", opg:"Indretning af hus", budget:"1.000.000", timer:"", pay:"", start:"2026-08-01", slut:"2026-10-15", status:"Afventer", owner:"SMG", faktura:"", mail:"", tlf:"", drive:"", notes:"", docs:{drive:"", byggereferater:docDemo.byggereferater, transkripter:docDemo.transkripter}},
+  {k:5, nr:"", kunde:"Eva Arndt", adr:"Hyrdeengen 12, 2625 Vallensbæk", opg:"Tilbygning", budget:"558.000", timer:"", pay:"", start:"2026-09-01", slut:"2026-11-15", status:"Afventer", owner:"SMG", faktura:"", mail:"", tlf:"", drive:"", notes:"", docs:{drive:"", byggereferater:docDemo.byggereferater, transkripter:docDemo.transkripter}},
+  {k:5, nr:"", kunde:"Rikke + Martin", adr:"Møllebakken 16, 3460 Birkerød", opg:"Nyt tag", budget:"400.000", timer:"", pay:"", start:"2026-08-15", slut:"2026-09-30", status:"Afventer", owner:"SMG", faktura:"", mail:"", tlf:"", drive:"", notes:"", docs:{drive:"", byggereferater:docDemo.byggereferater, transkripter:docDemo.transkripter}},
+  {k:5, nr:"", kunde:"Rikke Iversen", adr:"Gefionsvej 15, Holte", opg:"Nyt loft og vinduer", budget:"190.000", timer:"", pay:"", start:"2026-07-15", slut:"2026-08-20", status:"Afventer", owner:"SMG", faktura:"", mail:"", tlf:"", drive:"", notes:"", docs:{drive:"", byggereferater:docDemo.byggereferater, transkripter:docDemo.transkripter}},
+  {k:5, nr:"", kunde:"Marianne & Søren", adr:"Ermelundsvej 42, 2820 Gentofte", opg:"Nyt tag og efterisolering", budget:"375.000", timer:"", pay:"", start:"2026-09-01", slut:"2026-10-31", status:"Afventer", owner:"SMG", faktura:"", mail:"", tlf:"", drive:"", notes:"", docs:{drive:"", byggereferater:docDemo.byggereferater, transkripter:docDemo.transkripter}},
+  {k:5, nr:"", kunde:"Marie & Jørn", adr:"Slotsgade 9, st. tv., Hillerød", opg:"Gang og køkken + loft", budget:"17.387", timer:"", pay:"", start:"2026-08-01", slut:"2026-08-15", status:"Afventer", owner:"SMG", faktura:"1149", mail:"rikke_jm@hotmail.com", tlf:"", drive:"", notes:"", docs:{drive:"", byggereferater:docDemo.byggereferater, transkripter:docDemo.transkripter}},
+  {k:5, nr:"", kunde:"DKE v. Charlotte", adr:"Ryesgade 62, lejlighed 72", opg:"Istandsættelse ved fraflytning", budget:"225.000", timer:"", pay:"", start:"2026-05-18", slut:"2026-06-12", status:"Afventer", owner:"SMG", faktura:"", mail:"charlotte@dke.dk", tlf:"33124567", drive:"", notes:"", docs:{drive:"", byggereferater:docDemo.byggereferater, transkripter:docDemo.transkripter}},
+  {k:5, nr:"", kunde:"Frank Lyhne", adr:"Ellemosevej 9, Fredensborg", opg:"Mure trappe", budget:"8.000", timer:"", pay:"", start:"2026-04-29", slut:"2026-04-30", status:"Afventer", owner:"SMG", faktura:"", mail:"f.lyhne@mail.dk", tlf:"40184491", drive:"", notes:"", docs:{drive:"", byggereferater:docDemo.byggereferater, transkripter:docDemo.transkripter}},
+  {k:6, nr:"", kunde:"DKE v. Nils", adr:"Kingosvej 1B", opg:"Afsluttet lejlighedssag", budget:"0", timer:"", pay:"", start:"2026-03-10", slut:"2026-04-20", status:"Afsluttet", owner:"SMG", faktura:"1137", mail:"nils@dke.dk", tlf:"22743109", drive:"", notes:"", docs:{drive:"", byggereferater:docDemo.byggereferater, transkripter:docDemo.transkripter}},
+  {k:6, nr:"", kunde:"Niels & Vibeke", adr:"Villingebæk Strandvej 532", opg:"Tak og betaling af vinduessag", budget:"178.000", timer:"", pay:"2026-05-01", start:"2026-04-01", slut:"2026-05-01", status:"Afsluttet", owner:"SMG", faktura:"", mail:"niels.bach@hotmail.com", tlf:"21443809", drive:"", notes:"", docs:{drive:"", byggereferater:docDemo.byggereferater, transkripter:docDemo.transkripter}},
+  {k:6, nr:"", kunde:"Charlotte / DKE", adr:"Ryesgade 62 lejl. 56", opg:"Faktura 1148 betalt", budget:"41.000", timer:"", pay:"2026-04-18", start:"2026-04-01", slut:"2026-04-18", status:"Betalt", owner:"SMG", faktura:"1148", mail:"charlotte@dke.dk", tlf:"", drive:"", notes:"", docs:{drive:"", byggereferater:docDemo.byggereferater, transkripter:docDemo.transkripter}},
+  {k:7, nr:"", kunde:"Test / eksempel", adr:"Eksempelvej 1", opg:"Ikke relevant lead", budget:"1.000.000", timer:"", pay:"", start:"", slut:"", status:"Afvist", owner:"SMG", faktura:"", mail:"", tlf:"", drive:"", notes:"", docs:{drive:"", byggereferater:docDemo.byggereferater, transkripter:docDemo.transkripter}},
+  {k:7, nr:"", kunde:"Andet eksempel", adr:"Ukendt", opg:"Ikke relevant forespørgsel", budget:"0", timer:"", pay:"", start:"", slut:"", status:"Afvist", owner:"SMG", faktura:"", mail:"", tlf:"", drive:"", notes:"", docs:{drive:"", byggereferater:docDemo.byggereferater, transkripter:docDemo.transkripter}}
 ];
 sager.forEach((s, i)=>{
   s.sort = i;
-  s.docs = {
-    drive:s.drive || "",
-    byggereferater:docDemo.byggereferater,
-    transkripter:docDemo.transkripter
-  };
+  if(!s.docs){
+    s.docs = {drive:s.drive || "", byggereferater:docDemo.byggereferater, transkripter:docDemo.transkripter};
+  }
 });
+function estimatedHours(s){
+  return parseNumber(s.timer);
+}
 
 const betalinger = [
   {nr:"215", kunde:"Lise Galskov", milepael:"Udestående betaling", dato:"01. Apr 2026", beloeb:"80.000", fak:"1132", status:"udestaaende"},
@@ -912,35 +863,146 @@ const betalinger = [
 ];
 
 const STORAGE_KEY = 'nstsf-dashboard-state-v2';
+const TOKEN_KEY = 'nstsf-dashboard-token';
+const STATE_API = '/api/state';
+let remoteSaveTimer = null;
+let isApplyingRemoteState = false;
+
+function setSyncStatus(text, tone){
+  const el = document.getElementById('syncStatus');
+  if(!el) return;
+  el.textContent = text;
+  el.style.color = tone === 'error' ? 'var(--red)' : tone === 'ok' ? 'var(--green)' : 'var(--muted)';
+}
+
+function getDashboardToken(){
+  const input = document.getElementById('dashboardToken');
+  return (input && input.value) || localStorage.getItem(TOKEN_KEY) || '';
+}
+
+function collectState(){
+  const capacityHours = document.getElementById('capacityHours') ? +document.getElementById('capacityHours').value || 37 : 37;
+  return {
+    schema:'nstsf-dashboard-state-v1',
+    savedFrom:location.hostname || 'local-file',
+    savedAt:new Date().toISOString(),
+    sager:sager,
+    betalinger:betalinger,
+    employees:employees,
+    settings:{capacityHours}
+  };
+}
+
+function applyState(state){
+  if(!state || typeof state !== 'object') return;
+  if(Array.isArray(state.sager)){
+    sager.splice(0, sager.length, ...state.sager.map((saved, i)=>({
+      ...saved,
+      k:+saved.k || 5,
+      sort: typeof saved.sort === 'number' ? saved.sort : i,
+      docs: saved.docs || {drive:saved.drive || "", byggereferater:docDemo.byggereferater, transkripter:docDemo.transkripter}
+    })));
+  }
+  if(Array.isArray(state.betalinger)){
+    betalinger.splice(0, betalinger.length, ...state.betalinger.map(b=>({
+      ...b,
+      status:b.status || 'udestaaende'
+    })));
+  }
+  if(Array.isArray(state.employees)){
+    employees.splice(0, employees.length, ...state.employees);
+  }
+  if(state.settings && document.getElementById('capacityHours')){
+    document.getElementById('capacityHours').value = state.settings.capacityHours || 37;
+  }
+}
+
+function persistLocalState(){
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(collectState()));
+}
+
 function loadState(){
   try{
     const state = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
-    if(Array.isArray(state.sager)){
-      sager.splice(0, sager.length, ...state.sager.map((saved, i)=>({
-        ...saved,
-        k:+saved.k || 5,
-        sort: typeof saved.sort === 'number' ? saved.sort : i,
-        docs: saved.docs || {drive:saved.drive || "", byggereferater:docDemo.byggereferater, transkripter:docDemo.transkripter}
-      })));
-    }
-    if(Array.isArray(state.betalinger)){
-      state.betalinger.forEach((saved, i)=>{
-        if(betalinger[i] && saved.status) betalinger[i].status = saved.status;
-      });
-    }
-    if(Array.isArray(state.employees)){
-      employees.splice(0, employees.length, ...state.employees);
-    }
+    applyState(state);
   }catch(e){}
 }
-function saveState(){
+async function saveRemoteState(manual=false){
+  const token = getDashboardToken();
+  if(!token){
+    if(manual) setSyncStatus('Mangler dashboard-adgangskode. Data er kun gemt lokalt.', 'error');
+    return;
+  }
+  if(location.protocol === 'file:'){
+    if(manual) setSyncStatus('Backend virker først på Netlify eller via netlify dev. Lokal fil er kun browser-kopi.', 'error');
+    return;
+  }
   try{
-    localStorage.setItem(STORAGE_KEY, JSON.stringify({
-      sager:sager,
-      betalinger:betalinger.map(b=>({status:b.status})),
-      employees:employees
-    }));
-  }catch(e){}
+    setSyncStatus('Gemmer til central backend...');
+    const res = await fetch(STATE_API, {
+      method:'PUT',
+      headers:{'content-type':'application/json','x-dashboard-token':token},
+      body:JSON.stringify(collectState())
+    });
+    const data = await res.json().catch(()=>({}));
+    if(!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+    setSyncStatus(`Gemt centralt ${new Date(data.savedAt || Date.now()).toLocaleString('da-DK')}`, 'ok');
+  }catch(err){
+    setSyncStatus(`Kun lokal kopi gemt. Backend-fejl: ${err.message}`, 'error');
+  }
+}
+function queueRemoteSave(){
+  clearTimeout(remoteSaveTimer);
+  remoteSaveTimer = setTimeout(()=>saveRemoteState(false), 700);
+}
+function saveState(manual=false){
+  try{
+    persistLocalState();
+    if(!isApplyingRemoteState) manual ? saveRemoteState(true) : queueRemoteSave();
+  }catch(e){
+    setSyncStatus(`Kunne ikke gemme lokalt: ${e.message}`, 'error');
+  }
+}
+async function loadRemoteState(manual=false){
+  const token = getDashboardToken();
+  if(!token){
+    if(manual) setSyncStatus('Indtast dashboard-adgangskode først.', 'error');
+    return;
+  }
+  if(location.protocol === 'file:'){
+    if(manual) setSyncStatus('Backend kan ikke hentes fra file://. Test på Netlify-linket efter deploy.', 'error');
+    return;
+  }
+  try{
+    setSyncStatus('Henter central data...');
+    const res = await fetch(STATE_API, {headers:{'x-dashboard-token':token}});
+    const data = await res.json().catch(()=>({}));
+    if(res.status === 404 && data.error === 'no_state'){
+      await saveRemoteState(true);
+      return;
+    }
+    if(!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+    isApplyingRemoteState = true;
+    applyState(data.state);
+    persistLocalState();
+    isApplyingRemoteState = false;
+    render();
+    renderBetalinger();
+    setSyncStatus(`Central data hentet ${new Date(data.savedAt || Date.now()).toLocaleString('da-DK')}`, 'ok');
+  }catch(err){
+    isApplyingRemoteState = false;
+    setSyncStatus(`Kunne ikke hente central data: ${err.message}`, 'error');
+  }
+}
+function connectDashboardStorage(){
+  const input = document.getElementById('dashboardToken');
+  const token = input ? input.value.trim() : '';
+  if(!token){
+    setSyncStatus('Indtast dashboard-adgangskode først.', 'error');
+    return;
+  }
+  localStorage.setItem(TOKEN_KEY, token);
+  loadRemoteState(true);
 }
 loadState();
 
@@ -964,254 +1026,207 @@ function escapeAttr(value){
   return String(value || '').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');
 }
 function getSagDrive(s){
-  return (s.docs && s.docs.drive) || s.drive || '';
+  return s.docs && s.docs.drive ? s.docs.drive : (s.drive || CUSTOMER_DRIVE_ROOT);
 }
-
 function render(){
   const q = (document.getElementById('sagerSoeg').value || '').toLowerCase();
-  const katF = document.getElementById('filterKat').value;
+  const filterKat = document.getElementById('filterKat').value;
   const rows = sager.filter(s=>{
-    if(katF && String(s.k)!==katF) return false;
-    if(q){
-      const hay = `${s.nr} ${s.kunde} ${s.adr} ${s.opg}`.toLowerCase();
-      if(!hay.includes(q)) return false;
-    }
-    return true;
-  }).sort((a,b)=>a.k-b.k || a.sort-b.sort);
+    const matchQ = !q || [s.nr,s.kunde,s.adr,s.opg,s.mail,s.tlf].join(' ').toLowerCase().includes(q);
+    const matchKat = filterKat === 'all' || String(s.k) === filterKat;
+    return matchQ && matchKat;
+  }).sort((a,b)=> (+a.k - +b.k) || ((a.sort||0) - (b.sort||0)) || a.kunde.localeCompare(b.kunde, 'da'));
+
   tbody.innerHTML = rows.map(s=>{
     const idx = sager.indexOf(s);
-    const isDke = s.kunde.toLowerCase().includes('dke');
-    const kundeCell = isDke
-      ? `${s.kunde} <span class="chip tag-dke" style="font-size:10px">DKE</span>`
-      : s.kunde;
     return `
-    <tr data-kat="${s.k}">
-      <td>
-        <select class="kategori kat-${s.k}" onchange="changeKat(${idx}, this.value)">
-          ${Object.entries(KAT).map(([k,v])=>`<option value="${k}"${+k===s.k?' selected':''}>${v}</option>`).join('')}
-        </select>
-      </td>
-      <td>${s.nr || '—'}</td>
-      <td title="${s.kunde}"><button class="kunde-link" onclick="openSag(${idx})">${kundeCell}</button></td>
-      <td title="${s.adr}" class="dim">${s.adr || '—'}</td>
-      <td class="wrap" title="${s.opg}">${s.opg || '—'}</td>
-      <td class="num">${s.b && s.b !== '0' ? s.b + ' kr.' : '—'}</td>
-      <td class="num">${s.u && s.u !== '0' ? '<span class="chip chip-amber">' + s.u + ' kr.</span>' : '—'}</td>
-      <td class="dim date-cell">${displayDate(s.dato)}</td>
-      <td class="dim date-cell">${displayDate(s.start)}</td>
-      <td class="dim date-cell">${displayDate(s.slut)}</td>
-      <td>
-        <select class="status-sel" onchange="changeStatus(${idx}, this.value)">
-          <option${s.status==='—'?' selected':''}>—</option>
-          <option${s.status==='Faktura sendt'?' selected':''}>Faktura sendt</option>
-          <option${s.status==='Ingen udeståender'?' selected':''}>Ingen udeståender</option>
-          <option${s.status==='Semi-godkendt'?' selected':''}>Semi-godkendt</option>
-          <option${s.status==='Afsendt'?' selected':''}>Afsendt</option>
-        </select>
-      </td>
-      <td class="dim">${s.fak || '—'}</td>
-      <td><button class="icon-btn" onclick="openEditSag(${idx})">Rediger</button></td>
-    </tr>
-  `;}).join('');
+      <tr data-kat="${s.k}">
+        <td>
+          <select class="kategori kat-${s.k}" onchange="changeKat(${idx}, this.value)">
+            ${Object.entries(categories).map(([k,v])=>`<option value="${k}" ${+k===+s.k?'selected':''}>${v}</option>`).join('')}
+          </select>
+        </td>
+        <td>${s.nr || '<span class="dim">—</span>'}</td>
+        <td><button class="kunde-link" onclick="openSag(${idx})">${s.kunde}</button></td>
+        <td class="wrap">${s.adr || '<span class="dim">—</span>'}</td>
+        <td class="wrap">${s.opg || '<span class="dim">—</span>'}</td>
+        <td class="num">${parseNumber(s.budget).toLocaleString('da-DK')} kr.</td>
+        <td class="num">${estimatedHours(s) ? `${estimatedHours(s).toLocaleString('da-DK')} t` : '<span class="dim">—</span>'}</td>
+        <td class="date-cell">${displayDate(s.pay)}</td>
+        <td class="date-cell">${displayDate(s.start)}</td>
+        <td class="date-cell">${displayDate(s.slut)}</td>
+        <td>
+          <select class="status-sel" onchange="changeStatus(${idx}, this.value)">
+            ${statusOptions.map(v=>`<option value="${v}" ${v===s.status?'selected':''}>${v}</option>`).join('')}
+          </select>
+        </td>
+        <td>${s.owner || '<span class="dim">—</span>'}</td>
+        <td>${s.faktura || '<span class="dim">—</span>'}</td>
+        <td>
+          <div class="row-actions">
+            <button class="icon-btn" onclick="openSag(${idx})">Vis</button>
+            <button class="icon-btn" onclick="editSag(${idx})">Rediger</button>
+          </div>
+        </td>
+      </tr>
+    `;
+  }).join('');
   document.getElementById('count').textContent = `${rows.length} af ${sager.length} sager`;
   if(activeSag !== null) renderSagDetail(activeSag);
   renderCapacity();
 }
 function changeKat(i,v){ sager[i].k = +v; saveState(); render(); }
 function changeStatus(i,v){ sager[i].status = v; saveState(); render(); }
-
-function openSag(i){
-  activeSag = i;
-  renderSagDetail(i);
-}
-
+function openSag(i){ activeSag = i; editSagIndex = null; renderSagDetail(i); }
+function editSag(i){ activeSag = i; editSagIndex = i; renderSagDetail(i); }
+function closeSag(){ activeSag = null; editSagIndex = null; caseDetail.classList.remove('active'); caseDetail.innerHTML = ''; }
+function updateField(i, key, value){ sager[i][key] = value; saveState(); renderSagDetail(i); }
 function renderDocs(items){
-  if(!items || !items.length) return '<div class="doc-empty">Ingen dokumenter registreret endnu.</div>';
-  return items.map(d=>`
+  if(!items || !items.length) return '<div class="doc-empty">Ingen dokumenter endnu.</div>';
+  return `<div class="doc-list">${items.map(item=>`
     <div class="doc-item">
       <div>
-        <strong>${d.titel}</strong>
-        <div class="doc-meta">${d.dato || 'Dato mangler'}</div>
+        <div>${item.titel}</div>
+        <div class="doc-meta">${item.dato}</div>
       </div>
-      ${d.url ? `<a href="${d.url}" target="_blank" rel="noopener">Åbn</a>` : '<span class="dim">Mangler link</span>'}
+      ${item.url ? `<a href="${item.url}" target="_blank" rel="noreferrer">Åbn</a>` : '<span class="dim">Afventer</span>'}
     </div>
-  `).join('');
+  `).join('')}</div>`;
 }
-
 function renderSagDetail(i){
   const s = sager[i];
-  if(!s) return;
-  const driveUrl = getSagDrive(s);
-  const driveLink = driveUrl
-    ? `<a class="btn primary" href="${driveUrl}" target="_blank" rel="noopener">Åbn kundemappe</a>`
-    : `<a class="btn" href="${CUSTOMER_DRIVE_ROOT}" target="_blank" rel="noopener">Find/opret kundemappe</a>`;
+  if(!s) return closeSag();
   caseDetail.classList.add('active');
-  caseDetail.innerHTML = `
-    <div class="panel-hd">
-      <div>
-        <h2>${s.kunde}</h2>
-        <div class="dim">${s.nr ? 'Sag ' + s.nr + ' · ' : ''}${s.adr || 'Adresse mangler'} · ${KAT[s.k]}</div>
-      </div>
-      <div style="display:flex;gap:8px">
-        <button class="btn" onclick="openEditSag(${i})">Rediger</button>
-        <button class="btn ghost" onclick="closeSag()">Luk</button>
+  const isEditing = editSagIndex === i;
+  const driveUrl = getSagDrive(s);
+  const form = isEditing ? `
+    <div class="case-card">
+      <h3>Rediger sag</h3>
+      <div class="case-form">
+        <label>Kategori<select onchange="updateField(${i}, 'k', +this.value)">${Object.entries(categories).map(([k,v])=>`<option value="${k}" ${+k===+s.k?'selected':''}>${v}</option>`).join('')}</select></label>
+        <label>Sagsnr.<input value="${escapeAttr(s.nr)}" oninput="updateField(${i}, 'nr', this.value)"></label>
+        <label>Kundenavn<input value="${escapeAttr(s.kunde)}" oninput="updateField(${i}, 'kunde', this.value)"></label>
+        <label class="wide">Adresse<input value="${escapeAttr(s.adr)}" oninput="updateField(${i}, 'adr', this.value)"></label>
+        <label class="wide">Opgave<textarea oninput="updateField(${i}, 'opg', this.value)">${s.opg || ''}</textarea></label>
+        <label>Budget<input value="${escapeAttr(s.budget)}" oninput="updateField(${i}, 'budget', this.value)"></label>
+        <label>Estimerede timer<input value="${escapeAttr(s.timer)}" oninput="updateField(${i}, 'timer', this.value)"></label>
+        <label>Betalingsdato<input type="date" value="${escapeAttr(s.pay)}" oninput="updateField(${i}, 'pay', this.value)"></label>
+        <label>Startdato<input type="date" value="${escapeAttr(s.start)}" oninput="updateField(${i}, 'start', this.value)"></label>
+        <label>Slutdato<input type="date" value="${escapeAttr(s.slut)}" oninput="updateField(${i}, 'slut', this.value)"></label>
+        <label>Status<select onchange="updateField(${i}, 'status', this.value)">${statusOptions.map(v=>`<option value="${v}" ${v===s.status?'selected':''}>${v}</option>`).join('')}</select></label>
+        <label>Ansvarlig<select onchange="updateField(${i}, 'owner', this.value)">${owners.map(v=>`<option value="${v}" ${v===s.owner?'selected':''}>${v}</option>`).join('')}</select></label>
+        <label>Faktura<input value="${escapeAttr(s.faktura)}" oninput="updateField(${i}, 'faktura', this.value)"></label>
+        <label>Mail<input value="${escapeAttr(s.mail)}" oninput="updateField(${i}, 'mail', this.value)"></label>
+        <label>Telefon<input value="${escapeAttr(s.tlf)}" oninput="updateField(${i}, 'tlf', this.value)"></label>
+        <label>Google Drive URL<input value="${escapeAttr(s.docs && s.docs.drive ? s.docs.drive : s.drive)}" oninput="(sager[${i}].docs=sager[${i}].docs||{}); sager[${i}].docs.drive=this.value; sager[${i}].drive=this.value; saveState();"></label>
+        <label class="wide">Noter<textarea oninput="updateField(${i}, 'notes', this.value)">${s.notes || ''}</textarea></label>
       </div>
     </div>
-    <div class="case-grid">
-      <div class="case-card">
-        <h3>Sagsinfo</h3>
-        <table>
-          <tbody>
-            <tr><td>Sagsnr.</td><td>${s.nr || '—'}</td></tr>
-            <tr><td>Opgave</td><td>${s.opg || '—'}</td></tr>
-            <tr><td>Est. beløb</td><td class="num">${s.b && s.b !== '0' ? s.b + ' kr.' : '—'}</td></tr>
-            <tr><td>Udestående</td><td class="num">${s.u && s.u !== '0' ? s.u + ' kr.' : '—'}</td></tr>
-            <tr><td>Startdato</td><td>${displayDate(s.start)}</td></tr>
-            <tr><td>Slutdato</td><td>${displayDate(s.slut)}</td></tr>
-            <tr><td>Mail</td><td>${s.mail || '—'}</td></tr>
-            <tr><td>Telefon</td><td>${s.tlf || '—'}</td></tr>
-            <tr><td>Fin. status</td><td>${s.status || '—'}</td></tr>
-            <tr><td>Fakturanr.</td><td>${s.fak || '—'}</td></tr>
-          </tbody>
-        </table>
-        <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap">
-          ${driveLink}
-          <a class="btn" href="${DRIVE_ROOT}" target="_blank" rel="noopener">Åbn fælles Drive-root</a>
-        </div>
+  ` : `
+    <div class="case-card">
+      <h3>${s.kunde}</h3>
+      <table>
+        <tbody>
+          <tr><td class="dim">Sagsnr.</td><td>${s.nr || '—'}</td></tr>
+          <tr><td class="dim">Kategori</td><td>${categories[s.k]}</td></tr>
+          <tr><td class="dim">Adresse</td><td>${s.adr || '—'}</td></tr>
+          <tr><td class="dim">Opgave</td><td>${s.opg || '—'}</td></tr>
+          <tr><td class="dim">Budget</td><td>${parseNumber(s.budget).toLocaleString('da-DK')} kr.</td></tr>
+          <tr><td class="dim">Estimerede timer</td><td>${estimatedHours(s) ? `${estimatedHours(s)} t` : '—'}</td></tr>
+          <tr><td class="dim">Start / slut</td><td>${displayDate(s.start)} → ${displayDate(s.slut)}</td></tr>
+          <tr><td class="dim">Mail</td><td>${s.mail || '—'}</td></tr>
+          <tr><td class="dim">Telefon</td><td>${s.tlf || '—'}</td></tr>
+        </tbody>
+      </table>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px">
+        <a class="btn" href="${driveUrl || CUSTOMER_DRIVE_ROOT}" target="_blank" rel="noreferrer">Åbn kundemappe</a>
+        <a class="btn" href="${DRIVE_ROOT}" target="_blank" rel="noreferrer">Åbn fælles Drive</a>
+        <button class="btn" onclick="editSag(${i})">Rediger</button>
+        <button class="btn" onclick="closeSag()">Luk</button>
       </div>
+    </div>
+  `;
+  caseDetail.innerHTML = `
+    <div class="case-grid">
+      ${form}
       <div class="case-card">
-        <h3>Mødenoter og referater</h3>
-        <div class="doc-list">
-          <strong>Byggereferater fra SMG</strong>
-          ${renderDocs(s.docs.byggereferater)}
-          <strong style="margin-top:6px">Gemini transkripter</strong>
-          ${renderDocs(s.docs.transkripter)}
+        <h3>Dokumenter og mødemateriale</h3>
+        <div style="display:grid;gap:14px">
+          <div>
+            <div class="dim" style="font-weight:600;margin-bottom:6px">Google Drive</div>
+            <div class="doc-list">
+              <div class="doc-item">
+                <div>
+                  <div>Kundemappe</div>
+                  <div class="doc-meta">Åbner relevant Drive-map</div>
+                </div>
+                <a href="${driveUrl || CUSTOMER_DRIVE_ROOT}" target="_blank" rel="noreferrer">Åbn</a>
+              </div>
+            </div>
+          </div>
+          <div>
+            <div class="dim" style="font-weight:600;margin-bottom:6px">Byggereferater</div>
+            ${renderDocs(s.docs && s.docs.byggereferater)}
+          </div>
+          <div>
+            <div class="dim" style="font-weight:600;margin-bottom:6px">Gemini / transkripter</div>
+            ${renderDocs(s.docs && s.docs.transkripter)}
+          </div>
         </div>
       </div>
     </div>
   `;
 }
-
 function addSag(){
   const idx = sager.length;
   sager.push({
-    k:3,nr:"",kunde:"Ny kunde",adr:"",opg:"",b:"0",u:"0",dato:"",
-    status:"—",timer:"",fak:"",start:"",slut:"",info:"",mail:"",tlf:"",
-    drive:"",sort:idx,docs:{drive:"",byggereferater:docDemo.byggereferater,transkripter:docDemo.transkripter}
+    k:3, nr:'', kunde:'Ny kunde', adr:'', opg:'', budget:'0', timer:'', pay:'', start:'', slut:'',
+    status:'Afventer', owner:'SMG', faktura:'', mail:'', tlf:'', drive:'', notes:'', sort:Date.now(),
+    docs:{drive:'', byggereferater:[], transkripter:[]}
   });
   saveState();
-  openEditSag(idx);
   render();
+  editSag(idx);
 }
 
-function openEditSag(i){
-  const s = sager[i];
-  if(!s) return;
-  editSagIndex = i;
-  activeSag = i;
-  caseDetail.classList.add('active');
-  caseDetail.innerHTML = `
-    <div class="panel-hd">
-      <h2>Rediger sag</h2>
-      <button class="btn ghost" onclick="closeSag()">Luk</button>
-    </div>
-    <div class="case-form">
-      <label>Kategori<select id="edit-k">${Object.entries(KAT).map(([k,v])=>`<option value="${k}"${+k===s.k?' selected':''}>${v}</option>`).join('')}</select></label>
-      <label>Sagsnr.<input id="edit-nr" value="${escapeAttr(s.nr)}"></label>
-      <label>Kundenavn<input id="edit-kunde" value="${escapeAttr(s.kunde)}"></label>
-      <label class="wide">Adresse<input id="edit-adr" value="${escapeAttr(s.adr === '—' ? '' : s.adr)}"></label>
-      <label class="wide">Opgave<textarea id="edit-opg">${escapeAttr(s.opg)}</textarea></label>
-      <label>Est. beløb<input id="edit-b" value="${escapeAttr(s.b)}"></label>
-      <label>Udestående<input id="edit-u" value="${escapeAttr(s.u)}"></label>
-      <label>Betalingsdato<input id="edit-dato" type="date" value="${escapeAttr(s.dato)}"></label>
-      <label>Startdato<input id="edit-start" type="date" value="${escapeAttr(s.start)}"></label>
-      <label>Slutdato<input id="edit-slut" type="date" value="${escapeAttr(s.slut)}"></label>
-      <label>Fin. status<input id="edit-status" value="${escapeAttr(s.status)}"></label>
-      <label>Est. timer<input id="edit-timer" value="${escapeAttr(s.timer)}"></label>
-      <label>Fakturanr.<input id="edit-fak" value="${escapeAttr(s.fak)}"></label>
-      <label>Mail<input id="edit-mail" value="${escapeAttr(s.mail)}"></label>
-      <label>Telefon<input id="edit-tlf" value="${escapeAttr(s.tlf)}"></label>
-      <label class="wide">Google Drive-folder URL<input id="edit-drive" value="${escapeAttr(getSagDrive(s))}" placeholder="Indsæt link til kundens Drive-mappe"></label>
-      <label class="wide">Noter/info<textarea id="edit-info">${escapeAttr(s.info)}</textarea></label>
-    </div>
-    <div style="display:flex;gap:8px;margin-top:14px">
-      <button class="btn primary" onclick="saveSagEdit()">Gem</button>
-      <button class="btn" onclick="renderSagDetail(${i})">Annuller</button>
-    </div>
-  `;
+function startOfWeek(date){
+  const d = new Date(date);
+  const day = (d.getDay() + 6) % 7;
+  d.setDate(d.getDate() - day);
+  d.setHours(0,0,0,0);
+  return d;
 }
-
-function readEdit(id){ return document.getElementById(id).value.trim(); }
-function saveSagEdit(){
-  if(editSagIndex === null || !sager[editSagIndex]) return;
-  const s = sager[editSagIndex];
-  Object.assign(s, {
-    k:+readEdit('edit-k'), nr:readEdit('edit-nr'), kunde:readEdit('edit-kunde') || 'Ny kunde',
-    adr:readEdit('edit-adr') || '—', opg:readEdit('edit-opg'), b:readEdit('edit-b') || '0',
-    u:readEdit('edit-u') || '0', dato:readEdit('edit-dato'), start:readEdit('edit-start'),
-    slut:readEdit('edit-slut'), status:readEdit('edit-status') || '—', timer:readEdit('edit-timer'),
-    fak:readEdit('edit-fak'), mail:readEdit('edit-mail'), tlf:readEdit('edit-tlf'),
-    info:readEdit('edit-info'), drive:readEdit('edit-drive')
-  });
-  s.docs = s.docs || {byggereferater:docDemo.byggereferater, transkripter:docDemo.transkripter};
-  s.docs.drive = s.drive;
-  saveState();
-  render();
-  renderSagDetail(editSagIndex);
+function addDays(date, days){
+  const d = new Date(date);
+  d.setDate(d.getDate() + days);
+  return d;
 }
-
-function closeSag(){
-  activeSag = null;
-  editSagIndex = null;
-  caseDetail.classList.remove('active');
-  caseDetail.innerHTML = '';
+function overlapDays(startA, endA, startB, endB){
+  const start = Math.max(startA.getTime(), startB.getTime());
+  const end = Math.min(endA.getTime(), endB.getTime());
+  if(end < start) return 0;
+  return Math.floor((end - start) / 86400000) + 1;
 }
-
-function startOfWeek(d){
-  const x = new Date(d);
-  const day = (x.getDay() + 6) % 7;
-  x.setDate(x.getDate() - day);
-  x.setHours(0,0,0,0);
-  return x;
+function isoWeek(date){
+  const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+  d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay() || 7));
+  const yearStart = new Date(Date.UTC(d.getUTCFullYear(),0,1));
+  return Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
 }
-function isoWeek(d){
-  const date = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
-  const day = date.getUTCDay() || 7;
-  date.setUTCDate(date.getUTCDate() + 4 - day);
-  const yearStart = new Date(Date.UTC(date.getUTCFullYear(),0,1));
-  return Math.ceil((((date - yearStart) / 86400000) + 1) / 7);
-}
-function addDays(d, days){
-  const x = new Date(d);
-  x.setDate(x.getDate() + days);
-  return x;
-}
-function overlapDays(aStart, aEnd, bStart, bEnd){
-  const start = Math.max(aStart.getTime(), bStart.getTime());
-  const end = Math.min(aEnd.getTime(), bEnd.getTime());
-  return Math.max(0, Math.ceil((end - start) / 86400000) + 1);
-}
-function estimatedHours(s){
-  const explicit = parseNumber(s.timer);
-  if(explicit) return explicit;
-  const amount = parseNumber(s.b);
-  return amount ? amount / 650 : 0;
-}
-function employeeBaseStatus(emp, weekIndex){
-  if(emp.type === 'foreign'){
-    return (weekIndex % 7) < 5 ? 'work' : 'poland';
+function employeeWeek(emp, weekKey, weekObj, defaultHours){
+  const manual = emp.overrides && emp.overrides[weekKey];
+  if(manual){
+    return {status:manual.status, hours: manual.status === 'work' ? (manual.hours ?? emp.hours ?? defaultHours) : (manual.hours ?? 0)};
   }
-  return 'work';
+  if(emp.type === 'foreign'){
+    const cycle = Math.floor((weekObj.weekStart - startOfWeek(new Date())) / (7*86400000));
+    const mod = ((cycle % 7) + 7) % 7;
+    if(mod >= 5) return {status:'poland', hours:0};
+  }
+  return {status:'work', hours: emp.hours || defaultHours};
 }
 function statusLabel(status){
-  return {work:'På arbejde', vacation:'Ferie', school:'Skole', poland:'Polen'}[status] || status;
-}
-function employeeWeek(emp, weekKey, weekIndex, defaultHours){
-  const override = (emp.overrides || {})[weekKey] || {};
-  const status = override.status || employeeBaseStatus(emp, weekIndex);
-  const baseHours = parseNumber(emp.hours) || defaultHours;
-  const hours = override.hours !== undefined && override.hours !== '' ? +override.hours : (status === 'work' ? baseHours : 0);
-  return {status, hours};
+  return ({work:'På arbejde', vacation:'Ferie', school:'Skole', poland:'Polen'})[status] || status;
 }
 function renderEmployees(weeks){
   const list = document.getElementById('employeeList');
@@ -1220,9 +1235,9 @@ function renderEmployees(weeks){
   if(!list || !empSel || !weekSel) return;
   list.innerHTML = employees.map((e,i)=>`
     <div class="employee-row">
-      <input value="${escapeAttr(e.name)}" onchange="updateEmployee(${i}, 'name', this.value)">
-      <input type="number" min="0" step="1" value="${escapeAttr(e.hours)}" onchange="updateEmployee(${i}, 'hours', this.value)">
-      <button title="Fjern" onclick="removeEmployee(${i})">×</button>
+      <input value="${escapeAttr(e.name)}" oninput="updateEmployee(${i}, 'name', this.value)">
+      <input type="number" value="${e.hours || 0}" min="0" oninput="updateEmployee(${i}, 'hours', this.value)">
+      <button onclick="removeEmployee(${i})">×</button>
     </div>
   `).join('');
   empSel.innerHTML = employees.map(e=>`<option value="${e.id}">${e.name}</option>`).join('');
@@ -1291,7 +1306,7 @@ function renderCapacity(){
       hours += h;
       details.push({kunde:s.kunde, hours:h});
     });
-    const staff = employees.map(emp=>({emp, ...employeeWeek(emp, weekKey, w, defaultHours)}));
+    const staff = employees.map(emp=>({emp, ...employeeWeek(emp, weekKey, {weekStart}, defaultHours)}));
     const capacity = staff.reduce((sum,e)=>sum + e.hours, 0);
     details.sort((a,b)=>b.hours-a.hours);
     rows.push({weekStart, weekEnd, weekKey, weekNo:isoWeek(weekStart), hours, capacity, details, staff});
@@ -1364,6 +1379,11 @@ document.getElementById('capacityHours').addEventListener('input',renderCapacity
 
 render();
 renderBetalinger();
+if(localStorage.getItem(TOKEN_KEY)){
+  const input = document.getElementById('dashboardToken');
+  if(input) input.value = localStorage.getItem(TOKEN_KEY);
+  loadRemoteState(false);
+}
 
 // === Konverteringsrate slider ===
 const formatKr = n => Math.round(n).toLocaleString('da-DK') + ' kr.';
