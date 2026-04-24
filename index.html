@@ -364,6 +364,38 @@
     min-width:190px;
     font-size:12px;
   }
+  .auth-overlay{
+    position:fixed;
+    inset:0;
+    background:rgba(15,30,46,.52);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:24px;
+    z-index:40;
+  }
+  .auth-overlay.hidden{display:none}
+  .auth-card{
+    width:min(420px, 100%);
+    background:#fff;
+    border:1px solid var(--line);
+    border-radius:12px;
+    padding:22px;
+    box-shadow:0 18px 50px rgba(15,30,46,.18);
+  }
+  .auth-card h2{margin-bottom:8px}
+  .auth-card p{margin:0 0 14px;color:var(--muted);font-size:13px}
+  .auth-form{display:grid;gap:10px}
+  .auth-form input{
+    width:100%;
+    border:1px solid var(--line);
+    border-radius:8px;
+    padding:10px 12px;
+    font:inherit;
+    font-size:14px;
+  }
+  .auth-error{min-height:18px;color:var(--red);font-size:12px}
+  .auth-identity{font-size:12px;color:var(--muted);font-weight:600}
 
   /* Chips */
   .chip{
@@ -406,18 +438,31 @@
   <button class="tab-btn" data-tab="marginer">Marginer</button>
 </nav>
 
+<div id="authOverlay" class="auth-overlay hidden">
+  <div class="auth-card">
+    <h2>Log ind</h2>
+    <p>Dashboardet henter og gemmer automatisk fælles data, når du er logget ind.</p>
+    <form class="auth-form" onsubmit="loginDashboard(event)">
+      <input id="loginEmail" type="email" autocomplete="username" placeholder="E-mail">
+      <input id="loginPassword" type="password" autocomplete="current-password" placeholder="Adgangskode">
+      <button class="btn primary" type="submit">Log ind</button>
+      <div id="authError" class="auth-error"></div>
+    </form>
+  </div>
+</div>
+
 <main>
 
-<div class="sync-panel">
+<div class="sync-panel" id="statusPanel">
   <div>
-    <div class="sync-title">Central datalagring</div>
-    <div id="syncStatus" class="sync-state">Lokal browser-kopi aktiv. Forbind til Netlify backend for fælles data.</div>
+    <div class="sync-title">Dashboard status</div>
+    <div id="syncStatus" class="sync-state">Tjekker login og central datalagring...</div>
   </div>
   <div class="sync-actions">
-    <input id="dashboardToken" type="password" placeholder="Dashboard adgangskode">
-    <button class="btn primary" onclick="connectDashboardStorage()">Forbind</button>
     <button class="btn" onclick="loadRemoteState(true)">Hent fra backend</button>
     <button class="btn" onclick="saveState(true)">Gem nu</button>
+    <span id="authIdentity" class="auth-identity"></span>
+    <button class="btn" id="logoutBtn" style="display:none" onclick="logoutDashboard()">Log ud</button>
   </div>
 </div>
 
@@ -862,22 +907,18 @@ const betalinger = [
   {nr:"", kunde:"DKE v. Charlotte", milepael:"Udestående betaling", dato:"", beloeb:"25.000", fak:"", status:"udestaaende"}
 ];
 
-const STORAGE_KEY = 'nstsf-dashboard-state-v2';
-const TOKEN_KEY = 'nstsf-dashboard-token';
+const STORAGE_KEY = 'nstsf-dashboard-state-v3';
+const AUTH_API = '/api/auth';
 const STATE_API = '/api/state';
 let remoteSaveTimer = null;
 let isApplyingRemoteState = false;
+let authUser = null;
 
 function setSyncStatus(text, tone){
   const el = document.getElementById('syncStatus');
   if(!el) return;
   el.textContent = text;
   el.style.color = tone === 'error' ? 'var(--red)' : tone === 'ok' ? 'var(--green)' : 'var(--muted)';
-}
-
-function getDashboardToken(){
-  const input = document.getElementById('dashboardToken');
-  return (input && input.value) || localStorage.getItem(TOKEN_KEY) || '';
 }
 
 function collectState(){
@@ -928,9 +969,8 @@ function loadState(){
   }catch(e){}
 }
 async function saveRemoteState(manual=false){
-  const token = getDashboardToken();
-  if(!token){
-    if(manual) setSyncStatus('Mangler dashboard-adgangskode. Data er kun gemt lokalt.', 'error');
+  if(!authUser){
+    if(manual) setSyncStatus('Du skal være logget ind for at gemme centralt.', 'error');
     return;
   }
   if(location.protocol === 'file:'){
@@ -941,7 +981,8 @@ async function saveRemoteState(manual=false){
     setSyncStatus('Gemmer til central backend...');
     const res = await fetch(STATE_API, {
       method:'PUT',
-      headers:{'content-type':'application/json','x-dashboard-token':token},
+      credentials:'include',
+      headers:{'content-type':'application/json'},
       body:JSON.stringify(collectState())
     });
     const data = await res.json().catch(()=>({}));
@@ -964,9 +1005,8 @@ function saveState(manual=false){
   }
 }
 async function loadRemoteState(manual=false){
-  const token = getDashboardToken();
-  if(!token){
-    if(manual) setSyncStatus('Indtast dashboard-adgangskode først.', 'error');
+  if(!authUser){
+    if(manual) setSyncStatus('Du skal være logget ind for at hente central data.', 'error');
     return;
   }
   if(location.protocol === 'file:'){
@@ -975,10 +1015,16 @@ async function loadRemoteState(manual=false){
   }
   try{
     setSyncStatus('Henter central data...');
-    const res = await fetch(STATE_API, {headers:{'x-dashboard-token':token}});
+    const res = await fetch(STATE_API, {credentials:'include'});
     const data = await res.json().catch(()=>({}));
     if(res.status === 404 && data.error === 'no_state'){
       await saveRemoteState(true);
+      return;
+    }
+    if(res.status === 401){
+      authUser = null;
+      updateAuthUi();
+      showAuthOverlay('Session udløbet. Log ind igen.');
       return;
     }
     if(!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
@@ -994,17 +1040,92 @@ async function loadRemoteState(manual=false){
     setSyncStatus(`Kunne ikke hente central data: ${err.message}`, 'error');
   }
 }
-function connectDashboardStorage(){
-  const input = document.getElementById('dashboardToken');
-  const token = input ? input.value.trim() : '';
-  if(!token){
-    setSyncStatus('Indtast dashboard-adgangskode først.', 'error');
+loadState();
+
+function updateAuthUi(){
+  const idEl = document.getElementById('authIdentity');
+  const logoutBtn = document.getElementById('logoutBtn');
+  if(idEl) idEl.textContent = authUser ? `${authUser.name} · ${authUser.email}` : 'Ikke logget ind';
+  if(logoutBtn) logoutBtn.style.display = authUser ? 'inline-flex' : 'none';
+}
+
+function showAuthOverlay(message=''){
+  const overlay = document.getElementById('authOverlay');
+  const error = document.getElementById('authError');
+  if(overlay) overlay.classList.remove('hidden');
+  if(error) error.textContent = message;
+}
+
+function hideAuthOverlay(){
+  const overlay = document.getElementById('authOverlay');
+  const error = document.getElementById('authError');
+  if(overlay) overlay.classList.add('hidden');
+  if(error) error.textContent = '';
+}
+
+async function checkAuth(){
+  if(location.protocol === 'file:'){
+    setSyncStatus('Login og central lagring virker kun på Netlify-linket. Den lokale fil er kun preview.', 'error');
+    showAuthOverlay('Åbn dashboardet via Netlify-linket for at logge ind.');
     return;
   }
-  localStorage.setItem(TOKEN_KEY, token);
-  loadRemoteState(true);
+  try{
+    const res = await fetch(AUTH_API, {credentials:'include'});
+    const data = await res.json().catch(()=>({}));
+    if(!res.ok){
+      authUser = null;
+      updateAuthUi();
+      showAuthOverlay('');
+      setSyncStatus('Log ind for at hente og gemme fælles data.');
+      return;
+    }
+    authUser = data.user;
+    updateAuthUi();
+    hideAuthOverlay();
+    setSyncStatus(`Logget ind som ${authUser.name}. Synkroniserer data...`);
+    loadRemoteState(false);
+  }catch(err){
+    authUser = null;
+    updateAuthUi();
+    showAuthOverlay('Kunne ikke kontakte login-backend.');
+    setSyncStatus(`Login-backend utilgængelig: ${err.message}`, 'error');
+  }
 }
-loadState();
+
+async function loginDashboard(event){
+  event.preventDefault();
+  const email = document.getElementById('loginEmail').value.trim();
+  const password = document.getElementById('loginPassword').value;
+  const error = document.getElementById('authError');
+  if(error) error.textContent = '';
+  try{
+    const res = await fetch(AUTH_API, {
+      method:'POST',
+      credentials:'include',
+      headers:{'content-type':'application/json'},
+      body:JSON.stringify({email, password})
+    });
+    const data = await res.json().catch(()=>({}));
+    if(!res.ok) throw new Error(data.error === 'invalid_credentials' ? 'Forkert e-mail eller adgangskode.' : (data.error || `HTTP ${res.status}`));
+    authUser = data.user;
+    updateAuthUi();
+    hideAuthOverlay();
+    setSyncStatus(`Logget ind som ${authUser.name}. Synkroniserer data...`);
+    loadRemoteState(true);
+  }catch(err){
+    if(error) error.textContent = err.message;
+  }
+}
+
+async function logoutDashboard(){
+  try{
+    await fetch(AUTH_API, {method:'DELETE', credentials:'include'});
+  }catch{}
+  authUser = null;
+  updateAuthUi();
+  showAuthOverlay('');
+  setSyncStatus('Logget ud. Lokal kopi er stadig i browseren, men fælles data kræver login.');
+}
 
 // === Render sager table ===
 const tbody = document.getElementById('sagerBody');
@@ -1379,11 +1500,8 @@ document.getElementById('capacityHours').addEventListener('input',renderCapacity
 
 render();
 renderBetalinger();
-if(localStorage.getItem(TOKEN_KEY)){
-  const input = document.getElementById('dashboardToken');
-  if(input) input.value = localStorage.getItem(TOKEN_KEY);
-  loadRemoteState(false);
-}
+updateAuthUi();
+checkAuth();
 
 // === Konverteringsrate slider ===
 const formatKr = n => Math.round(n).toLocaleString('da-DK') + ' kr.';
