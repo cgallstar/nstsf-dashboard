@@ -1,8 +1,10 @@
+import { createHmac, timingSafeEqual } from "node:crypto";
 import { getStore } from "@netlify/blobs";
 
 const STORE_NAME = "nstsf-dashboard";
 const STATE_KEY = "state-v1";
-const FALLBACK_TOKEN = "NSTSF-2026-sync-8Qm2Lr7vK9pX";
+const SESSION_COOKIE = "nstsf_session";
+const AUTH_SECRET = Netlify.env.get("DASHBOARD_AUTH_SECRET") || "nstsf-auth-fallback-2026";
 
 const json = (body, status = 200) =>
   new Response(JSON.stringify(body, null, 2), {
@@ -10,13 +12,50 @@ const json = (body, status = 200) =>
     headers: { "content-type": "application/json; charset=utf-8" },
   });
 
-const env = (name) => Netlify.env.get(name) || "";
+function parseCookies(header = "") {
+  return Object.fromEntries(
+    header
+      .split(";")
+      .map((part) => part.trim())
+      .filter(Boolean)
+      .map((part) => {
+        const idx = part.indexOf("=");
+        return idx === -1 ? [part, ""] : [part.slice(0, idx), decodeURIComponent(part.slice(idx + 1))];
+      }),
+  );
+}
+
+function sign(value) {
+  return createHmac("sha256", AUTH_SECRET).update(value).digest("base64url");
+}
 
 function authorize(request) {
-  const expected = env("DASHBOARD_TOKEN") || FALLBACK_TOKEN;
+  const cookies = parseCookies(request.headers.get("cookie") || "");
+  const token = cookies[SESSION_COOKIE];
+  if (!token) {
+    return { ok: false, response: json({ ok: false, error: "unauthorized" }, 401) };
+  }
 
-  const received = request.headers.get("x-dashboard-token") || "";
-  if (received !== expected) {
+  const idx = token.lastIndexOf(".");
+  if (idx === -1) {
+    return { ok: false, response: json({ ok: false, error: "unauthorized" }, 401) };
+  }
+
+  const payload = token.slice(0, idx);
+  const signature = token.slice(idx + 1);
+  const expected = sign(payload);
+  const a = Buffer.from(signature);
+  const b = Buffer.from(expected);
+  if (a.length !== b.length || !timingSafeEqual(a, b)) {
+    return { ok: false, response: json({ ok: false, error: "unauthorized" }, 401) };
+  }
+
+  try {
+    const session = JSON.parse(Buffer.from(payload, "base64url").toString("utf8"));
+    if (!session.exp || session.exp < Date.now()) {
+      return { ok: false, response: json({ ok: false, error: "unauthorized" }, 401) };
+    }
+  } catch {
     return { ok: false, response: json({ ok: false, error: "unauthorized" }, 401) };
   }
 
