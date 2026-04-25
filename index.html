@@ -663,6 +663,54 @@
       </div>
     </div>
   </div>
+
+  <div class="panel">
+    <div class="panel-hd">
+      <h2>Kapacitetskalender — resten af 2026</h2>
+      <div class="capacity-tools">
+        <label for="capacityHours" class="dim" style="font-size:12px;font-weight:600">Timer pr. medarbejder pr. uge</label>
+        <input id="capacityHours" type="number" min="1" step="1" value="37">
+        <span class="dim" style="font-size:12px">Timer fordeles lineært mellem start- og slutdato.</span>
+      </div>
+    </div>
+    <div class="capacity-layout">
+      <div class="employee-panel">
+        <h3>Medarbejdere</h3>
+        <div id="employeeList" class="employee-list"></div>
+        <button class="btn" type="button" onclick="addEmployee()">Tilføj medarbejder</button>
+
+        <div class="employee-status-editor">
+          <label>Medarbejder
+            <select id="statusEmployee"></select>
+          </label>
+          <label>Uge
+            <select id="statusWeek"></select>
+          </label>
+          <label>Status
+            <select id="statusType">
+              <option value="work">På arbejde</option>
+              <option value="vacation">Ferie</option>
+              <option value="school">Skole</option>
+              <option value="poland">Polen</option>
+            </select>
+          </label>
+          <label>Timer override
+            <input id="statusHours" type="number" min="0" step="1" placeholder="valgfri">
+          </label>
+        </div>
+
+        <div class="admin-actions">
+          <button class="btn primary" type="button" onclick="setEmployeeWeekStatus()">Gem uge</button>
+          <button class="btn" type="button" onclick="clearEmployeeWeekStatus()">Nulstil uge</button>
+        </div>
+        <div class="capacity-note">Udenlandske medarbejdere har automatisk 5 uger i DK og 2 uger i Polen. Lærlinge kan markeres som skole uge for uge.</div>
+      </div>
+
+      <div>
+        <div id="capacityCalendar" class="calendar-grid"></div>
+      </div>
+    </div>
+  </div>
 </section>
 
 <section id="sager" class="section">
