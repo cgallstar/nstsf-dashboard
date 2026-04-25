@@ -43,6 +43,7 @@
   header .sub{color:#c2d2e1;font-size:13px;margin-top:4px}
   .topbar{display:flex;justify-content:space-between;align-items:center}
   .logo{display:flex;align-items:center;gap:14px}
+  .topmeta{font-size:12px;color:#c2d2e1;text-align:right}
   .logo .mark{
     width:44px;height:44px;border-radius:8px;
     background:var(--brand);display:flex;align-items:center;justify-content:center;
@@ -68,7 +69,6 @@
   h2{font-size:15px;font-weight:600;margin:0 0 14px;letter-spacing:.02em;text-transform:uppercase;color:#3b4a5c}
   h3{font-size:13px;font-weight:600;margin:0 0 10px;color:#4a5968}
 
-  /* KPI Cards */
   .kpi-grid{
     display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:24px;
   }
@@ -84,7 +84,6 @@
   .kpi.amber{border-top:3px solid var(--amber)}
   .kpi.blue{border-top:3px solid var(--blue)}
 
-  /* Panels */
   .panel{
     background:var(--card);border:1px solid var(--line);border-radius:10px;
     padding:18px 20px;margin-bottom:20px;
@@ -104,7 +103,6 @@
   .num{text-align:right;font-variant-numeric:tabular-nums}
   .dim{color:var(--muted)}
 
-  /* Parameter box */
   .param-box{
     background:var(--brand-soft);border:1px solid #c1d3e5;border-radius:10px;
     padding:16px 20px;margin-bottom:20px;display:flex;justify-content:space-between;align-items:center;
@@ -115,7 +113,6 @@
     font-size:14px;text-align:right;
   }
 
-  /* Status pills & dropdowns */
   select.kategori{
     border:1px solid var(--line);border-radius:6px;padding:4px 8px;
     font-size:12px;background:#fff;cursor:pointer;min-width:180px;
@@ -143,7 +140,6 @@
     border:1px solid var(--line);border-radius:6px;padding:4px 8px;
     font-size:12px;background:#fff;cursor:pointer;min-width:120px;
   }
-  /* Kategori-farver */
   tr[data-kat="1"] td:first-child{border-left:3px solid var(--green)}
   tr[data-kat="2"] td:first-child{border-left:3px solid var(--brand)}
   tr[data-kat="3"] td:first-child{border-left:3px solid var(--amber)}
@@ -152,7 +148,6 @@
   tr[data-kat="6"] td:first-child{border-left:3px solid #888}
   tr[data-kat="7"] td:first-child{border-left:3px solid var(--red)}
 
-  /* Sager table */
   .sager-wrap{overflow-x:auto;background:var(--card);border:1px solid var(--line);border-radius:10px}
   .sager-tools{
     padding:12px 16px;border-bottom:1px solid var(--line);
@@ -254,7 +249,6 @@
   }
   .integration-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
 
-  /* Email inbox */
   .inbox-layout{
     display:grid;grid-template-columns:380px 1fr;gap:16px;
     background:var(--card);border:1px solid var(--line);border-radius:10px;
@@ -396,8 +390,80 @@
   }
   .auth-error{min-height:18px;color:var(--red);font-size:12px}
   .auth-identity{font-size:12px;color:var(--muted);font-weight:600}
+  .admin-panel{
+    margin:0 0 20px;
+    background:#fff;
+    border:1px solid var(--line);
+    border-radius:10px;
+    padding:16px 18px;
+    display:none;
+  }
+  .admin-panel.visible{display:block}
+  .admin-grid{display:grid;grid-template-columns:1.2fr .8fr;gap:16px;align-items:start}
+  .admin-users{border:1px solid var(--line);border-radius:8px;overflow:hidden}
+  .admin-users table{font-size:12px}
+  .admin-users th,.admin-users td{padding:9px 10px}
+  .admin-empty{padding:14px;color:var(--muted);font-size:12px}
+  .admin-form{
+    border:1px solid var(--line);
+    border-radius:8px;
+    padding:14px;
+    background:#f8fafc;
+  }
+  .admin-form-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .admin-form label{display:grid;gap:5px;font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+  .admin-form input,.admin-form select{
+    border:1px solid var(--line);
+    border-radius:6px;
+    padding:8px 10px;
+    font:inherit;
+    background:#fff;
+  }
+  .admin-form .wide{grid-column:span 2}
+  .admin-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+  .admin-message{min-height:18px;font-size:12px;color:var(--muted);margin-top:10px}
 
-  /* Chips */
+  body.login-mode{
+    background:var(--brand-dark);
+  }
+  body.login-mode .tabs,
+  body.login-mode main,
+  body.login-mode footer{
+    display:none;
+  }
+  body.login-mode header{
+    min-height:100vh;
+    border-bottom:none;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:32px;
+  }
+  body.login-mode .topbar{
+    width:min(520px,100%);
+    display:block;
+    text-align:center;
+  }
+  body.login-mode .logo{
+    justify-content:center;
+    margin-bottom:16px;
+  }
+  body.login-mode .topmeta{
+    display:none;
+  }
+  body.login-mode .auth-overlay{
+    position:static;
+    inset:auto;
+    background:transparent;
+    padding:0;
+    margin-top:24px;
+  }
+  body.login-mode .auth-card{
+    width:min(440px,100%);
+    margin:0 auto;
+    text-align:left;
+  }
+
   .chip{
     display:inline-block;padding:2px 8px;border-radius:12px;font-size:11px;
     font-weight:600;letter-spacing:.02em;
@@ -411,7 +477,7 @@
   footer{padding:20px 32px;text-align:center;color:var(--muted);font-size:12px}
 </style>
 </head>
-<body>
+<body class="login-mode">
 
 <header>
   <div class="topbar">
@@ -422,7 +488,7 @@
         <div class="sub">Pipeline, sager og økonomi — opdateret 21. apr 2026</div>
       </div>
     </div>
-    <div style="font-size:12px;color:#c2d2e1;text-align:right">
+    <div class="topmeta">
       <div>Christian · cgallstar@gmail.com</div>
       <div style="color:#8fa3b8">SMG · Ejer · smg@nstsf.dk</div>
     </div>
@@ -438,7 +504,7 @@
   <button class="tab-btn" data-tab="marginer">Marginer</button>
 </nav>
 
-<div id="authOverlay" class="auth-overlay hidden">
+<div id="authOverlay" class="auth-overlay">
   <div class="auth-card">
     <h2>Log ind</h2>
     <p>Dashboardet henter og gemmer automatisk fælles data, når du er logget ind.</p>
@@ -466,7 +532,52 @@
   </div>
 </div>
 
-<!-- ============ DASHBOARD ============ -->
+<section id="adminPanel" class="admin-panel">
+  <div class="panel-hd">
+    <h2>Brugeradministration</h2>
+    <div class="dim" style="font-size:12px">Kun synlig for admins. Brugere gemmes centralt.</div>
+  </div>
+  <div class="admin-grid">
+    <div class="admin-users">
+      <table>
+        <thead>
+          <tr>
+            <th>Navn</th>
+            <th>E-mail</th>
+            <th>Rolle</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="adminUsersBody">
+          <tr><td colspan="4" class="admin-empty">Henter brugere...</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="admin-form">
+      <div class="panel-hd" style="margin-bottom:10px">
+        <h3 id="adminFormTitle">Opret bruger</h3>
+        <button class="btn" type="button" onclick="resetUserForm()">Nulstil</button>
+      </div>
+      <div class="admin-form-grid">
+        <label>Navn<input id="userName" type="text" placeholder="Navn"></label>
+        <label>Rolle
+          <select id="userRole">
+            <option value="user">Bruger</option>
+            <option value="admin">Admin</option>
+          </select>
+        </label>
+        <label class="wide">E-mail<input id="userEmail" type="email" placeholder="bruger@firma.dk"></label>
+        <label class="wide">Adgangskode<input id="userPassword" type="password" placeholder="Ny adgangskode"></label>
+      </div>
+      <div class="admin-actions">
+        <button class="btn primary" type="button" onclick="submitUserForm()">Gem bruger</button>
+        <button class="btn" type="button" onclick="resetUserForm()">Annuller</button>
+      </div>
+      <div id="adminMessage" class="admin-message"></div>
+    </div>
+  </div>
+</section>
+
 <section id="dashboard" class="section active">
 
   <div class="kpi-grid">
@@ -551,7 +662,7 @@
     </table>
   </div>
 
-  <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+  <div class="grid-2" style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:20px">
     <div class="panel">
       <h2>Fordeling pr. kategori</h2>
       <table>
@@ -560,257 +671,190 @@
           <tr><td><span class="chip chip-brand">Aktive kunder</span></td><td class="num">5 sager</td><td class="num">792.000 kr.</td></tr>
           <tr><td><span class="chip chip-amber">Kunde (ikke startet)</span></td><td class="num">3 sager</td><td class="num">7.047.587 kr.</td></tr>
           <tr><td><span class="chip chip-blue">Tilbud sendt</span></td><td class="num">5 sager</td><td class="num">4.987.000 kr.</td></tr>
-          <tr><td><span class="chip" style="background:#edf0f5;color:#4f5b6b">Pipeline</span></td><td class="num">6 sager</td><td class="num">9.103.000 kr.</td></tr>
-          <tr><td><span class="chip" style="background:var(--gray-soft);color:#555">Afsluttet</span></td><td class="num">4 sager</td><td class="num">95.000 kr.</td></tr>
+          <tr><td><span class="chip">Pipeline</span></td><td class="num">10 sager</td><td class="num">1.830.000 kr.</td></tr>
+          <tr><td><span class="chip">Afsluttet</span></td><td class="num">4 sager</td><td class="num">95.000 kr.</td></tr>
           <tr><td><span class="chip chip-red">Ikke relevant</span></td><td class="num">2 sager</td><td class="num">1.000.000 kr.</td></tr>
         </tbody>
       </table>
     </div>
-
     <div class="panel">
       <h2>Kundefordeling — top kunder</h2>
       <table>
         <tbody>
           <tr><td><strong>DKE</strong> <span class="dim">(Charlotte · Lars · Nils)</span></td><td class="num">12 sager</td><td><span class="chip chip-brand">nøglekunde</span></td></tr>
           <tr><td>Helle Fortland (+ kusine)</td><td class="num">2 sager</td><td></td></tr>
-          <tr><td>Brandskole, Helsingør</td><td class="num">1 sag</td><td><span class="chip chip-blue">storkunde</span></td></tr>
+          <tr><td>Brandskole, Helsingør</td><td class="num">1 sag</td><td><span class="chip chip-brand">storkunde</span></td></tr>
           <tr><td>Henrik (nyt hus, Jyllinge)</td><td class="num">1 sag</td><td><span class="chip chip-amber">storsag</span></td></tr>
-          <tr><td>Øvrige privatkunder</td><td class="num">13 sager</td><td></td></tr>
+          <tr><td>Øvrige privatkunder</td><td class="num">9 sager</td><td></td></tr>
         </tbody>
       </table>
-      <h3 style="margin-top:14px">DKE-kontakter</h3>
-      <table>
-        <tbody>
-          <tr><td>Charlotte</td><td class="num">8 sager</td><td class="dim">charlotte@dke.dk</td></tr>
-          <tr><td>Lars</td><td class="num">1 sag</td><td class="dim">lars@dke.dk</td></tr>
-          <tr><td>Nils</td><td class="num">1 sag</td><td class="dim">nils@dke.dk</td></tr>
-        </tbody>
-      </table>
+      <div class="status-note" style="border-left-color:var(--brand);margin-top:12px;background:#f6f9fc">
+        <strong style="color:var(--brand)">DKE-kontakter</strong><br>
+        Charlotte · 8 sager · charlotte@dke.dk<br>
+        Lars · 1 sag · lars@dke.dk<br>
+        Nils · 1 sag · nils@dke.dk
+      </div>
     </div>
   </div>
+</section>
 
+<section id="sager" class="section">
   <div class="panel">
     <div class="panel-hd">
-      <h2>Kapacitetskalender — resten af 2026</h2>
-      <div class="capacity-tools">
-        <label for="capacityHours" class="dim" style="font-weight:600">Timer pr. medarbejder pr. uge</label>
-        <input type="number" id="capacityHours" value="37" min="1" step="1">
-        <span class="dim">Timer fordeles lineært mellem start- og slutdato.</span>
-      </div>
-    </div>
-    <div class="capacity-layout">
-      <div class="employee-panel">
-        <h3>Medarbejdere</h3>
-        <div id="employeeList" class="employee-list"></div>
-        <button class="btn" onclick="addEmployee()">Tilføj medarbejder</button>
-        <div class="employee-status-editor">
-          <label>Medarbejder
-            <select id="statusEmployee"></select>
-          </label>
-          <label>Uge
-            <select id="statusWeek"></select>
-          </label>
-          <label>Status
-            <select id="statusType">
-              <option value="work">På arbejde</option>
-              <option value="vacation">Ferie</option>
-              <option value="school">Skole</option>
-              <option value="poland">Polen</option>
-            </select>
-          </label>
-          <label>Timer override
-            <input id="statusHours" type="number" min="0" placeholder="valgfri">
-          </label>
-        </div>
-        <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">
-          <button class="btn primary" onclick="setEmployeeWeekStatus()">Gem uge</button>
-          <button class="btn" onclick="clearEmployeeWeekStatus()">Nulstil uge</button>
-        </div>
-        <div class="capacity-note">Udenlandske medarbejdere har automatisk 5 uger i DK og 2 uger i Polen. Lærlinge kan markeres som skole uge for uge.</div>
-      </div>
-      <div id="capacityCalendar" class="calendar-grid"></div>
-    </div>
-  </div>
-
-</section>
-
-<!-- ============ SAGER ============ -->
-<section id="sager" class="section">
-
-  <div class="sager-wrap">
-    <div class="sager-tools">
-      <input type="search" id="sagerSoeg" placeholder="Søg kunde, sagsnr., adresse…">
-      <select id="filterKat">
-        <option value="all">Alle kategorier</option>
-        <option value="1">01. Arbejde færdigt</option>
-        <option value="2">02. Aktive kunder</option>
-        <option value="3">03. Kunde (ikke startet)</option>
-        <option value="4">04. Tilbud sendt</option>
-        <option value="5">05. Pipeline</option>
-        <option value="6">06. Afsluttet</option>
-        <option value="7">07. Ikke relevant</option>
-      </select>
+      <h2>Sager</h2>
       <button class="btn primary" onclick="addSag()">Tilføj ny</button>
-      <span class="count" id="count"></span>
     </div>
-
-    <table id="sagerTable">
-      <thead>
-        <tr>
-          <th>Kategori</th>
-          <th>Sagsnr.</th>
-          <th>Kundenavn</th>
-          <th>Adresse</th>
-          <th>Opgave</th>
-          <th class="num">Budget</th>
-          <th class="num">Est. timer</th>
-          <th>Betalingsdato</th>
-          <th>Start</th>
-          <th>Slut</th>
-          <th>Status</th>
-          <th>Ansvarlig</th>
-          <th>Faktura</th>
-          <th>Handling</th>
-        </tr>
-      </thead>
-      <tbody id="sagerBody"></tbody>
-    </table>
-
-    <div id="caseDetail" class="case-detail"></div>
+    <div class="sager-wrap">
+      <div class="sager-tools">
+        <input id="sagerSoeg" type="search" placeholder="Søg på sagsnr., kunde, adresse eller opgave">
+        <select id="filterKat">
+          <option value="">Alle kategorier</option>
+          <option value="1">01. Arbejde færdigt</option>
+          <option value="2">02. Aktive kunder</option>
+          <option value="3">03. Kunde (ikke startet)</option>
+          <option value="4">04. Tilbud sendt</option>
+          <option value="5">05. Pipeline</option>
+          <option value="6">06. Afsluttet</option>
+          <option value="7">07. Ikke relevant</option>
+        </select>
+        <div id="count" class="count"></div>
+      </div>
+      <table id="sagerTable">
+        <thead>
+          <tr>
+            <th>Kategori</th>
+            <th>Sagsnr.</th>
+            <th>Kundenavn</th>
+            <th>Adresse</th>
+            <th>Opgave</th>
+            <th class="num">Est. beløb</th>
+            <th class="num">Udestående</th>
+            <th>Betalingsdato</th>
+            <th>Startdato</th>
+            <th>Slutdato</th>
+            <th>Fin. status</th>
+            <th>Fakturanr.</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="sagerBody"></tbody>
+      </table>
+      <div id="caseDetail" class="case-detail"></div>
+    </div>
   </div>
 </section>
 
-<!-- ============ INDBAKKE ============ -->
 <section id="indbakke" class="section">
   <div class="inbox-layout">
     <div class="inbox-list">
       <div class="inbox-hd">
         <div>
-          <div class="title">SMG / NSTSF indbakke</div>
-          <div class="addr">smg@nstsf.dk · kontakt@nstsf.dk · christian@nstsf.dk</div>
+          <div class="title">Indbakke</div>
+          <div class="addr">SMG / NSTSF</div>
         </div>
+        <span class="chip chip-red">8 nye</span>
       </div>
-
       <div class="inbox-tabs">
         <button class="inbox-tab active" data-filter="alle">Alle</button>
-        <button class="inbox-tab" data-filter="uhaandteret">Uhåndterede <span class="badge">8</span></button>
-        <button class="inbox-tab" data-filter="haandteret">Håndterede</button>
+        <button class="inbox-tab" data-filter="uhaandteret">Uhåndteret <span class="badge">8</span></button>
+        <button class="inbox-tab" data-filter="haandteret">Håndteret</button>
       </div>
-
       <div id="emailList"></div>
     </div>
-
-    <div class="inbox-view" id="emailView"></div>
+    <div id="emailView" class="inbox-view"></div>
   </div>
 </section>
 
-<!-- ============ LIKVIDITET ============ -->
 <section id="likviditet" class="section">
   <div class="panel">
-    <h2>Likviditetsoversigt</h2>
+    <h2>Likviditet — rullende årsview</h2>
     <table>
       <thead>
         <tr>
-          <th>Periode</th>
-          <th class="num">Forventede indbetalinger</th>
-          <th class="num">Forventede udbetalinger</th>
+          <th>Måned</th>
+          <th class="num">Ind</th>
+          <th class="num">Ud</th>
           <th class="num">Netto</th>
+          <th class="num">Akkumuleret</th>
         </tr>
       </thead>
       <tbody>
-        <tr>
-          <td>Næste 30 dage</td>
-          <td class="num">478.387 kr.</td>
-          <td class="num">241.000 kr.</td>
-          <td class="num"><span class="chip chip-green">+237.387 kr.</span></td>
-        </tr>
-        <tr>
-          <td>Næste 60 dage</td>
-          <td class="num">1.643.957 kr.</td>
-          <td class="num">818.000 kr.</td>
-          <td class="num"><span class="chip chip-green">+825.957 kr.</span></td>
-        </tr>
-        <tr>
-          <td>Næste 90 dage</td>
-          <td class="num">2.282.819 kr.</td>
-          <td class="num">1.420.000 kr.</td>
-          <td class="num"><span class="chip chip-green">+862.819 kr.</span></td>
-        </tr>
+        <tr><td>Maj</td><td class="num">195.387</td><td class="num" style="color:var(--red)">(430.000)</td><td class="num" style="color:var(--red)">(234.613)</td><td class="num" style="color:var(--red)">(234.613)</td></tr>
+        <tr><td>Jun</td><td class="num">283.000</td><td class="num" style="color:var(--red)">(430.000)</td><td class="num" style="color:var(--red)">(147.000)</td><td class="num" style="color:var(--red)">(381.613)</td></tr>
+        <tr><td>Jul</td><td class="num">0</td><td class="num" style="color:var(--red)">(430.000)</td><td class="num" style="color:var(--red)">(430.000)</td><td class="num" style="color:var(--red)">(811.613)</td></tr>
+        <tr><td>Aug</td><td class="num">0</td><td class="num" style="color:var(--red)">(430.000)</td><td class="num" style="color:var(--red)">(430.000)</td><td class="num" style="color:var(--red)">(1.241.613)</td></tr>
+        <tr><td>Sep</td><td class="num">0</td><td class="num" style="color:var(--red)">(430.000)</td><td class="num" style="color:var(--red)">(430.000)</td><td class="num" style="color:var(--red)">(1.671.613)</td></tr>
+        <tr><td>Okt</td><td class="num">0</td><td class="num" style="color:var(--red)">(430.000)</td><td class="num" style="color:var(--red)">(430.000)</td><td class="num" style="color:var(--red)">(2.101.613)</td></tr>
+        <tr><td>Nov</td><td class="num">0</td><td class="num" style="color:var(--red)">(430.000)</td><td class="num" style="color:var(--red)">(430.000)</td><td class="num" style="color:var(--red)">(2.531.613)</td></tr>
+        <tr><td>Dec</td><td class="num">0</td><td class="num" style="color:var(--red)">(430.000)</td><td class="num" style="color:var(--red)">(430.000)</td><td class="num" style="color:var(--red)"><strong>(2.961.613)</strong></td></tr>
       </tbody>
     </table>
+    <div class="status-note"><strong>OBS:</strong> Likviditetsoversigten er fortsat et statisk forecast. Næste skridt er at koble betalinger, Minuba og evt. bankfeed på.</div>
   </div>
 </section>
 
-<!-- ============ BETALINGER ============ -->
 <section id="betalinger" class="section">
   <div class="panel">
-    <div class="panel-hd">
-      <h2>Betalingsplan — udestående rater</h2>
-      <span class="dim">Marker en rate som betalt for at fjerne den fra listen.</span>
-    </div>
+    <h2>Betalingsplan — udestående rater</h2>
     <table>
       <thead>
         <tr>
           <th>Sagsnr.</th>
           <th>Kunde</th>
           <th>Milepæl</th>
-          <th>Dato</th>
+          <th>Forv. dato</th>
           <th class="num">Beløb</th>
-          <th>Faktura</th>
+          <th>Fakturanr.</th>
           <th>Status</th>
         </tr>
       </thead>
       <tbody id="betalingBody"></tbody>
     </table>
-    <div class="pay-note">Status styres direkte i dropdownen. Vælg <strong>Betalt</strong>, så forsvinder posten fra udestående oversigt.</div>
+    <div class="pay-note">Skift status til "Betalt" for at fjerne en rate fra oversigten over udestående rater. Den bliver i data, men skjules her.</div>
   </div>
 </section>
 
-<!-- ============ MARGINER ============ -->
 <section id="marginer" class="section">
   <div class="panel">
     <div class="panel-hd">
-      <h2>Marginer og timeforbrug</h2>
-      <span class="dim">Estimerede timer er flyttet hertil fra Sager.</span>
+      <h2>Marginer — estimat inden start · faktisk efter aflevering</h2>
+      <div style="font-size:12px;color:var(--muted)">Standard timepris: 650 kr./t</div>
     </div>
-    <div id="marginSummary" class="kpi-grid" style="margin-top:0"></div>
-  </div>
-
-  <div class="panel">
-    <div class="panel-hd">
-      <h2>Minuba integration</h2>
-      <span class="dim">Klar til API/FilAPI når nøgler er tilføjet i Netlify.</span>
-    </div>
-    <div class="integration-grid">
-      <div>
-        <div class="integration-status" id="minubaStatus">Tryk på “Test forbindelse” efter deploy for at se om Minuba backend og environment variables er sat korrekt.</div>
-        <div class="integration-actions">
-          <button class="btn" onclick="checkMinuba()">Test forbindelse</button>
-          <button class="btn" onclick="fetchMinubaResource('filapi')">Hent FilAPI preview</button>
-          <button class="btn" onclick="fetchMinubaResource('cases')">Hent sager</button>
-          <button class="btn" onclick="fetchMinubaResource('time')">Hent timer</button>
-          <button class="btn" onclick="fetchMinubaResource('materials')">Hent materialer</button>
+    <div class="panel" style="padding:14px;margin-bottom:16px;background:#f8fafc">
+      <div class="panel-hd">
+        <h2>Minuba integration</h2>
+        <span class="dim" style="font-size:12px">Backend proxy via Netlify Functions</span>
+      </div>
+      <div class="integration-grid">
+        <div>
+          <div id="minubaStatus" class="integration-status">Ikke testet endnu.</div>
+          <div class="integration-actions">
+            <button class="btn" onclick="checkMinuba()">Test forbindelse</button>
+            <button class="btn" onclick="fetchMinubaResource('filapi')">Hent FilAPI preview</button>
+            <button class="btn" onclick="fetchMinubaResource('cases')">Hent sager</button>
+            <button class="btn" onclick="fetchMinubaResource('time')">Hent timer</button>
+            <button class="btn" onclick="fetchMinubaResource('materials')">Hent materialer</button>
+          </div>
+        </div>
+        <div class="status-note" style="margin-top:0">
+          Minuba-nøgler skal ligge som environment variables i Netlify, ikke i HTML-filen.
+          Første version tester dataflowet; næste version mapper data til sager og DB.
         </div>
       </div>
-      <div class="integration-status">Minuba-nøgler skal ligge som environment variables i Netlify, ikke i HTML-filen.
-
-Første version tester dataflowet; næste version mapper data til sager og DB.</div>
     </div>
-  </div>
-
-  <div class="panel">
+    <div class="kpi-grid" id="marginSummary" style="grid-template-columns:repeat(3,1fr);margin-bottom:16px"></div>
     <table>
       <thead>
         <tr>
           <th>Sagsnr.</th>
           <th>Kunde</th>
-          <th>Opgave</th>
-          <th class="num">Timer</th>
-          <th class="num">Omkostning</th>
-          <th class="num">Pris</th>
-          <th class="num">Margin</th>
-          <th class="num">DB%</th>
-          <th class="num">Materialer</th>
+          <th class="wrap">Opgave</th>
+          <th class="num">Est. timer</th>
+          <th class="num">Est. omk.</th>
+          <th class="num">Tilbudspris</th>
+          <th class="num">Est. margin</th>
+          <th class="num">Est. margin %</th>
+          <th class="num">Faktisk margin</th>
         </tr>
       </thead>
       <tbody id="marginBody"></tbody>
@@ -820,1105 +864,106 @@ Første version tester dataflowet; næste version mapper data til sager og DB.</
 
 </main>
 
-<footer>Nordsjællands Tømrer- &amp; Snedkerfirma · Pipeline dashboard · Skabt som overblik over Excel-arkene</footer>
+<footer>
+  Nordsjællands Tømrer- &amp; Snedkerfirma · Pipeline dashboard · Skabt som overblik over Excel-arkene
+</footer>
 
 <script>
+const KAT = {
+  1:"01. Arbejde færdigt", 2:"02. Aktive kunder", 3:"03. Kunde (ikke startet)",
+  4:"04. Tilbud sendt", 5:"05. Pipeline", 6:"06. Afsluttet", 7:"07. Ikke relevant"
+};
 const DRIVE_ROOT = "https://drive.google.com/drive/folders/1Xf06EVUrNfQiS_pLMwOOTzhjq0Q3NC8K?usp=drive_link";
 const CUSTOMER_DRIVE_ROOT = "https://drive.google.com/drive/u/0/folders/16mPUBQntdRS0N65EmnigsyNesRz3bC-f";
-const categories = {
-  1:"01. Arbejde færdigt",
-  2:"02. Aktive kunder",
-  3:"03. Kunde (ikke startet)",
-  4:"04. Tilbud sendt",
-  5:"05. Pipeline",
-  6:"06. Afsluttet",
-  7:"07. Ikke relevant"
-};
-const statusOptions = ["Afventer","I gang","Afsluttet","Tilbud sendt","Afventer kunde","Betalt"];
-const owners = ["SMG","Christian","Mikkel","TBD"];
 const employees = [
-  {id:'emp-smg', name:'SMG', hours:37, type:'employee', overrides:{}},
-  {id:'emp-svend1', name:'Svend 1', hours:37, type:'employee', overrides:{}},
-  {id:'emp-svend2', name:'Svend 2', hours:37, type:'employee', overrides:{}},
-  {id:'emp-apprentice', name:'Lærling', hours:37, type:'apprentice', overrides:{}},
-  {id:'emp-foreign1', name:'Udenlandsk 1', hours:37, type:'foreign', overrides:{}},
-  {id:'emp-foreign2', name:'Udenlandsk 2', hours:37, type:'foreign', overrides:{}}
+  {id:"smg", name:"SMG", hours:37, type:"employee", overrides:{}},
+  {id:"svend-1", name:"Svend 1", hours:37, type:"employee", overrides:{}},
+  {id:"svend-2", name:"Svend 2", hours:37, type:"employee", overrides:{}},
+  {id:"laerling", name:"Lærling", hours:37, type:"apprentice", overrides:{}},
+  {id:"polen-1", name:"Udenlandsk 1", hours:37, type:"foreign", overrides:{}},
+  {id:"polen-2", name:"Udenlandsk 2", hours:37, type:"foreign", overrides:{}}
 ];
 const docDemo = {
-  byggereferater:[
-    {titel:"Byggereferat fra seneste møde", dato:"Afventer upload", url:""},
-    {titel:"Mailudkast til referat", dato:"Automatiseres senere", url:"mailto:smg@nstsf.dk"}
-  ],
-  transkripter:[
-    {titel:"Gemini transkript", dato:"Afventer upload", url:""},
-    {titel:"Mødenoter", dato:"Automatiseres senere", url:DRIVE_ROOT}
-  ]
+  byggereferater:[{titel:"Byggereferat fra seneste møde", dato:"Afventer upload", url:""}],
+  transkripter:[{titel:"Gemini transkript", dato:"Afventer upload", url:""}],
 };
-const sager = [
-  {k:2, nr:"215", kunde:"Lise Galskov", adr:"Lise Galskov · Nordre Strandvej, Hellebæk", opg:"Fuld renovering", budget:"80.000", timer:"30", pay:"2026-04-01", start:"2026-03-03", slut:"2026-03-31", status:"Afsluttet", owner:"SMG", faktura:"1132", mail:"", tlf:"", drive:"", notes:"", docs:{drive:"", byggereferater:docDemo.byggereferater, transkripter:docDemo.transkripter}},
-  {k:6, nr:"", kunde:"DKE v. Charlotte", adr:"Guldborgvej 1", opg:"Fakturering", budget:"15.000", timer:"40", pay:"2026-03-05", start:"2025-11-01", slut:"2025-11-15", status:"Betalt", owner:"SMG", faktura:"", mail:"charlotte@dke.dk", tlf:"", drive:"", notes:"", docs:{drive:"", byggereferater:docDemo.byggereferater, transkripter:docDemo.transkripter}},
-  {k:6, nr:"", kunde:"DKE v. Charlotte", adr:"Bülowsvej", opg:"Fakturering", budget:"32.000", timer:"55", pay:"2026-03-05", start:"2025-12-01", slut:"2025-12-15", status:"Betalt", owner:"SMG", faktura:"", mail:"charlotte@dke.dk", tlf:"", drive:"", notes:"", docs:{drive:"", byggereferater:docDemo.byggereferater, transkripter:docDemo.transkripter}},
-  {k:1, nr:"218", kunde:"Helle Fortland", adr:"Helle Fortland · Kongevejen 9, Humlebæk", opg:"Småopgaver i huset", budget:"87.625", timer:"35", pay:"2026-03-29", start:"2026-03-03", slut:"2026-03-28", status:"Afsluttet", owner:"SMG", faktura:"", mail:"helle.fortland@mail.dk", tlf:"26118432", drive:"", notes:"", docs:{drive:"", byggereferater:docDemo.byggereferater, transkripter:docDemo.transkripter}},
-  {k:6, nr:"", kunde:"DKE v. Charlotte", adr:"Blågårdsgade 14", opg:"Fakturering", budget:"114.000", timer:"20", pay:"2025-12-24", start:"2025-12-01", slut:"2025-12-05", status:"Betalt", owner:"SMG", faktura:"", mail:"charlotte@dke.dk", tlf:"", drive:"", notes:"", docs:{drive:"", byggereferater:docDemo.byggereferater, transkripter:docDemo.transkripter}},
-  {k:1, nr:"", kunde:"DKE v. Charlotte", adr:"Ryesgade 62 lejl. 48", opg:"Renovering", budget:"273.000", timer:"15", pay:"2026-04-17", start:"2026-03-01", slut:"2026-03-21", status:"Afsluttet", owner:"SMG", faktura:"", mail:"charlotte@dke.dk", tlf:"", drive:"", notes:"", docs:{drive:"", byggereferater:docDemo.byggereferater, transkripter:docDemo.transkripter}},
-  {k:2, nr:"214", kunde:"DKE v. Charlotte", adr:"Ryesgade 62 lejl. 30", opg:"Fakturering", budget:"286.502", timer:"15", pay:"2026-05-19", start:"2026-04-20", slut:"2026-05-19", status:"I gang", owner:"SMG", faktura:"1142", mail:"charlotte@dke.dk", tlf:"", drive:"", notes:"", docs:{drive:"", byggereferater:docDemo.byggereferater, transkripter:docDemo.transkripter}},
-  {k:2, nr:"", kunde:"Niels & Vibeke", adr:"Villingebæk Strandvej 532, 3120 Dronningmølle", opg:"Vinduer", budget:"178.000", timer:"", pay:"2026-05-01", start:"2026-04-22", slut:"2026-05-15", status:"I gang", owner:"SMG", faktura:"", mail:"niels.bach@hotmail.com", tlf:"21443809", drive:"", notes:"", docs:{drive:"", byggereferater:docDemo.byggereferater, transkripter:docDemo.transkripter}},
-  {k:2, nr:"", kunde:"DKE v. Lars", adr:"Carit Etlers Vej 14, 1814 Frederiksberg", opg:"Fuld renovering", budget:"874.587", timer:"", pay:"2026-06-01", start:"2026-05-04", slut:"2026-08-14", status:"I gang", owner:"SMG", faktura:"", mail:"lars@dke.dk", tlf:"40227891", drive:"", notes:"", docs:{drive:"", byggereferater:docDemo.byggereferater, transkripter:docDemo.transkripter}},
-  {k:2, nr:"", kunde:"DKE v. Charlotte", adr:"Lykkeholms Allé 35, 1902 Frederiksberg C", opg:"Pejs", budget:"25.000", timer:"", pay:"", start:"2026-05-11", slut:"2026-05-15", status:"Afventer", owner:"SMG", faktura:"", mail:"charlotte@dke.dk", tlf:"", drive:"", notes:"", docs:{drive:"", byggereferater:docDemo.byggereferater, transkripter:docDemo.transkripter}},
-  {k:3, nr:"", kunde:"Henrik", adr:"Smedestræde 4, 4040 Jyllinge", opg:"Helt nyt hus", budget:"5.995.000", timer:"", pay:"", start:"2026-05-01", slut:"2027-06-30", status:"Afventer", owner:"SMG", faktura:"", mail:"", tlf:"", drive:"", notes:"", docs:{drive:"", byggereferater:docDemo.byggereferater, transkripter:docDemo.transkripter}},
-  {k:3, nr:"", kunde:"Helle Fortlands kusine", adr:"Kongevejen 1, Humlebæk", opg:"Udskiftning af tag", budget:"750.000", timer:"", pay:"", start:"2026-06-01", slut:"2026-07-31", status:"Afventer", owner:"SMG", faktura:"", mail:"", tlf:"", drive:"", notes:"", docs:{drive:"", byggereferater:docDemo.byggereferater, transkripter:docDemo.transkripter}},
-  {k:4, nr:"", kunde:"DKE v. Charlotte", adr:"Vordingborggade + Assensgade", opg:"Vinduer og zinkarbejde", budget:"4.000.000", timer:"", pay:"", start:"2026-07-01", slut:"2026-09-30", status:"Tilbud sendt", owner:"SMG", faktura:"", mail:"charlotte@dke.dk", tlf:"", drive:"", notes:"", docs:{drive:"", byggereferater:docDemo.byggereferater, transkripter:docDemo.transkripter}},
-  {k:4, nr:"", kunde:"Brandskole, Helsingør", adr:"Helsingør", opg:"Totalentreprise", budget:"8.000.000", timer:"", pay:"", start:"2026-05-01", slut:"2027-03-01", status:"Tilbud sendt", owner:"Christian", faktura:"", mail:"tv@brandskolen-helsingor.dk", tlf:"49283155", drive:"", notes:"", docs:{drive:"", byggereferater:docDemo.byggereferater, transkripter:docDemo.transkripter}},
-  {k:4, nr:"", kunde:"Mikkel Munkholm", adr:"Kornvænget 29, 3600 Frederikssund", opg:"Tilbygning", budget:"1.100.000", timer:"", pay:"", start:"2026-05-01", slut:"2026-08-31", status:"Tilbud sendt", owner:"SMG", faktura:"", mail:"mikkel.munkholm@gmail.com", tlf:"28441782", drive:"", notes:"", docs:{drive:"", byggereferater:docDemo.byggereferater, transkripter:docDemo.transkripter}},
-  {k:5, nr:"", kunde:"Jacob Frandsen", adr:"Kovangen 503, 3480 Fredensborg", opg:"Indretning af hus", budget:"1.000.000", timer:"", pay:"", start:"2026-08-01", slut:"2026-10-15", status:"Afventer", owner:"SMG", faktura:"", mail:"", tlf:"", drive:"", notes:"", docs:{drive:"", byggereferater:docDemo.byggereferater, transkripter:docDemo.transkripter}},
-  {k:5, nr:"", kunde:"Eva Arndt", adr:"Hyrdeengen 12, 2625 Vallensbæk", opg:"Tilbygning", budget:"558.000", timer:"", pay:"", start:"2026-09-01", slut:"2026-11-15", status:"Afventer", owner:"SMG", faktura:"", mail:"", tlf:"", drive:"", notes:"", docs:{drive:"", byggereferater:docDemo.byggereferater, transkripter:docDemo.transkripter}},
-  {k:5, nr:"", kunde:"Rikke + Martin", adr:"Møllebakken 16, 3460 Birkerød", opg:"Nyt tag", budget:"400.000", timer:"", pay:"", start:"2026-08-15", slut:"2026-09-30", status:"Afventer", owner:"SMG", faktura:"", mail:"", tlf:"", drive:"", notes:"", docs:{drive:"", byggereferater:docDemo.byggereferater, transkripter:docDemo.transkripter}},
-  {k:5, nr:"", kunde:"Rikke Iversen", adr:"Gefionsvej 15, Holte", opg:"Nyt loft og vinduer", budget:"190.000", timer:"", pay:"", start:"2026-07-15", slut:"2026-08-20", status:"Afventer", owner:"SMG", faktura:"", mail:"", tlf:"", drive:"", notes:"", docs:{drive:"", byggereferater:docDemo.byggereferater, transkripter:docDemo.transkripter}},
-  {k:5, nr:"", kunde:"Marianne & Søren", adr:"Ermelundsvej 42, 2820 Gentofte", opg:"Nyt tag og efterisolering", budget:"375.000", timer:"", pay:"", start:"2026-09-01", slut:"2026-10-31", status:"Afventer", owner:"SMG", faktura:"", mail:"", tlf:"", drive:"", notes:"", docs:{drive:"", byggereferater:docDemo.byggereferater, transkripter:docDemo.transkripter}},
-  {k:5, nr:"", kunde:"Marie & Jørn", adr:"Slotsgade 9, st. tv., Hillerød", opg:"Gang og køkken + loft", budget:"17.387", timer:"", pay:"", start:"2026-08-01", slut:"2026-08-15", status:"Afventer", owner:"SMG", faktura:"1149", mail:"rikke_jm@hotmail.com", tlf:"", drive:"", notes:"", docs:{drive:"", byggereferater:docDemo.byggereferater, transkripter:docDemo.transkripter}},
-  {k:5, nr:"", kunde:"DKE v. Charlotte", adr:"Ryesgade 62, lejlighed 72", opg:"Istandsættelse ved fraflytning", budget:"225.000", timer:"", pay:"", start:"2026-05-18", slut:"2026-06-12", status:"Afventer", owner:"SMG", faktura:"", mail:"charlotte@dke.dk", tlf:"33124567", drive:"", notes:"", docs:{drive:"", byggereferater:docDemo.byggereferater, transkripter:docDemo.transkripter}},
-  {k:5, nr:"", kunde:"Frank Lyhne", adr:"Ellemosevej 9, Fredensborg", opg:"Mure trappe", budget:"8.000", timer:"", pay:"", start:"2026-04-29", slut:"2026-04-30", status:"Afventer", owner:"SMG", faktura:"", mail:"f.lyhne@mail.dk", tlf:"40184491", drive:"", notes:"", docs:{drive:"", byggereferater:docDemo.byggereferater, transkripter:docDemo.transkripter}},
-  {k:6, nr:"", kunde:"DKE v. Nils", adr:"Kingosvej 1B", opg:"Afsluttet lejlighedssag", budget:"0", timer:"", pay:"", start:"2026-03-10", slut:"2026-04-20", status:"Afsluttet", owner:"SMG", faktura:"1137", mail:"nils@dke.dk", tlf:"22743109", drive:"", notes:"", docs:{drive:"", byggereferater:docDemo.byggereferater, transkripter:docDemo.transkripter}},
-  {k:6, nr:"", kunde:"Niels & Vibeke", adr:"Villingebæk Strandvej 532", opg:"Tak og betaling af vinduessag", budget:"178.000", timer:"", pay:"2026-05-01", start:"2026-04-01", slut:"2026-05-01", status:"Afsluttet", owner:"SMG", faktura:"", mail:"niels.bach@hotmail.com", tlf:"21443809", drive:"", notes:"", docs:{drive:"", byggereferater:docDemo.byggereferater, transkripter:docDemo.transkripter}},
-  {k:6, nr:"", kunde:"Charlotte / DKE", adr:"Ryesgade 62 lejl. 56", opg:"Faktura 1148 betalt", budget:"41.000", timer:"", pay:"2026-04-18", start:"2026-04-01", slut:"2026-04-18", status:"Betalt", owner:"SMG", faktura:"1148", mail:"charlotte@dke.dk", tlf:"", drive:"", notes:"", docs:{drive:"", byggereferater:docDemo.byggereferater, transkripter:docDemo.transkripter}},
-  {k:7, nr:"", kunde:"Test / eksempel", adr:"Eksempelvej 1", opg:"Ikke relevant lead", budget:"1.000.000", timer:"", pay:"", start:"", slut:"", status:"Afvist", owner:"SMG", faktura:"", mail:"", tlf:"", drive:"", notes:"", docs:{drive:"", byggereferater:docDemo.byggereferater, transkripter:docDemo.transkripter}},
-  {k:7, nr:"", kunde:"Andet eksempel", adr:"Ukendt", opg:"Ikke relevant forespørgsel", budget:"0", timer:"", pay:"", start:"", slut:"", status:"Afvist", owner:"SMG", faktura:"", mail:"", tlf:"", drive:"", notes:"", docs:{drive:"", byggereferater:docDemo.byggereferater, transkripter:docDemo.transkripter}}
-];
-sager.forEach((s, i)=>{
-  s.sort = i;
-  if(!s.docs){
-    s.docs = {drive:s.drive || "", byggereferater:docDemo.byggereferater, transkripter:docDemo.transkripter};
-  }
-});
-function estimatedHours(s){
-  return parseNumber(s.timer);
-}
-
-const betalinger = [
-  {nr:"215", kunde:"Lise Galskov", milepael:"Udestående betaling", dato:"01. Apr 2026", beloeb:"80.000", fak:"1132", status:"udestaaende"},
-  {nr:"", kunde:"DKE v. Charlotte", milepael:"Udestående betaling", dato:"05. Mar 2026", beloeb:"15.000", fak:"", status:"udestaaende"},
-  {nr:"", kunde:"DKE v. Charlotte", milepael:"Udestående betaling", dato:"05. Mar 2026", beloeb:"32.000", fak:"", status:"udestaaende"},
-  {nr:"218", kunde:"Helle Fortland", milepael:"Udestående betaling", dato:"29. Mar 2026", beloeb:"87.625", fak:"", status:"udestaaende"},
-  {nr:"", kunde:"DKE v. Charlotte", milepael:"Udestående betaling", dato:"24. Dec 2025", beloeb:"114.000", fak:"", status:"udestaaende"},
-  {nr:"", kunde:"DKE v. Charlotte", milepael:"Udestående betaling", dato:"17. Apr 2026", beloeb:"273.000", fak:"", status:"udestaaende"},
-  {nr:"214", kunde:"DKE v. Charlotte", milepael:"Udestående betaling", dato:"19. May 2026", beloeb:"286.502", fak:"1142", status:"udestaaende"},
-  {nr:"", kunde:"Niels & Vibeke", milepael:"Udestående betaling", dato:"01. May 2026", beloeb:"178.000", fak:"", status:"udestaaende"},
-  {nr:"", kunde:"DKE v. Lars", milepael:"Udestående betaling", dato:"01. Jun 2026", beloeb:"80.000", fak:"", status:"udestaaende"},
-  {nr:"", kunde:"DKE v. Charlotte", milepael:"Udestående betaling", dato:"", beloeb:"25.000", fak:"", status:"udestaaende"}
-];
-
+const sager = [];
+const betalinger = [];
 const STORAGE_KEY = 'nstsf-dashboard-state-v3';
 const AUTH_API = '/api/auth';
 const STATE_API = '/api/state';
+const USERS_API = '/api/users';
 let remoteSaveTimer = null;
 let isApplyingRemoteState = false;
 let authUser = null;
-
-function setSyncStatus(text, tone){
-  const el = document.getElementById('syncStatus');
-  if(!el) return;
-  el.textContent = text;
-  el.style.color = tone === 'error' ? 'var(--red)' : tone === 'ok' ? 'var(--green)' : 'var(--muted)';
-}
-
-function collectState(){
-  const capacityHours = document.getElementById('capacityHours') ? +document.getElementById('capacityHours').value || 37 : 37;
-  return {
-    schema:'nstsf-dashboard-state-v1',
-    savedFrom:location.hostname || 'local-file',
-    savedAt:new Date().toISOString(),
-    sager:sager,
-    betalinger:betalinger,
-    employees:employees,
-    settings:{capacityHours}
-  };
-}
-
-function applyState(state){
-  if(!state || typeof state !== 'object') return;
-  if(Array.isArray(state.sager)){
-    sager.splice(0, sager.length, ...state.sager.map((saved, i)=>({
-      ...saved,
-      k:+saved.k || 5,
-      sort: typeof saved.sort === 'number' ? saved.sort : i,
-      docs: saved.docs || {drive:saved.drive || "", byggereferater:docDemo.byggereferater, transkripter:docDemo.transkripter}
-    })));
-  }
-  if(Array.isArray(state.betalinger)){
-    betalinger.splice(0, betalinger.length, ...state.betalinger.map(b=>({
-      ...b,
-      status:b.status || 'udestaaende'
-    })));
-  }
-  if(Array.isArray(state.employees)){
-    employees.splice(0, employees.length, ...state.employees);
-  }
-  if(state.settings && document.getElementById('capacityHours')){
-    document.getElementById('capacityHours').value = state.settings.capacityHours || 37;
-  }
-}
-
-function persistLocalState(){
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(collectState()));
-}
-
-function loadState(){
-  try{
-    const state = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
-    applyState(state);
-  }catch(e){}
-}
-async function saveRemoteState(manual=false){
-  if(!authUser){
-    if(manual) setSyncStatus('Du skal være logget ind for at gemme centralt.', 'error');
-    return;
-  }
-  if(location.protocol === 'file:'){
-    if(manual) setSyncStatus('Backend virker først på Netlify eller via netlify dev. Lokal fil er kun browser-kopi.', 'error');
-    return;
-  }
-  try{
-    setSyncStatus('Gemmer til central backend...');
-    const res = await fetch(STATE_API, {
-      method:'PUT',
-      credentials:'include',
-      headers:{'content-type':'application/json'},
-      body:JSON.stringify(collectState())
-    });
-    const data = await res.json().catch(()=>({}));
-    if(!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
-    setSyncStatus(`Gemt centralt ${new Date(data.savedAt || Date.now()).toLocaleString('da-DK')}`, 'ok');
-  }catch(err){
-    setSyncStatus(`Kun lokal kopi gemt. Backend-fejl: ${err.message}`, 'error');
-  }
-}
-function queueRemoteSave(){
-  clearTimeout(remoteSaveTimer);
-  remoteSaveTimer = setTimeout(()=>saveRemoteState(false), 700);
-}
-function saveState(manual=false){
-  try{
-    persistLocalState();
-    if(!isApplyingRemoteState) manual ? saveRemoteState(true) : queueRemoteSave();
-  }catch(e){
-    setSyncStatus(`Kunne ikke gemme lokalt: ${e.message}`, 'error');
-  }
-}
-async function loadRemoteState(manual=false){
-  if(!authUser){
-    if(manual) setSyncStatus('Du skal være logget ind for at hente central data.', 'error');
-    return;
-  }
-  if(location.protocol === 'file:'){
-    if(manual) setSyncStatus('Backend kan ikke hentes fra file://. Test på Netlify-linket efter deploy.', 'error');
-    return;
-  }
-  try{
-    setSyncStatus('Henter central data...');
-    const res = await fetch(STATE_API, {credentials:'include'});
-    const data = await res.json().catch(()=>({}));
-    if(res.status === 404 && data.error === 'no_state'){
-      await saveRemoteState(true);
-      return;
-    }
-    if(res.status === 401){
-      authUser = null;
-      updateAuthUi();
-      showAuthOverlay('Session udløbet. Log ind igen.');
-      return;
-    }
-    if(!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
-    isApplyingRemoteState = true;
-    applyState(data.state);
-    persistLocalState();
-    isApplyingRemoteState = false;
-    render();
-    renderBetalinger();
-    setSyncStatus(`Central data hentet ${new Date(data.savedAt || Date.now()).toLocaleString('da-DK')}`, 'ok');
-  }catch(err){
-    isApplyingRemoteState = false;
-    setSyncStatus(`Kunne ikke hente central data: ${err.message}`, 'error');
-  }
-}
+let adminUsers = [];
+let editingUserEmail = null;
+function setSyncStatus(text, tone){ const el = document.getElementById('syncStatus'); if(!el) return; el.textContent = text; el.style.color = tone === 'error' ? 'var(--red)' : tone === 'ok' ? 'var(--green)' : 'var(--muted)'; }
+function setAdminMessage(text='', tone=''){ const el = document.getElementById('adminMessage'); if(!el) return; el.textContent = text; el.style.color = tone === 'error' ? 'var(--red)' : tone === 'ok' ? 'var(--green)' : 'var(--muted)'; }
+function textValue(value, fallback=''){ if(value === null || value === undefined) return fallback; return String(value); }
+function cloneDocs(docs={}, drive=''){ return { drive: textValue(docs?.drive ?? drive, ''), byggereferater: Array.isArray(docs?.byggereferater) ? docs.byggereferater : [...docDemo.byggereferater], transkripter: Array.isArray(docs?.transkripter) ? docs.transkripter : [...docDemo.transkripter] }; }
+function normalizeSag(saved={}, i=0){ return { ...saved, k:+saved.k || 5, nr:textValue(saved.nr, ''), kunde:textValue(saved.kunde, 'Ukendt kunde'), adr:textValue(saved.adr, ''), opg:textValue(saved.opg, ''), b:textValue(saved.b, '0'), u:textValue(saved.u, '0'), dato:textValue(saved.dato, ''), status:textValue(saved.status, '—'), timer:textValue(saved.timer, ''), fak:textValue(saved.fak, ''), start:textValue(saved.start, ''), slut:textValue(saved.slut, ''), info:textValue(saved.info, ''), mail:textValue(saved.mail, ''), tlf:textValue(saved.tlf, ''), drive:textValue(saved.drive, ''), sort: typeof saved.sort === 'number' ? saved.sort : i, docs: cloneDocs(saved.docs, saved.drive) }; }
+function normalizeBetaling(saved={}){ return { ...saved, nr:textValue(saved.nr, ''), kunde:textValue(saved.kunde, 'Ukendt kunde'), milepael:textValue(saved.milepael, 'Udestående betaling'), dato:textValue(saved.dato, ''), beloeb:textValue(saved.beloeb, '0'), fak:textValue(saved.fak, ''), status:textValue(saved.status, 'udestaaende') }; }
+function normalizeEmployee(saved={}, i=0){ return { id:textValue(saved.id, `employee-${i + 1}`), name:textValue(saved.name, `Medarbejder ${i + 1}`), hours:Number(saved.hours) || 37, type:textValue(saved.type, 'employee'), overrides: saved && typeof saved.overrides === 'object' && !Array.isArray(saved.overrides) ? saved.overrides : {} }; }
+function collectState(){ const capacityHours = document.getElementById('capacityHours') ? +document.getElementById('capacityHours').value || 37 : 37; return { schema:'nstsf-dashboard-state-v1', savedFrom:location.hostname || 'local-file', savedAt:new Date().toISOString(), sager:sager, betalinger:betalinger, employees:employees, settings:{capacityHours} }; }
+function applyState(state){ if(!state || typeof state !== 'object') return; if(Array.isArray(state.sager)){ sager.splice(0, sager.length, ...state.sager.map(normalizeSag)); } if(Array.isArray(state.betalinger)){ betalinger.splice(0, betalinger.length, ...state.betalinger.map(normalizeBetaling)); } if(Array.isArray(state.employees)){ employees.splice(0, employees.length, ...state.employees.map(normalizeEmployee)); } if(state.settings && document.getElementById('capacityHours')){ document.getElementById('capacityHours').value = state.settings.capacityHours || 37; } }
+function persistLocalState(){ localStorage.setItem(STORAGE_KEY, JSON.stringify(collectState())); }
+function loadState(){ try{ const state = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}'); applyState(state); }catch(e){} }
+async function saveRemoteState(manual=false){ if(!authUser){ if(manual) setSyncStatus('Du skal være logget ind for at gemme centralt.', 'error'); return; } if(location.protocol === 'file:'){ if(manual) setSyncStatus('Backend virker først på Netlify eller via netlify dev. Lokal fil er kun browser-kopi.', 'error'); return; } try{ setSyncStatus('Gemmer til central backend...'); const res = await fetch(STATE_API, { method:'PUT', credentials:'include', headers:{'content-type':'application/json'}, body:JSON.stringify(collectState()) }); const data = await res.json().catch(()=>({})); if(!res.ok) throw new Error(data.error || `HTTP ${res.status}`); setSyncStatus(`Gemt centralt ${new Date(data.savedAt || Date.now()).toLocaleString('da-DK')}`, 'ok'); }catch(err){ setSyncStatus(`Kun lokal kopi gemt. Backend-fejl: ${err.message}`, 'error'); } }
+function queueRemoteSave(){ clearTimeout(remoteSaveTimer); remoteSaveTimer = setTimeout(()=>saveRemoteState(false), 700); }
+function saveState(manual=false){ try{ persistLocalState(); if(!isApplyingRemoteState) manual ? saveRemoteState(true) : queueRemoteSave(); }catch(e){ setSyncStatus(`Kunne ikke gemme lokalt: ${e.message}`, 'error'); } }
+async function loadRemoteState(manual=false){ if(!authUser){ if(manual) setSyncStatus('Du skal være logget ind for at hente central data.', 'error'); return; } if(location.protocol === 'file:'){ if(manual) setSyncStatus('Backend kan ikke hentes fra file://. Test på Netlify-linket efter deploy.', 'error'); return; } try{ setSyncStatus('Henter central data...'); const res = await fetch(STATE_API, {credentials:'include'}); const data = await res.json().catch(()=>({})); if(res.status === 404 && data.error === 'no_state'){ await saveRemoteState(true); return; } if(res.status === 401){ authUser = null; updateAuthUi(); showAuthOverlay('Session udløbet. Log ind igen.'); return; } if(!res.ok) throw new Error(data.error || `HTTP ${res.status}`); isApplyingRemoteState = true; applyState(data.state); persistLocalState(); isApplyingRemoteState = false; render(); renderBetalinger(); renderCapacity(); setSyncStatus(`Central data hentet ${new Date(data.savedAt || Date.now()).toLocaleString('da-DK')}`, 'ok'); }catch(err){ isApplyingRemoteState = false; setSyncStatus(`Kunne ikke hente central data: ${err.message}`, 'error'); } }
 loadState();
-
-function updateAuthUi(){
-  const idEl = document.getElementById('authIdentity');
-  const logoutBtn = document.getElementById('logoutBtn');
-  if(idEl) idEl.textContent = authUser ? `${authUser.name} · ${authUser.email}` : 'Ikke logget ind';
-  if(logoutBtn) logoutBtn.style.display = authUser ? 'inline-flex' : 'none';
-}
-
-function showAuthOverlay(message=''){
-  const overlay = document.getElementById('authOverlay');
-  const error = document.getElementById('authError');
-  if(overlay) overlay.classList.remove('hidden');
-  if(error) error.textContent = message;
-}
-
-function hideAuthOverlay(){
-  const overlay = document.getElementById('authOverlay');
-  const error = document.getElementById('authError');
-  if(overlay) overlay.classList.add('hidden');
-  if(error) error.textContent = '';
-}
-
-async function checkAuth(){
-  if(location.protocol === 'file:'){
-    setSyncStatus('Login og central lagring virker kun på Netlify-linket. Den lokale fil er kun preview.', 'error');
-    showAuthOverlay('Åbn dashboardet via Netlify-linket for at logge ind.');
-    return;
-  }
-  try{
-    const res = await fetch(AUTH_API, {credentials:'include'});
-    const data = await res.json().catch(()=>({}));
-    if(!res.ok){
-      authUser = null;
-      updateAuthUi();
-      showAuthOverlay('');
-      setSyncStatus('Log ind for at hente og gemme fælles data.');
-      return;
-    }
-    authUser = data.user;
-    updateAuthUi();
-    hideAuthOverlay();
-    setSyncStatus(`Logget ind som ${authUser.name}. Synkroniserer data...`);
-    loadRemoteState(false);
-  }catch(err){
-    authUser = null;
-    updateAuthUi();
-    showAuthOverlay('Kunne ikke kontakte login-backend.');
-    setSyncStatus(`Login-backend utilgængelig: ${err.message}`, 'error');
-  }
-}
-
-async function loginDashboard(event){
-  event.preventDefault();
-  const email = document.getElementById('loginEmail').value.trim();
-  const password = document.getElementById('loginPassword').value;
-  const error = document.getElementById('authError');
-  if(error) error.textContent = '';
-  try{
-    const res = await fetch(AUTH_API, {
-      method:'POST',
-      credentials:'include',
-      headers:{'content-type':'application/json'},
-      body:JSON.stringify({email, password})
-    });
-    const data = await res.json().catch(()=>({}));
-    if(!res.ok) throw new Error(data.error === 'invalid_credentials' ? 'Forkert e-mail eller adgangskode.' : (data.error || `HTTP ${res.status}`));
-    authUser = data.user;
-    updateAuthUi();
-    hideAuthOverlay();
-    setSyncStatus(`Logget ind som ${authUser.name}. Synkroniserer data...`);
-    loadRemoteState(true);
-  }catch(err){
-    if(error) error.textContent = err.message;
-  }
-}
-
-async function logoutDashboard(){
-  try{
-    await fetch(AUTH_API, {method:'DELETE', credentials:'include'});
-  }catch{}
-  authUser = null;
-  updateAuthUi();
-  showAuthOverlay('');
-  setSyncStatus('Logget ud. Lokal kopi er stadig i browseren, men fælles data kræver login.');
-}
-
-// === Render sager table ===
-const tbody = document.getElementById('sagerBody');
-const caseDetail = document.getElementById('caseDetail');
-let activeSag = null;
-let editSagIndex = null;
-
-function displayDate(value){
-  if(!value) return '—';
-  const d = new Date(value + 'T00:00:00');
-  if(Number.isNaN(d.getTime())) return value;
-  return d.toLocaleDateString('da-DK', {day:'2-digit', month:'short', year:'numeric'});
-}
-function parseNumber(value){
-  if(value === undefined || value === null || value === '') return 0;
-  return +String(value).replace(/\./g,'').replace(',', '.') || 0;
-}
-function escapeAttr(value){
-  return String(value || '').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');
-}
-function getSagDrive(s){
-  return s.docs && s.docs.drive ? s.docs.drive : (s.drive || CUSTOMER_DRIVE_ROOT);
-}
-function render(){
-  const q = (document.getElementById('sagerSoeg').value || '').toLowerCase();
-  const filterKat = document.getElementById('filterKat').value;
-  const rows = sager.filter(s=>{
-    const matchQ = !q || [s.nr,s.kunde,s.adr,s.opg,s.mail,s.tlf].join(' ').toLowerCase().includes(q);
-    const matchKat = filterKat === 'all' || String(s.k) === filterKat;
-    return matchQ && matchKat;
-  }).sort((a,b)=> (+a.k - +b.k) || ((a.sort||0) - (b.sort||0)) || a.kunde.localeCompare(b.kunde, 'da'));
-
-  tbody.innerHTML = rows.map(s=>{
-    const idx = sager.indexOf(s);
-    return `
-      <tr data-kat="${s.k}">
-        <td>
-          <select class="kategori kat-${s.k}" onchange="changeKat(${idx}, this.value)">
-            ${Object.entries(categories).map(([k,v])=>`<option value="${k}" ${+k===+s.k?'selected':''}>${v}</option>`).join('')}
-          </select>
-        </td>
-        <td>${s.nr || '<span class="dim">—</span>'}</td>
-        <td><button class="kunde-link" onclick="openSag(${idx})">${s.kunde}</button></td>
-        <td class="wrap">${s.adr || '<span class="dim">—</span>'}</td>
-        <td class="wrap">${s.opg || '<span class="dim">—</span>'}</td>
-        <td class="num">${parseNumber(s.budget).toLocaleString('da-DK')} kr.</td>
-        <td class="num">${estimatedHours(s) ? `${estimatedHours(s).toLocaleString('da-DK')} t` : '<span class="dim">—</span>'}</td>
-        <td class="date-cell">${displayDate(s.pay)}</td>
-        <td class="date-cell">${displayDate(s.start)}</td>
-        <td class="date-cell">${displayDate(s.slut)}</td>
-        <td>
-          <select class="status-sel" onchange="changeStatus(${idx}, this.value)">
-            ${statusOptions.map(v=>`<option value="${v}" ${v===s.status?'selected':''}>${v}</option>`).join('')}
-          </select>
-        </td>
-        <td>${s.owner || '<span class="dim">—</span>'}</td>
-        <td>${s.faktura || '<span class="dim">—</span>'}</td>
-        <td>
-          <div class="row-actions">
-            <button class="icon-btn" onclick="openSag(${idx})">Vis</button>
-            <button class="icon-btn" onclick="editSag(${idx})">Rediger</button>
-          </div>
-        </td>
-      </tr>
-    `;
-  }).join('');
-  document.getElementById('count').textContent = `${rows.length} af ${sager.length} sager`;
-  if(activeSag !== null) renderSagDetail(activeSag);
-  renderCapacity();
-}
+function updateAuthUi(){ const idEl = document.getElementById('authIdentity'); const logoutBtn = document.getElementById('logoutBtn'); const adminPanel = document.getElementById('adminPanel'); if(idEl) idEl.textContent = authUser ? `${authUser.name} · ${authUser.email}` : 'Ikke logget ind'; if(logoutBtn) logoutBtn.style.display = authUser ? 'inline-flex' : 'none'; if(adminPanel) adminPanel.classList.toggle('visible', !!authUser && authUser.role === 'admin'); document.body.classList.toggle('login-mode', !authUser); }
+function renderAdminUsers(){ const body = document.getElementById('adminUsersBody'); if(!body) return; if(!adminUsers.length){ body.innerHTML = '<tr><td colspan="4" class="admin-empty">Ingen brugere fundet.</td></tr>'; return; } body.innerHTML = adminUsers.map((user)=>`<tr><td>${user.name || '—'}</td><td>${user.email}</td><td>${user.role === 'admin' ? 'Admin' : 'Bruger'}</td><td class="row-actions"><button class="icon-btn" onclick="editUser('${String(user.email).replace(/'/g,"&#39;")}')">Rediger</button><button class="icon-btn" onclick="deleteUser('${String(user.email).replace(/'/g,"&#39;")}')">Slet</button></td></tr>`).join(''); }
+async function loadUsers(){ if(!authUser || authUser.role !== 'admin') return; try{ const res = await fetch(USERS_API, {credentials:'include'}); const data = await res.json().catch(()=>({})); if(!res.ok) throw new Error(data.error || `HTTP ${res.status}`); adminUsers = Array.isArray(data.users) ? data.users : []; renderAdminUsers(); }catch(err){ setAdminMessage(`Kunne ikke hente brugere: ${err.message}`, 'error'); } }
+function resetUserForm(){ editingUserEmail = null; document.getElementById('adminFormTitle').textContent = 'Opret bruger'; document.getElementById('userName').value = ''; document.getElementById('userEmail').value = ''; document.getElementById('userEmail').disabled = false; document.getElementById('userRole').value = 'user'; document.getElementById('userPassword').value = ''; setAdminMessage(''); }
+function editUser(email){ const user = adminUsers.find((entry)=>entry.email === email); if(!user) return; editingUserEmail = user.email; document.getElementById('adminFormTitle').textContent = 'Rediger bruger'; document.getElementById('userName').value = user.name || ''; document.getElementById('userEmail').value = user.email; document.getElementById('userEmail').disabled = true; document.getElementById('userRole').value = user.role || 'user'; document.getElementById('userPassword').value = ''; setAdminMessage('Efterlad adgangskode tom for at beholde den nuværende.', ''); }
+async function submitUserForm(){ if(!authUser || authUser.role !== 'admin') return; const isEdit = !!editingUserEmail; const name = document.getElementById('userName').value.trim(); const email = document.getElementById('userEmail').value.trim().toLowerCase(); const role = document.getElementById('userRole').value; const password = document.getElementById('userPassword').value; if(!email){ setAdminMessage('E-mail mangler.', 'error'); return; } if(!editingUserEmail && !password){ setAdminMessage('Adgangskode mangler for ny bruger.', 'error'); return; } try{ const payload = {name, email, role}; if(password) payload.password = password; const res = await fetch(USERS_API, { method: editingUserEmail ? 'PUT' : 'POST', credentials:'include', headers:{'content-type':'application/json'}, body:JSON.stringify(payload) }); const data = await res.json().catch(()=>({})); if(!res.ok) throw new Error(data.error || `HTTP ${res.status}`); adminUsers = Array.isArray(data.users) ? data.users : []; renderAdminUsers(); resetUserForm(); setAdminMessage(isEdit ? 'Bruger opdateret.' : 'Bruger oprettet.', 'ok'); }catch(err){ setAdminMessage(`Kunne ikke gemme bruger: ${err.message}`, 'error'); } }
+async function deleteUser(email){ if(!authUser || authUser.role !== 'admin') return; if(!confirm(`Slet bruger ${email}?`)) return; try{ const res = await fetch(USERS_API, { method:'DELETE', credentials:'include', headers:{'content-type':'application/json'}, body:JSON.stringify({email}) }); const data = await res.json().catch(()=>({})); if(!res.ok) throw new Error(data.error || `HTTP ${res.status}`); adminUsers = Array.isArray(data.users) ? data.users : []; renderAdminUsers(); if(editingUserEmail === email) resetUserForm(); setAdminMessage('Bruger slettet.', 'ok'); }catch(err){ setAdminMessage(`Kunne ikke slette bruger: ${err.message}`, 'error'); } }
+function showAuthOverlay(message=''){ const overlay = document.getElementById('authOverlay'); const error = document.getElementById('authError'); if(overlay) overlay.classList.remove('hidden'); if(error) error.textContent = message; }
+function hideAuthOverlay(){ const overlay = document.getElementById('authOverlay'); const error = document.getElementById('authError'); if(overlay) overlay.classList.add('hidden'); if(error) error.textContent = ''; }
+async function checkAuth(){ if(location.protocol === 'file:'){ setSyncStatus('Login og central lagring virker kun på Netlify-linket. Den lokale fil er kun preview.', 'error'); showAuthOverlay('Åbn dashboardet via Netlify-linket for at logge ind.'); return; } try{ const res = await fetch(AUTH_API, {credentials:'include'}); const data = await res.json().catch(()=>({})); if(!res.ok){ authUser = null; updateAuthUi(); showAuthOverlay(''); setSyncStatus('Log ind for at hente og gemme fælles data.'); return; } authUser = data.user; updateAuthUi(); hideAuthOverlay(); setSyncStatus(`Logget ind som ${authUser.name}. Synkroniserer data...`); if(authUser.role === 'admin') loadUsers(); loadRemoteState(false); }catch(err){ authUser = null; updateAuthUi(); showAuthOverlay('Kunne ikke kontakte login-backend.'); setSyncStatus(`Login-backend utilgængelig: ${err.message}`, 'error'); } }
+async function loginDashboard(event){ event.preventDefault(); const email = document.getElementById('loginEmail').value.trim(); const password = document.getElementById('loginPassword').value; const error = document.getElementById('authError'); if(error) error.textContent = ''; try{ const res = await fetch(AUTH_API, { method:'POST', credentials:'include', headers:{'content-type':'application/json'}, body:JSON.stringify({email, password}) }); const data = await res.json().catch(()=>({})); if(!res.ok) throw new Error(data.error === 'invalid_credentials' ? 'Forkert e-mail eller adgangskode.' : (data.error || `HTTP ${res.status}`)); authUser = data.user; updateAuthUi(); hideAuthOverlay(); setSyncStatus(`Logget ind som ${authUser.name}. Synkroniserer data...`); if(authUser.role === 'admin') loadUsers(); loadRemoteState(true); }catch(err){ if(error) error.textContent = err.message; } }
+async function logoutDashboard(){ try{ await fetch(AUTH_API, {method:'DELETE', credentials:'include'}); }catch{} authUser = null; adminUsers = []; renderAdminUsers(); resetUserForm(); updateAuthUi(); showAuthOverlay(''); setSyncStatus('Logget ud. Lokal kopi er stadig i browseren, men fælles data kræver login.'); }
+function displayDate(value){ if(!value) return '—'; const d = new Date(value + 'T00:00:00'); if(Number.isNaN(d.getTime())) return value; return d.toLocaleDateString('da-DK', {day:'2-digit', month:'short', year:'numeric'}); }
+function parseNumber(value){ const n = Number(String(value || '').replace(/\./g,'').replace(',','.').replace(/[^\d.-]/g,'')); return Number.isFinite(n) ? n : 0; }
+function estimatedHours(s){ const explicit = parseNumber(s.timer); if(explicit) return explicit; return Math.round(parseNumber(s.b) / 650); }
+function getSagDrive(s){ return (s.docs && s.docs.drive) || s.drive || ''; }
+function escapeAttr(str=''){ return String(str).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function render(){ const tbody = document.getElementById('sagerBody'); const q = (document.getElementById('sagerSoeg').value || '').toLowerCase(); const katF = document.getElementById('filterKat').value; const rows = sager.filter(s=>{ if(katF && String(s.k)!==katF) return false; if(q){ const hay = `${s.nr} ${s.kunde} ${s.adr} ${s.opg}`.toLowerCase(); if(!hay.includes(q)) return false; } return true; }).sort((a,b)=>a.k-b.k || a.sort-b.sort); tbody.innerHTML = rows.map(s=>{ const idx = sager.indexOf(s); const kundeLower = String(s.kunde || '').toLowerCase(); const isDke = kundeLower.includes('dke'); const kundeCell = isDke ? `${s.kunde} <span class="chip tag-dke" style="font-size:10px">DKE</span>` : s.kunde; return `<tr data-kat="${s.k}"><td><select class="kategori kat-${s.k}" onchange="changeKat(${idx}, this.value)">${Object.entries(KAT).map(([k,v])=>`<option value="${k}"${+k===s.k?' selected':''}>${v}</option>`).join('')}</select></td><td>${s.nr || '—'}</td><td title="${escapeAttr(s.kunde)}"><button class="kunde-link" onclick="openSag(${idx})">${kundeCell}</button></td><td title="${escapeAttr(s.adr)}" class="dim">${s.adr || '—'}</td><td class="wrap" title="${escapeAttr(s.opg)}">${s.opg || '—'}</td><td class="num">${s.b && s.b !== '0' ? s.b + ' kr.' : '—'}</td><td class="num">${s.u && s.u !== '0' ? '<span class="chip chip-amber">' + s.u + ' kr.</span>' : '—'}</td><td class="dim date-cell">${displayDate(s.dato)}</td><td class="dim date-cell">${displayDate(s.start)}</td><td class="dim date-cell">${displayDate(s.slut)}</td><td><select class="status-sel" onchange="changeStatus(${idx}, this.value)"><option${s.status==='—'?' selected':''}>—</option><option${s.status==='Faktura sendt'?' selected':''}>Faktura sendt</option><option${s.status==='Ingen udeståender'?' selected':''}>Ingen udeståender</option><option${s.status==='Semi-godkendt'?' selected':''}>Semi-godkendt</option><option${s.status==='Afsendt'?' selected':''}>Afsendt</option></select></td><td class="dim">${s.fak || '—'}</td><td><button class="icon-btn" onclick="openEditSag(${idx})">Rediger</button></td></tr>`; }).join(''); document.getElementById('count').textContent = `${rows.length} af ${sager.length} sager`; }
 function changeKat(i,v){ sager[i].k = +v; saveState(); render(); }
 function changeStatus(i,v){ sager[i].status = v; saveState(); render(); }
-function openSag(i){ activeSag = i; editSagIndex = null; renderSagDetail(i); }
-function editSag(i){ activeSag = i; editSagIndex = i; renderSagDetail(i); }
-function closeSag(){ activeSag = null; editSagIndex = null; caseDetail.classList.remove('active'); caseDetail.innerHTML = ''; }
-function updateField(i, key, value){ sager[i][key] = value; saveState(); renderSagDetail(i); }
-function renderDocs(items){
-  if(!items || !items.length) return '<div class="doc-empty">Ingen dokumenter endnu.</div>';
-  return `<div class="doc-list">${items.map(item=>`
-    <div class="doc-item">
-      <div>
-        <div>${item.titel}</div>
-        <div class="doc-meta">${item.dato}</div>
-      </div>
-      ${item.url ? `<a href="${item.url}" target="_blank" rel="noreferrer">Åbn</a>` : '<span class="dim">Afventer</span>'}
-    </div>
-  `).join('')}</div>`;
-}
-function renderSagDetail(i){
-  const s = sager[i];
-  if(!s) return closeSag();
-  caseDetail.classList.add('active');
-  const isEditing = editSagIndex === i;
-  const driveUrl = getSagDrive(s);
-  const form = isEditing ? `
-    <div class="case-card">
-      <h3>Rediger sag</h3>
-      <div class="case-form">
-        <label>Kategori<select onchange="updateField(${i}, 'k', +this.value)">${Object.entries(categories).map(([k,v])=>`<option value="${k}" ${+k===+s.k?'selected':''}>${v}</option>`).join('')}</select></label>
-        <label>Sagsnr.<input value="${escapeAttr(s.nr)}" oninput="updateField(${i}, 'nr', this.value)"></label>
-        <label>Kundenavn<input value="${escapeAttr(s.kunde)}" oninput="updateField(${i}, 'kunde', this.value)"></label>
-        <label class="wide">Adresse<input value="${escapeAttr(s.adr)}" oninput="updateField(${i}, 'adr', this.value)"></label>
-        <label class="wide">Opgave<textarea oninput="updateField(${i}, 'opg', this.value)">${s.opg || ''}</textarea></label>
-        <label>Budget<input value="${escapeAttr(s.budget)}" oninput="updateField(${i}, 'budget', this.value)"></label>
-        <label>Estimerede timer<input value="${escapeAttr(s.timer)}" oninput="updateField(${i}, 'timer', this.value)"></label>
-        <label>Betalingsdato<input type="date" value="${escapeAttr(s.pay)}" oninput="updateField(${i}, 'pay', this.value)"></label>
-        <label>Startdato<input type="date" value="${escapeAttr(s.start)}" oninput="updateField(${i}, 'start', this.value)"></label>
-        <label>Slutdato<input type="date" value="${escapeAttr(s.slut)}" oninput="updateField(${i}, 'slut', this.value)"></label>
-        <label>Status<select onchange="updateField(${i}, 'status', this.value)">${statusOptions.map(v=>`<option value="${v}" ${v===s.status?'selected':''}>${v}</option>`).join('')}</select></label>
-        <label>Ansvarlig<select onchange="updateField(${i}, 'owner', this.value)">${owners.map(v=>`<option value="${v}" ${v===s.owner?'selected':''}>${v}</option>`).join('')}</select></label>
-        <label>Faktura<input value="${escapeAttr(s.faktura)}" oninput="updateField(${i}, 'faktura', this.value)"></label>
-        <label>Mail<input value="${escapeAttr(s.mail)}" oninput="updateField(${i}, 'mail', this.value)"></label>
-        <label>Telefon<input value="${escapeAttr(s.tlf)}" oninput="updateField(${i}, 'tlf', this.value)"></label>
-        <label>Google Drive URL<input value="${escapeAttr(s.docs && s.docs.drive ? s.docs.drive : s.drive)}" oninput="(sager[${i}].docs=sager[${i}].docs||{}); sager[${i}].docs.drive=this.value; sager[${i}].drive=this.value; saveState();"></label>
-        <label class="wide">Noter<textarea oninput="updateField(${i}, 'notes', this.value)">${s.notes || ''}</textarea></label>
-      </div>
-    </div>
-  ` : `
-    <div class="case-card">
-      <h3>${s.kunde}</h3>
-      <table>
-        <tbody>
-          <tr><td class="dim">Sagsnr.</td><td>${s.nr || '—'}</td></tr>
-          <tr><td class="dim">Kategori</td><td>${categories[s.k]}</td></tr>
-          <tr><td class="dim">Adresse</td><td>${s.adr || '—'}</td></tr>
-          <tr><td class="dim">Opgave</td><td>${s.opg || '—'}</td></tr>
-          <tr><td class="dim">Budget</td><td>${parseNumber(s.budget).toLocaleString('da-DK')} kr.</td></tr>
-          <tr><td class="dim">Estimerede timer</td><td>${estimatedHours(s) ? `${estimatedHours(s)} t` : '—'}</td></tr>
-          <tr><td class="dim">Start / slut</td><td>${displayDate(s.start)} → ${displayDate(s.slut)}</td></tr>
-          <tr><td class="dim">Mail</td><td>${s.mail || '—'}</td></tr>
-          <tr><td class="dim">Telefon</td><td>${s.tlf || '—'}</td></tr>
-        </tbody>
-      </table>
-      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px">
-        <a class="btn" href="${driveUrl || CUSTOMER_DRIVE_ROOT}" target="_blank" rel="noreferrer">Åbn kundemappe</a>
-        <a class="btn" href="${DRIVE_ROOT}" target="_blank" rel="noreferrer">Åbn fælles Drive</a>
-        <button class="btn" onclick="editSag(${i})">Rediger</button>
-        <button class="btn" onclick="closeSag()">Luk</button>
-      </div>
-    </div>
-  `;
-  caseDetail.innerHTML = `
-    <div class="case-grid">
-      ${form}
-      <div class="case-card">
-        <h3>Dokumenter og mødemateriale</h3>
-        <div style="display:grid;gap:14px">
-          <div>
-            <div class="dim" style="font-weight:600;margin-bottom:6px">Google Drive</div>
-            <div class="doc-list">
-              <div class="doc-item">
-                <div>
-                  <div>Kundemappe</div>
-                  <div class="doc-meta">Åbner relevant Drive-map</div>
-                </div>
-                <a href="${driveUrl || CUSTOMER_DRIVE_ROOT}" target="_blank" rel="noreferrer">Åbn</a>
-              </div>
-            </div>
-          </div>
-          <div>
-            <div class="dim" style="font-weight:600;margin-bottom:6px">Byggereferater</div>
-            ${renderDocs(s.docs && s.docs.byggereferater)}
-          </div>
-          <div>
-            <div class="dim" style="font-weight:600;margin-bottom:6px">Gemini / transkripter</div>
-            ${renderDocs(s.docs && s.docs.transkripter)}
-          </div>
-        </div>
-      </div>
-    </div>
-  `;
-}
-function addSag(){
-  const idx = sager.length;
-  sager.push({
-    k:3, nr:'', kunde:'Ny kunde', adr:'', opg:'', budget:'0', timer:'', pay:'', start:'', slut:'',
-    status:'Afventer', owner:'SMG', faktura:'', mail:'', tlf:'', drive:'', notes:'', sort:Date.now(),
-    docs:{drive:'', byggereferater:[], transkripter:[]}
-  });
-  saveState();
-  render();
-  editSag(idx);
-}
-
-function startOfWeek(date){
-  const d = new Date(date);
-  const day = (d.getDay() + 6) % 7;
-  d.setDate(d.getDate() - day);
-  d.setHours(0,0,0,0);
-  return d;
-}
-function addDays(date, days){
-  const d = new Date(date);
-  d.setDate(d.getDate() + days);
-  return d;
-}
-function overlapDays(startA, endA, startB, endB){
-  const start = Math.max(startA.getTime(), startB.getTime());
-  const end = Math.min(endA.getTime(), endB.getTime());
-  if(end < start) return 0;
-  return Math.floor((end - start) / 86400000) + 1;
-}
-function isoWeek(date){
-  const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
-  d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay() || 7));
-  const yearStart = new Date(Date.UTC(d.getUTCFullYear(),0,1));
-  return Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
-}
-function employeeWeek(emp, weekKey, weekObj, defaultHours){
-  const manual = emp.overrides && emp.overrides[weekKey];
-  if(manual){
-    return {status:manual.status, hours: manual.status === 'work' ? (manual.hours ?? emp.hours ?? defaultHours) : (manual.hours ?? 0)};
-  }
-  if(emp.type === 'foreign'){
-    const cycle = Math.floor((weekObj.weekStart - startOfWeek(new Date())) / (7*86400000));
-    const mod = ((cycle % 7) + 7) % 7;
-    if(mod >= 5) return {status:'poland', hours:0};
-  }
-  return {status:'work', hours: emp.hours || defaultHours};
-}
-function statusLabel(status){
-  return ({work:'På arbejde', vacation:'Ferie', school:'Skole', poland:'Polen'})[status] || status;
-}
-function renderEmployees(weeks){
-  const list = document.getElementById('employeeList');
-  const empSel = document.getElementById('statusEmployee');
-  const weekSel = document.getElementById('statusWeek');
-  if(!list || !empSel || !weekSel) return;
-  list.innerHTML = employees.map((e,i)=>`
-    <div class="employee-row">
-      <input value="${escapeAttr(e.name)}" oninput="updateEmployee(${i}, 'name', this.value)">
-      <input type="number" value="${e.hours || 0}" min="0" oninput="updateEmployee(${i}, 'hours', this.value)">
-      <button onclick="removeEmployee(${i})">×</button>
-    </div>
-  `).join('');
-  empSel.innerHTML = employees.map(e=>`<option value="${e.id}">${e.name}</option>`).join('');
-  weekSel.innerHTML = weeks.map(w=>`<option value="${w.weekKey}">Uge ${w.weekNo} (${displayDate(w.weekStart.toISOString().slice(0,10))} - ${displayDate(w.weekEnd.toISOString().slice(0,10))})</option>`).join('');
-}
-function addEmployee(){
-  const id = 'emp-' + Date.now();
-  employees.push({id, name:'Ny medarbejder', hours:+document.getElementById('capacityHours').value || 37, type:'employee', overrides:{}});
-  saveState();
-  renderCapacity();
-}
-function updateEmployee(i, field, value){
-  if(!employees[i]) return;
-  employees[i][field] = field === 'hours' ? (+value || 0) : value;
-  saveState();
-  renderCapacity();
-}
-function removeEmployee(i){
-  employees.splice(i, 1);
-  saveState();
-  renderCapacity();
-}
-function setEmployeeWeekStatus(){
-  const emp = employees.find(e=>e.id === document.getElementById('statusEmployee').value);
-  if(!emp) return;
-  emp.overrides = emp.overrides || {};
-  const weekKey = document.getElementById('statusWeek').value;
-  const hours = document.getElementById('statusHours').value;
-  emp.overrides[weekKey] = {status:document.getElementById('statusType').value};
-  if(hours !== '') emp.overrides[weekKey].hours = +hours;
-  saveState();
-  renderCapacity();
-}
-function clearEmployeeWeekStatus(){
-  const emp = employees.find(e=>e.id === document.getElementById('statusEmployee').value);
-  if(!emp || !emp.overrides) return;
-  delete emp.overrides[document.getElementById('statusWeek').value];
-  saveState();
-  renderCapacity();
-}
-function renderCapacity(){
-  const calendar = document.getElementById('capacityCalendar');
-  const capacityInput = document.getElementById('capacityHours');
-  if(!calendar || !capacityInput) return;
-  const defaultHours = +capacityInput.value || 37;
-  const firstWeek = startOfWeek(new Date());
-  const yearEnd = new Date(new Date().getFullYear(), 11, 31);
-  const weekCount = Math.ceil((startOfWeek(yearEnd) - firstWeek) / (7 * 86400000)) + 1;
-  const rows = [];
-  for(let w=0; w<weekCount; w++){
-    const weekStart = addDays(firstWeek, w*7);
-    const weekEnd = addDays(weekStart, 6);
-    const weekKey = weekStart.toISOString().slice(0,10);
-    const details = [];
-    let hours = 0;
-    sager.forEach(s=>{
-      if(![2,3,4,5].includes(+s.k) || !s.start || !s.slut) return;
-      const start = new Date(s.start + 'T00:00:00');
-      const end = new Date(s.slut + 'T00:00:00');
-      if(Number.isNaN(start.getTime()) || Number.isNaN(end.getTime()) || end < start) return;
-      const days = overlapDays(start, end, weekStart, weekEnd);
-      if(!days) return;
-      const totalDays = Math.max(1, overlapDays(start, end, start, end));
-      const h = estimatedHours(s) * days / totalDays;
-      if(!h) return;
-      hours += h;
-      details.push({kunde:s.kunde, hours:h});
-    });
-    const staff = employees.map(emp=>({emp, ...employeeWeek(emp, weekKey, {weekStart}, defaultHours)}));
-    const capacity = staff.reduce((sum,e)=>sum + e.hours, 0);
-    details.sort((a,b)=>b.hours-a.hours);
-    rows.push({weekStart, weekEnd, weekKey, weekNo:isoWeek(weekStart), hours, capacity, details, staff});
-  }
-  renderEmployees(rows);
-  calendar.innerHTML = rows.map(r=>{
-    const pct = r.capacity ? Math.round(r.hours / r.capacity * 100) : 0;
-    const cls = pct > 100 ? 'over' : (pct >= 85 ? 'warn' : '');
-    const top = r.details.slice(0,2).map(d=>`${d.kunde} (${Math.round(d.hours)} t)`).join(', ') || '—';
-    const away = r.staff.filter(s=>s.status !== 'work');
-    const working = r.staff.filter(s=>s.status === 'work').length;
-    return `
-      <div class="week-card ${cls}">
-        <div class="week-head">
-          <div>
-            <div class="week-title">Uge ${r.weekNo}</div>
-            <div class="week-dates">(${displayDate(r.weekStart.toISOString().slice(0,10))} - ${displayDate(r.weekEnd.toISOString().slice(0,10))})</div>
-          </div>
-          <div class="week-pct">${pct}%</div>
-        </div>
-        <div class="capacity-bar"><div class="capacity-fill ${cls}" style="width:${Math.min(100,pct)}%"></div></div>
-        <div class="week-meta"><span>${Math.round(r.hours)} t planlagt</span><span>${Math.round(r.capacity)} t kapacitet</span></div>
-        <div class="week-section">Sager</div>
-        <div class="week-list"><div>${top}</div></div>
-        <div class="week-section">Mandskab</div>
-        <div class="week-list">
-          <div><span class="status-dot status-work"></span>${working} på arbejde</div>
-          ${away.slice(0,3).map(a=>`<div><span class="status-dot status-${a.status}"></span>${a.emp.name}: ${statusLabel(a.status)}</div>`).join('') || '<div class="dim">Ingen fravær</div>'}
-        </div>
-      </div>
-    `;
-  }).join('');
-}
-
-function renderBetalinger(){
-  const body = document.getElementById('betalingBody');
-  const rows = betalinger.filter(b=>b.status !== 'betalt');
-  body.innerHTML = rows.map(b=>{
-    const idx = betalinger.indexOf(b);
-    const isDke = b.kunde.toLowerCase().includes('dke');
-    const kunde = isDke ? `${b.kunde} <span class="chip tag-dke">DKE</span>` : b.kunde;
-    return `
-      <tr>
-        <td>${b.nr || '<span class="dim">—</span>'}</td>
-        <td>${kunde}</td>
-        <td>${b.milepael}</td>
-        <td>${b.dato || '<span class="dim">—</span>'}</td>
-        <td class="num">${b.beloeb} kr.</td>
-        <td>${b.fak || '<span class="dim">—</span>'}</td>
-        <td>
-          <select class="pay-status udestaaende" onchange="changeBetaling(${idx}, this.value)">
-            <option value="udestaaende" selected>Udestående</option>
-            <option value="betalt">Betalt</option>
-          </select>
-        </td>
-      </tr>
-    `;
-  }).join('') || '<tr><td colspan="7" class="dim">Ingen udestående rater.</td></tr>';
-}
-
-function changeBetaling(i,v){
-  betalinger[i].status = v;
-  saveState();
-  renderBetalinger();
-}
-
+function openSag(i){ renderSagDetail(i); }
+function renderDocs(items){ if(!items || !items.length) return '<div class="doc-empty">Ingen dokumenter registreret endnu.</div>'; return items.map(d=>`<div class="doc-item"><div><strong>${d.titel}</strong><div class="doc-meta">${d.dato || 'Dato mangler'}</div></div>${d.url ? `<a href="${d.url}" target="_blank" rel="noopener">Åbn</a>` : '<span class="dim">Mangler link</span>'}</div>`).join(''); }
+function renderSagDetail(i){ const s = sager[i]; const caseDetail = document.getElementById('caseDetail'); if(!s || !caseDetail) return; const driveUrl = getSagDrive(s); const driveLink = driveUrl ? `<a class="btn primary" href="${driveUrl}" target="_blank" rel="noopener">Åbn kundemappe</a>` : `<a class="btn" href="${CUSTOMER_DRIVE_ROOT}" target="_blank" rel="noopener">Find/opret kundemappe</a>`; caseDetail.classList.add('active'); caseDetail.innerHTML = `<div class="panel-hd"><div><h2>${s.kunde}</h2><div class="dim">${s.nr ? 'Sag ' + s.nr + ' · ' : ''}${s.adr || 'Adresse mangler'} · ${KAT[s.k]}</div></div><div style="display:flex;gap:8px"><button class="btn" onclick="openEditSag(${i})">Rediger</button><button class="btn ghost" onclick="closeSag()">Luk</button></div></div><div class="case-grid"><div class="case-card"><h3>Sagsinfo</h3><table><tbody><tr><td>Sagsnr.</td><td>${s.nr || '—'}</td></tr><tr><td>Opgave</td><td>${s.opg || '—'}</td></tr><tr><td>Est. beløb</td><td class="num">${s.b && s.b !== '0' ? s.b + ' kr.' : '—'}</td></tr><tr><td>Udestående</td><td class="num">${s.u && s.u !== '0' ? s.u + ' kr.' : '—'}</td></tr><tr><td>Startdato</td><td>${displayDate(s.start)}</td></tr><tr><td>Slutdato</td><td>${displayDate(s.slut)}</td></tr><tr><td>Mail</td><td>${s.mail || '—'}</td></tr><tr><td>Telefon</td><td>${s.tlf || '—'}</td></tr><tr><td>Fin. status</td><td>${s.status || '—'}</td></tr><tr><td>Fakturanr.</td><td>${s.fak || '—'}</td></tr></tbody></table><div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap">${driveLink}<a class="btn" href="${DRIVE_ROOT}" target="_blank" rel="noopener">Åbn fælles Drive-root</a></div></div><div class="case-card"><h3>Mødenoter og referater</h3><div class="doc-list"><strong>Byggereferater fra SMG</strong>${renderDocs(s.docs.byggereferater)}<strong style="margin-top:6px">Gemini transkripter</strong>${renderDocs(s.docs.transkripter)}</div></div></div>`; }
+function closeSag(){ const caseDetail = document.getElementById('caseDetail'); if(caseDetail){ caseDetail.classList.remove('active'); caseDetail.innerHTML = ''; } }
+function addSag(){ const idx = sager.length; sager.push(normalizeSag({ k:3,nr:"",kunde:"Ny kunde",adr:"",opg:"",b:"0",u:"0",dato:"",status:"—",timer:"",fak:"",start:"",slut:"",info:"",mail:"",tlf:"",drive:"",sort:idx,docs:{drive:"",byggereferater:docDemo.byggereferater,transkripter:docDemo.transkripter}}, idx)); saveState(); openEditSag(idx); render(); }
+let editSagIndex = null;
+function openEditSag(i){ const s = sager[i]; const caseDetail = document.getElementById('caseDetail'); if(!s || !caseDetail) return; editSagIndex = i; caseDetail.classList.add('active'); caseDetail.innerHTML = `<div class="panel-hd"><h2>Rediger sag</h2><button class="btn ghost" onclick="closeSag()">Luk</button></div><div class="case-form"><label>Kategori<select id="edit-k">${Object.entries(KAT).map(([k,v])=>`<option value="${k}"${+k===s.k?' selected':''}>${v}</option>`).join('')}</select></label><label>Sagsnr.<input id="edit-nr" value="${escapeAttr(s.nr)}"></label><label>Kundenavn<input id="edit-kunde" value="${escapeAttr(s.kunde)}"></label><label class="wide">Adresse<input id="edit-adr" value="${escapeAttr(s.adr === '—' ? '' : s.adr)}"></label><label class="wide">Opgave<textarea id="edit-opg">${escapeAttr(s.opg)}</textarea></label><label>Est. beløb<input id="edit-b" value="${escapeAttr(s.b)}"></label><label>Udestående<input id="edit-u" value="${escapeAttr(s.u)}"></label><label>Betalingsdato<input id="edit-dato" type="date" value="${escapeAttr(s.dato)}"></label><label>Startdato<input id="edit-start" type="date" value="${escapeAttr(s.start)}"></label><label>Slutdato<input id="edit-slut" type="date" value="${escapeAttr(s.slut)}"></label><label>Fin. status<input id="edit-status" value="${escapeAttr(s.status)}"></label><label>Est. timer<input id="edit-timer" value="${escapeAttr(s.timer)}"></label><label>Fakturanr.<input id="edit-fak" value="${escapeAttr(s.fak)}"></label><label>Mail<input id="edit-mail" value="${escapeAttr(s.mail)}"></label><label>Telefon<input id="edit-tlf" value="${escapeAttr(s.tlf)}"></label><label class="wide">Google Drive-folder URL<input id="edit-drive" value="${escapeAttr(getSagDrive(s))}" placeholder="Indsæt link til kundens Drive-mappe"></label><label class="wide">Noter/info<textarea id="edit-info">${escapeAttr(s.info)}</textarea></label></div><div style="display:flex;gap:8px;margin-top:14px"><button class="btn primary" onclick="saveSagEdit()">Gem</button><button class="btn" onclick="renderSagDetail(${i})">Annuller</button></div>`; }
+function readEdit(id){ return document.getElementById(id).value.trim(); }
+function saveSagEdit(){ if(editSagIndex === null || !sager[editSagIndex]) return; const s = sager[editSagIndex]; s.k = +readEdit('edit-k') || 3; s.nr = readEdit('edit-nr'); s.kunde = readEdit('edit-kunde') || 'Ukendt kunde'; s.adr = readEdit('edit-adr'); s.opg = readEdit('edit-opg'); s.b = readEdit('edit-b') || '0'; s.u = readEdit('edit-u') || '0'; s.dato = readEdit('edit-dato'); s.start = readEdit('edit-start'); s.slut = readEdit('edit-slut'); s.status = readEdit('edit-status') || '—'; s.timer = readEdit('edit-timer'); s.fak = readEdit('edit-fak'); s.mail = readEdit('edit-mail'); s.tlf = readEdit('edit-tlf'); s.drive = readEdit('edit-drive'); s.info = readEdit('edit-info'); s.docs = s.docs || {byggereferater:docDemo.byggereferater, transkripter:docDemo.transkripter}; s.docs.drive = s.drive; saveState(); render(); renderSagDetail(editSagIndex); }
+function startOfWeek(date){ const d = new Date(date); const day = (d.getDay() + 6) % 7; d.setDate(d.getDate() - day); d.setHours(0,0,0,0); return d; }
+function addDays(date, days){ const d = new Date(date); d.setDate(d.getDate() + days); return d; }
+function isoWeek(date){ const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate())); const dayNum = d.getUTCDay() || 7; d.setUTCDate(d.getUTCDate() + 4 - dayNum); const yearStart = new Date(Date.UTC(d.getUTCFullYear(),0,1)); return Math.ceil((((d - yearStart) / 86400000) + 1) / 7); }
+function overlapDays(startA, endA, startB, endB){ const start = Math.max(startA.getTime(), startB.getTime()); const end = Math.min(endA.getTime(), endB.getTime()); if(end < start) return 0; return Math.floor((end - start) / 86400000) + 1; }
+function employeeWeek(emp, weekKey, index, defaultHours){ const override = (emp.overrides || {})[weekKey] || {}; let status = override.status || 'work'; if(!override.status && emp.type === 'foreign'){ status = index % 7 >= 5 ? 'poland' : 'work'; } const hours = override.hours !== undefined ? +override.hours || 0 : (status === 'work' ? (+emp.hours || defaultHours) : 0); return {status, hours}; }
+function statusLabel(status){ return ({work:'På arbejde', vacation:'Ferie', school:'Skole', poland:'Polen'})[status] || status; }
+function renderEmployees(rows){ const list = document.getElementById('employeeList'); const empSel = document.getElementById('statusEmployee'); const weekSel = document.getElementById('statusWeek'); if(!list || !empSel || !weekSel) return; list.innerHTML = employees.map((e,i)=>`<div class="employee-row"><input value="${escapeAttr(e.name)}" oninput="updateEmployee(${i}, 'name', this.value)"><input type="number" value="${e.hours}" oninput="updateEmployee(${i}, 'hours', this.value)"><button onclick="removeEmployee(${i})">×</button></div>`).join(''); const weeks = rows.slice(0, 16); empSel.innerHTML = employees.map(e=>`<option value="${e.id}">${e.name}</option>`).join(''); weekSel.innerHTML = weeks.map(w=>`<option value="${w.weekKey}">Uge ${w.weekNo} (${displayDate(w.weekStart.toISOString().slice(0,10))} - ${displayDate(w.weekEnd.toISOString().slice(0,10))})</option>`).join(''); }
+function addEmployee(){ const id = 'emp-' + Date.now(); employees.push({id, name:'Ny medarbejder', hours:+document.getElementById('capacityHours').value || 37, type:'employee', overrides:{}}); saveState(); renderCapacity(); }
+function updateEmployee(i, field, value){ if(!employees[i]) return; employees[i][field] = field === 'hours' ? (+value || 0) : value; saveState(); renderCapacity(); }
+function removeEmployee(i){ employees.splice(i, 1); saveState(); renderCapacity(); }
+function setEmployeeWeekStatus(){ const emp = employees.find(e=>e.id === document.getElementById('statusEmployee').value); if(!emp) return; emp.overrides = emp.overrides || {}; const weekKey = document.getElementById('statusWeek').value; const hours = document.getElementById('statusHours').value; emp.overrides[weekKey] = {status:document.getElementById('statusType').value}; if(hours !== '') emp.overrides[weekKey].hours = +hours; saveState(); renderCapacity(); }
+function clearEmployeeWeekStatus(){ const emp = employees.find(e=>e.id === document.getElementById('statusEmployee').value); if(!emp || !emp.overrides) return; delete emp.overrides[document.getElementById('statusWeek').value]; saveState(); renderCapacity(); }
+function renderCapacity(){ const calendar = document.getElementById('capacityCalendar'); const capacityInput = document.getElementById('capacityHours'); if(!calendar || !capacityInput) return; const defaultHours = +capacityInput.value || 37; const firstWeek = startOfWeek(new Date()); const yearEnd = new Date(new Date().getFullYear(), 11, 31); const weekCount = Math.ceil((startOfWeek(yearEnd) - firstWeek) / (7 * 86400000)) + 1; const rows = []; for(let w=0; w<weekCount; w++){ const weekStart = addDays(firstWeek, w*7); const weekEnd = addDays(weekStart, 6); const weekKey = weekStart.toISOString().slice(0,10); const details = []; let hours = 0; sager.forEach(s=>{ if(![2,3,4,5].includes(+s.k) || !s.start || !s.slut) return; const start = new Date(s.start + 'T00:00:00'); const end = new Date(s.slut + 'T00:00:00'); if(Number.isNaN(start.getTime()) || Number.isNaN(end.getTime()) || end < start) return; const days = overlapDays(start, end, weekStart, weekEnd); if(!days) return; const totalDays = Math.max(1, overlapDays(start, end, start, end)); const h = estimatedHours(s) * days / totalDays; if(!h) return; hours += h; details.push({kunde:s.kunde, hours:h}); }); const staff = employees.map(emp=>({emp, ...employeeWeek(emp, weekKey, w, defaultHours)})); const capacity = staff.reduce((sum,e)=>sum + e.hours, 0); details.sort((a,b)=>b.hours-a.hours); rows.push({weekStart, weekEnd, weekKey, weekNo:isoWeek(weekStart), hours, capacity, details, staff}); } renderEmployees(rows); calendar.innerHTML = rows.map(r=>{ const pct = r.capacity ? Math.round(r.hours / r.capacity * 100) : 0; const cls = pct > 100 ? 'over' : (pct >= 85 ? 'warn' : ''); const top = r.details.slice(0,2).map(d=>`${d.kunde} (${Math.round(d.hours)} t)`).join(', ') || '—'; const away = r.staff.filter(s=>s.status !== 'work'); const working = r.staff.filter(s=>s.status === 'work').length; return `<div class="week-card ${cls}"><div class="week-head"><div><div class="week-title">Uge ${r.weekNo}</div><div class="week-dates">(${displayDate(r.weekStart.toISOString().slice(0,10))} - ${displayDate(r.weekEnd.toISOString().slice(0,10))})</div></div><div class="week-pct">${pct}%</div></div><div class="capacity-bar"><div class="capacity-fill ${cls}" style="width:${Math.min(100,pct)}%"></div></div><div class="week-meta"><span>${Math.round(r.hours)} t planlagt</span><span>${Math.round(r.capacity)} t kapacitet</span></div><div class="week-section">Sager</div><div class="week-list"><div>${top}</div></div><div class="week-section">Mandskab</div><div class="week-list"><div><span class="status-dot status-work"></span>${working} på arbejde</div>${away.slice(0,3).map(a=>`<div><span class="status-dot status-${a.status}"></span>${a.emp.name}: ${statusLabel(a.status)}</div>`).join('') || '<div class="dim">Ingen fravær</div>'}</div></div>`; }).join(''); }
+function renderBetalinger(){ const body = document.getElementById('betalingBody'); const rows = betalinger.filter(b=>b.status !== 'betalt'); body.innerHTML = rows.map(b=>{ const idx = betalinger.indexOf(b); const isDke = String(b.kunde || '').toLowerCase().includes('dke'); const kunde = isDke ? `${b.kunde} <span class="chip tag-dke">DKE</span>` : b.kunde; return `<tr><td>${b.nr || '<span class="dim">—</span>'}</td><td>${kunde}</td><td>${b.milepael}</td><td>${b.dato || '<span class="dim">—</span>'}</td><td class="num">${b.beloeb} kr.</td><td>${b.fak || '<span class="dim">—</span>'}</td><td><select class="pay-status udestaaende" onchange="changeBetaling(${idx}, this.value)"><option value="udestaaende" selected>Udestående</option><option value="betalt">Betalt</option></select></td></tr>`; }).join('') || '<tr><td colspan="7" class="dim">Ingen udestående rater.</td></tr>'; }
+function changeBetaling(i,v){ betalinger[i].status = v; saveState(); renderBetalinger(); }
 document.getElementById('sagerSoeg').addEventListener('input',render);
 document.getElementById('filterKat').addEventListener('change',render);
-document.getElementById('capacityHours').addEventListener('input',renderCapacity);
-
 render();
 renderBetalinger();
 updateAuthUi();
 checkAuth();
-
-// === Konverteringsrate slider ===
-const formatKr = n => Math.round(n).toLocaleString('da-DK') + ' kr.';
-const bek30 = 195387, bek60 = 478387, bek90 = 478387;
-const tp30 = 677848, tp60 = 1942617, tp90 = 3007387;
-const budget30 = 800000, budget60 = 1600000, budget90 = 2400000;
-function updateKonv(){
-  const r = (+document.getElementById('konv').value)/100;
-  const v30 = bek30 + tp30*r, v60 = bek60 + tp60*r, v90 = bek90 + tp90*r;
-  document.getElementById('vaegt30').textContent = formatKr(v30);
-  document.getElementById('vaegt60').textContent = formatKr(v60);
-  document.getElementById('vaegt90').textContent = formatKr(v90);
-  const g30 = v30-budget30, g60 = v60-budget60, g90 = v90-budget90;
-  const style = (el,g)=>{
-    el.textContent = (g>=0?'+':'') + formatKr(g);
-    el.className = 'chip ' + (g>=0?'chip-green':'chip-red');
-  };
-  style(document.getElementById('gap30'),g30);
-  style(document.getElementById('gap60'),g60);
-  style(document.getElementById('gap90'),g90);
-}
-document.getElementById('konv').addEventListener('input',updateKonv);
-
-// === Tabs ===
-document.querySelectorAll('.tab-btn').forEach(b=>{
-  b.addEventListener('click',()=>{
-    document.querySelectorAll('.tab-btn').forEach(x=>x.classList.remove('active'));
-    document.querySelectorAll('.section').forEach(x=>x.classList.remove('active'));
-    b.classList.add('active');
-    document.getElementById(b.dataset.tab).classList.add('active');
-  });
-});
-
-// === Indbakke ===
-const emails = [
-  {
-    id:1, status:"ny", tag:"tag-dke", tagtxt:"DKE",
-    from:"Charlotte Holm · DKE", addr:"charlotte@dke.dk",
-    subj:"Ny lejlighed — Ryesgade 62, lejl. 72",
-    date:"21. apr 2026 · 10:14",
-    preview:"Hej Søren. Endnu en lejlighed i Ryesgade 62 skal istandsættes — kan I tage opgaven?",
-    body:`Hej Søren
-
-Endnu en lejlighed er blevet ledig i vores ejendom på Ryesgade 62 — denne gang lejlighed 72 (3. sal, t.v.).
-
-Som de øvrige skal den istandsættes før udlejning:
-- Male vægge, lofter og træværk
-- Udskifte 2 indv. døre
-- Udbedring af lille vandskade i badeværelse
-- Generel opretning / spartling
-
-Kan I kigge forbi i næste uge og give et overslag? Jeg regner med at det ligner omfanget på lejl. 48, som I netop har afleveret.
-
-PS: Faktura 1148 for lejl. 56 betaler vi fredag — beklager forsinkelsen.
-
-Mvh
-Charlotte Holm
-DKE A/S
-charlotte@dke.dk · 33 12 45 67`,
-    actions:["Opret sag i Aktive kunder","Svar Charlotte","Book besigtigelse","Arkivér"]
-  },
-  {
-    id:2, status:"ny", tag:"tag-new", tagtxt:"NY",
-    from:"Mikkel Munkholm", addr:"mikkel.munkholm@gmail.com",
-    subj:"Tilbygning Frederikssund — opfølgning",
-    date:"21. apr 2026 · 09:02",
-    preview:"Hej. Vi skrev sammen om en tilbygning i foråret. Er opgaven stadig mulig i maj?",
-    body:`Hej Søren
-
-Vi skrev sammen om tilbygningen på vores hus i Frederikssund tilbage i marts. I har sendt skitser, men jeg vil gerne høre om opgaven stadig er mulig at starte i maj som aftalt.
-
-Vi har fået byggetilladelsen i hus, og er klar til opstart.
-
-Samlet budget (jeres overslag): ca. 1,1 mio. kr.
-
-Mvh
-Mikkel Munkholm
-28 44 17 82`,
-    actions:["Ring Mikkel op","Flyt til Aktive kunder","Send opdateret tilbud","Arkivér"]
-  },
-  {
-    id:3, status:"ny", tag:"tag-dke", tagtxt:"DKE",
-    from:"Lars Grønbech · DKE", addr:"lars@dke.dk",
-    subj:"Re: Carit Etlers Vej — opstart",
-    date:"20. apr 2026 · 16:34",
-    preview:"Tak for tidsplanen. Én bemærkning: Kan gulvene leveres i uge 28 i stedet for 27?",
-    body:`Hej Søren
-
-Tak for den detaljerede tidsplan på fuldrenoveringen (Carit Etlers Vej). Den ser fornuftig ud.
-
-Én bemærkning: Kan I flytte leveringen af Dinesen-gulvene fra uge 27 til uge 28? Vi har et syn i fællesarealet ugen før, og det passer os dårligt med gulve stående i opgangen.
-
-Derudover: budget 874.587 kr. er OK — jeg har underskrevet kontrakten og sender den retur i dag.
-
-Vh
-Lars Grønbech
-DKE A/S
-lars@dke.dk · 40 22 78 91`,
-    actions:["Svar Lars","Opdater tidsplan","Bekræft kontrakt","Arkivér"]
-  },
-  {
-    id:4, status:"ny", tag:"tag-opfoelg", tagtxt:"OPFØLGNING",
-    from:"Helle Fortland", addr:"helle.fortland@mail.dk",
-    subj:"Betaling faktura 87.625 kr. — lidt forsinket",
-    date:"20. apr 2026 · 14:20",
-    preview:"Hej Søren. Undskyld forsinkelsen — beløbet overføres senest i morgen.",
-    body:`Kære Søren
-
-Jeg har lige set at jeg mangler at betale fakturaen på 87.625 kr. for småopgaverne (sag 218). Det var min fejl — den havnede i spam.
-
-Beløbet overføres i morgen senest.
-
-Og tak for det flotte arbejde — alt fungerer som det skal.
-
-PS: Min kusine ringer sandsynligvis til jer om tagudskiftning — hun har set jeres arbejde hos mig og er vild med kvaliteten.
-
-Mvh
-Helle Fortland
-26 11 84 32`,
-    actions:["Svar Helle","Marker faktura 218 som betalt","Arkivér"]
-  },
-  {
-    id:5, status:"ny", tag:"tag-dke", tagtxt:"DKE",
-    from:"Nils Krag · DKE", addr:"nils@dke.dk",
-    subj:"Kingosvej 1B — afslutning og faktura",
-    date:"20. apr 2026 · 11:07",
-    preview:"Sagen er færdig. Kan du bekræfte hvornår faktura 1137 sendes?",
-    body:`Hej Søren
-
-Lejligheden på Kingosvej 1B er godkendt ved syn i dag. Rigtig flot arbejde — kunden (ny lejer) flytter ind 1. maj.
-
-Kan du bekræfte:
-1. At faktura 1137 sendes denne uge?
-2. At beløbet modregnes i forskuddet på 0 kr. (ingen udestående, jf. aftale)?
-
-Vh
-Nils Krag
-DKE A/S
-nils@dke.dk · 22 74 31 09`,
-    actions:["Send faktura 1137","Svar Nils","Flyt sag til Afsluttet","Arkivér"]
-  },
-  {
-    id:6, status:"ny", tag:"tag-tilbud", tagtxt:"TILBUD",
-    from:"Brandskolen Helsingør · Thomas Vinther", addr:"tv@brandskolen-helsingor.dk",
-    subj:"Totalentreprise — kontrakt klar til underskrift",
-    date:"20. apr 2026 · 09:45",
-    preview:"Hej. Bestyrelsen har godkendt 8 mio. kr.-rammen. Kan vi mødes til underskrift?",
-    body:`Kære Søren
-
-Bestyrelsen har på mødet i går godkendt totalentreprise-rammen på 8.000.000 kr. for ombygningen af Brandskolen i Helsingør.
-
-Tidsplan: opstart 1. maj 2026, aflevering senest 1. marts 2027.
-
-Vi har forberedt kontrakten, og jeg vil meget gerne bede dig om at komme forbi til underskrift. Har du tid i næste uge?
-
-Forslag til møde:
-- Tirsdag 28. april kl. 10
-- Onsdag 29. april kl. 13
-
-Vh
-Thomas Vinther
-Projektleder, Brandskolen Helsingør
-49 28 31 55`,
-    actions:["Bekræft møde tirsdag","Bekræft møde onsdag","Flyt sag til Aktive kunder","Svar Thomas"]
-  },
-  {
-    id:7, status:"haandteret", tag:"tag-dke", tagtxt:"DKE",
-    from:"Charlotte Holm · DKE", addr:"charlotte@dke.dk",
-    subj:"Re: Faktura 1148 — betalt",
-    date:"18. apr 2026 · 15:28",
-    preview:"Beløbet på 41.000 kr. er overført. Tak for en perfekt aflevering.",
-    body:`Hej Søren
-
-Beløbet på 41.000 kr. (faktura 1148, Ryesgade 62 lejl. 56) er overført i dag.
-
-Som sagt: perfekt aflevering. Lejer flytter ind mandag.
-
-Mvh
-Charlotte
-DKE A/S`,
-    actions:["Arkivér","Marker sag som afsluttet"]
-  },
-  {
-    id:8, status:"ny", tag:"tag-new", tagtxt:"NY",
-    from:"Frank Lyhne", addr:"f.lyhne@mail.dk",
-    subj:"Tilbud på trappe — accepteret",
-    date:"18. apr 2026 · 10:12",
-    preview:"Hej Søren. Vi accepterer tilbuddet på 8.000 kr. — kan I komme i morgen?",
-    body:`Hej Søren
-
-Vi accepterer tilbuddet på 8.000 kr. for at mure trappen på Ellemosevej 9.
-
-Kan I komme allerede i morgen (onsdag)? Vi skal have den færdig inden næste weekend, hvor vi har gæster.
-
-Mvh
-Frank Lyhne
-40 18 44 91`,
-    actions:["Bekræft opstart","Flyt til Aktive kunder","Svar Frank","Arkivér"]
-  },
-  {
-    id:9, status:"haandteret", tag:"tag-faktura", tagtxt:"FAKTURA",
-    from:"Bogholderi · Dinero", addr:"noreply@dinero.dk",
-    subj:"Faktura 1149 sendt — Marie & Jørn",
-    date:"17. apr 2026 · 12:00",
-    preview:"Faktura 1149 på 17.387 kr. sendt til rikke_jm@hotmail.com",
-    body:`Faktura afsendt
-
-Fakturanr: 1149
-Kunde: Marie & Jørn, Slotsgade 9 st
-Beløb: 17.387 kr.
-Forfaldsdato: 28.04.2026
-Afsendt til: rikke_jm@hotmail.com`,
-    actions:["Arkivér","Opdater sag"]
-  },
-  {
-    id:10, status:"ny", tag:"tag-dke", tagtxt:"DKE",
-    from:"Charlotte Holm · DKE", addr:"charlotte@dke.dk",
-    subj:"Vordingborggade — opdaterede tegninger",
-    date:"16. apr 2026 · 14:40",
-    preview:"Arkitekten har lavet en ny version af facaderne. Vil det påvirke tilbudsprisen?",
-    body:`Hej Søren
-
-Arkitekten har leveret opdaterede tegninger til projektet på Vordingborggade/Assensgade. Der er mindre ændringer til facadeløsningen (mere zink, anderledes kvistdetalje).
-
-Spørgsmål:
-1. Vil disse ændringer påvirke tilbudsprisen på 4.000.000 kr.?
-2. Hvornår kan I komme med en opdateret pris?
-
-Vedhæftet: rev C-tegninger (PDF)
-
-Vh
-Charlotte
-DKE A/S
-charlotte@dke.dk`,
-    actions:["Læs tegninger","Opdater tilbud","Ring Charlotte","Arkivér"]
-  },
-  {
-    id:11, status:"haandteret", tag:"tag-sag", tagtxt:"SAG",
-    from:"Niels & Vibeke", addr:"niels.bach@hotmail.com",
-    subj:"Tak for vinduerne — alt ser fantastisk ud",
-    date:"14. apr 2026 · 18:02",
-    preview:"Vi er så glade for de nye vinduer — tusind tak til dig og drengene.",
-    body:`Kære Søren
-
-Tusind tak for de nye vinduer på Villingebæk Strandvej! Det blev virkelig flot, og vi kan mærke forskellen med det samme (ingen træk, bedre lys).
-
-Drengene arbejdede utroligt ordentligt — altid pæne og rydde op efter sig.
-
-Vi overfører beløbet 178.000 kr. som aftalt senest 1. maj.
-
-Mvh
-Niels og Vibeke
-21 44 38 09`,
-    actions:["Arkivér","Bed om anmeldelse","Send takkemail"]
-  },
-  {
-    id:12, status:"haandteret", tag:"tag-sag", tagtxt:"SAG",
-    from:"VELFAC Ordre", addr:"ordrer@velfac.dk",
-    subj:"Ordrebekræftelse #VF-2026-3391 — Niels & Vibeke",
-    date:"13. apr 2026 · 09:15",
-    preview:"Bekræftelse: 8 stk. VELFAC ribbon vinduer til Villingebæk Strandvej",
-    body:`Ordrebekræftelse
-
-Ordrenr: VF-2026-3391
-Kunde: Nordsjællands Tømrer- & Snedkerfirma
-Leveringsadresse: Villingebæk Strandvej 532, 3120 Dronningmølle
-
-8 stk. VELFAC Ribbon 200, hvide
-Leveringsdato: 15.05.2026
-Samlet: 71.400 kr. ekskl. moms`,
-    actions:["Arkivér","Videresend til projektansvarlig"]
-  }
-];
-
-function renderInbox(filter='alle'){
-  const list = document.getElementById('emailList');
-  const filtered = emails.filter(e=>{
-    if(filter==='uhaandteret') return e.status==='ny';
-    if(filter==='haandteret') return e.status==='haandteret';
-    return true;
-  });
-  list.innerHTML = filtered.map(e=>`
-    <div class="email-item ${e.status==='ny'?'unread':''}" onclick="showEmail(${e.id})" data-id="${e.id}">
-      <div class="meta">
-        <span><span class="tag ${e.tag}">${e.tagtxt}</span></span>
-        <span>${e.date.split(' · ')[1]}</span>
-      </div>
-      <div class="from">${e.from}</div>
-      <div class="subj">${e.subj}</div>
-      <div class="preview">${e.preview}</div>
-    </div>
-  `).join('');
-  if(filtered.length) showEmail(filtered[0].id);
-  else document.getElementById('emailView').innerHTML = '<div style="color:var(--muted);padding:40px 0;text-align:center">Ingen mails i denne visning</div>';
-}
-function showEmail(id){
-  const e = emails.find(x=>x.id===id);
-  document.querySelectorAll('.email-item').forEach(x=>x.classList.remove('active'));
-  const el = document.querySelector(`.email-item[data-id="${id}"]`);
-  if(el){ el.classList.add('active'); el.classList.remove('unread'); }
-  const isNy = e.status==='ny';
-  document.getElementById('emailView').innerHTML = `
-    <div class="email-view">
-      <div class="subject">${e.subj}</div>
-      <div class="meta-row">
-        <div class="who">
-          <strong>${e.from}</strong> <span class="addr">&lt;${e.addr}&gt;</span><br>
-          <span class="dim" style="font-size:12px">til: smg@nstsf.dk</span>
-        </div>
-        <div class="date">${e.date}</div>
-      </div>
-      <div class="body">${e.body}</div>
-      ${isNy ? `
-        <div class="status-note">
-          <strong>Uhåndteret</strong> — denne mail er ikke blevet besvaret eller arkiveret endnu.
-        </div>` : `
-        <div class="status-note" style="border-left-color:var(--green);background:#f2f9f4">
-          <strong style="color:var(--green)">Håndteret</strong> — mailen er besvaret / arkiveret.
-        </div>`}
-      <div class="actions">
-        ${e.actions.map((a,i)=>`<button class="btn ${i===0?'primary':''}">${a}</button>`).join('')}
-      </div>
-    </div>
-  `;
-}
-document.querySelectorAll('.inbox-tab').forEach(b=>{
-  b.addEventListener('click',()=>{
-    document.querySelectorAll('.inbox-tab').forEach(x=>x.classList.remove('active'));
-    b.classList.add('active');
-    renderInbox(b.dataset.filter);
-  });
-});
-renderInbox('alle');
-
-async function checkMinuba(){
-  const el = document.getElementById('minubaStatus');
-  if(!el) return;
-  el.textContent = 'Tester Minuba backend...';
-  try{
-    const res = await fetch('/api/minuba?resource=status');
-    const data = await res.json();
-    el.textContent = JSON.stringify(data, null, 2);
-  }catch(err){
-    el.textContent = 'Kunne ikke kontakte /api/minuba. Kører du lokalt via file://, virker Netlify Functions først efter deploy eller netlify dev.\\n\\n' + err.message;
-  }
-}
-
-async function fetchMinubaResource(resource){
-  const el = document.getElementById('minubaStatus');
-  if(!el) return;
-  el.textContent = `Henter ${resource} fra Minuba...`;
-  try{
-    const res = await fetch(`/api/minuba?resource=${encodeURIComponent(resource)}`);
-    const data = await res.json();
-    el.textContent = JSON.stringify(data, null, 2);
-  }catch(err){
-    el.textContent = 'Kunne ikke hente Minuba-data. Funktionen kræver deploy på Netlify og korrekte environment variables.\\n\\n' + err.message;
-  }
-}
-
-// === Marginer ===
-const margins = [
-  {nr:"215", k:"Lise Galskov",          o:"Fuld renovering",                    t:30, omk:"19.500", pris:"80.000",    marg:"60.500",  pct:"75.6%"},
-  {nr:"",    k:"DKE v. Charlotte",      o:"Guldborgvej 1 · Fakturering",        t:40, omk:"26.000", pris:"15.000",    marg:"-11.000", pct:"-73.3%"},
-  {nr:"",    k:"DKE v. Charlotte",      o:"Bülowsvej · Fakturering",            t:55, omk:"35.750", pris:"32.000",    marg:"-3.750",  pct:"-11.7%"},
-  {nr:"218", k:"Helle Fortland",        o:"Småopgaver i huset",                 t:35, omk:"22.750", pris:"87.625",    marg:"64.875",  pct:"74.0%"},
-  {nr:"",    k:"DKE v. Charlotte",      o:"Blågårdsgade 14 · Fakturering",      t:20, omk:"13.000", pris:"114.000",   marg:"101.000", pct:"88.6%"},
-  {nr:"",    k:"DKE v. Charlotte",      o:"Ryesgade 62 lejl. 48 · Renovering",  t:15, omk:"9.750",  pris:"273.000",   marg:"263.250", pct:"96.4%"},
-  {nr:"214", k:"DKE v. Charlotte",      o:"Ryesgade 62 lejl. 30 · Fakturering", t:15, omk:"9.750",  pris:"286.502",   marg:"276.752", pct:"96.6%"},
-  {nr:"",    k:"Niels & Vibeke",        o:"Vinduer",                            t:"", omk:"—",      pris:"178.000",   marg:"—",       pct:"—"},
-  {nr:"",    k:"DKE v. Lars",           o:"Carit Etlers Vej · Fuld renovering", t:"", omk:"—",      pris:"874.587",   marg:"—",       pct:"—"},
-  {nr:"",    k:"DKE v. Charlotte",      o:"Lykkeholms Allé · Pejs",             t:"", omk:"—",      pris:"25.000",    marg:"—",       pct:"—"},
-  {nr:"",    k:"Henrik",                o:"Smedestræde 4 · Helt nyt hus",       t:"", omk:"—",      pris:"5.995.000", marg:"—",       pct:"—"},
-  {nr:"",    k:"Helle Fortlands kusine",o:"Udskiftning af tag",                 t:"", omk:"—",      pris:"750.000",   marg:"—",       pct:"—"},
-  {nr:"",    k:"DKE v. Charlotte",      o:"Vordingborggade · Vinduer & zink",   t:"", omk:"—",      pris:"4.000.000", marg:"—",       pct:"—"},
-  {nr:"",    k:"Brandskole",            o:"Helsingør · Totalentreprise",        t:"", omk:"—",      pris:"8.000.000", marg:"—",       pct:"—"},
-  {nr:"",    k:"Mikkel Munkholm",       o:"Tilbygning · Frederikssund",         t:"", omk:"—",      pris:"1.100.000", marg:"—",       pct:"—"},
-  {nr:"",    k:"Jacob Frandsen",        o:"Indretning af hus · Fredensborg",    t:"", omk:"—",      pris:"1.000.000", marg:"—",       pct:"—"}
-];
-const knownHours = margins.reduce((sum,m)=>sum + (+m.t || 0), 0);
-const estimatedCost = knownHours * 650;
-const marginCasesWithHours = margins.filter(m=>+m.t).length;
-document.getElementById('marginSummary').innerHTML = `
-  <div class="kpi blue">
-    <div class="lbl">Estimerede timer</div>
-    <div class="val">${knownHours.toLocaleString('da-DK')} t</div>
-    <div class="sub">${marginCasesWithHours} sager med timeestimat</div>
-  </div>
-  <div class="kpi brand">
-    <div class="lbl">Est. timeomkostning</div>
-    <div class="val">${estimatedCost.toLocaleString('da-DK')} kr.</div>
-    <div class="sub">650 kr./t standard</div>
-  </div>
-  <div class="kpi amber">
-    <div class="lbl">Mangler timeestimat</div>
-    <div class="val">${(margins.length - marginCasesWithHours).toLocaleString('da-DK')}</div>
-    <div class="sub">bruges til marginopfølgning</div>
-  </div>
-`;
-document.getElementById('marginBody').innerHTML = margins.map(m=>{
-  const isDke = m.k.toLowerCase().includes('dke');
-  const knavn = isDke ? `${m.k} <span class="chip tag-dke" style="font-size:10px">DKE</span>` : m.k;
-  const pctCls = m.pct.startsWith('-') ? 'chip-red' : (m.pct==='—' ? '' : 'chip-green');
-  const pctEl  = m.pct==='—' ? '<span class="dim">—</span>' : `<span class="chip ${pctCls}">${m.pct}</span>`;
-  return `
-  <tr>
-    <td>${m.nr || '—'}</td>
-    <td>${knavn}</td>
-    <td class="wrap">${m.o}</td>
-    <td class="num">${m.t || '—'}</td>
-    <td class="num">${m.omk} kr.</td>
-    <td class="num">${m.pris} kr.</td>
-    <td class="num">${m.marg==='—' ? '—' : m.marg + ' kr.'}</td>
-    <td class="num">${pctEl}</td>
-    <td class="num dim">—</td>
-  </tr>
-`;}).join('');
 </script>
 
 </body>
