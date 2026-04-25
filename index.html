@@ -43,7 +43,16 @@
   header .sub{color:#c2d2e1;font-size:13px;margin-top:4px}
   .topbar{display:flex;justify-content:space-between;align-items:center}
   .logo{display:flex;align-items:center;gap:14px}
+  .topbar-right{display:flex;align-items:center;gap:12px}
   .topmeta{font-size:12px;color:#c2d2e1;text-align:right}
+  .header-actions{display:flex;align-items:center;gap:8px}
+  .gear-btn{
+    width:40px;height:40px;border-radius:10px;border:1px solid rgba(255,255,255,.18);
+    background:rgba(255,255,255,.08);color:#fff;display:inline-flex;align-items:center;
+    justify-content:center;cursor:pointer;font-size:18px;line-height:1;
+  }
+  .gear-btn:hover{background:rgba(255,255,255,.14)}
+  .gear-btn.hidden{display:none}
   .logo .mark{
     width:44px;height:44px;border-radius:8px;
     background:var(--brand);display:flex;align-items:center;justify-content:center;
@@ -351,6 +360,10 @@
   .sync-panel .sync-title{font-weight:700;color:#3b4a5c}
   .sync-panel .sync-state{color:var(--muted);margin-top:2px}
   .sync-panel .sync-actions{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+  .settings-layout{display:grid;gap:20px}
+  .settings-note{
+    font-size:12px;color:var(--muted);margin-top:4px;
+  }
   .sync-panel input{
     border:1px solid var(--line);
     border-radius:6px;
@@ -422,6 +435,10 @@
   .admin-form .wide{grid-column:span 2}
   .admin-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
   .admin-message{min-height:18px;font-size:12px;color:var(--muted);margin-top:10px}
+  .admin-locked{
+    padding:14px;border:1px dashed var(--line);border-radius:8px;
+    color:var(--muted);font-size:12px;background:#f8fafc;
+  }
 
   body.login-mode{
     background:var(--brand-dark);
@@ -449,6 +466,9 @@
     margin-bottom:0;
   }
   body.login-mode .topmeta{
+    display:none;
+  }
+  body.login-mode .header-actions{
     display:none;
   }
   body.login-mode .auth-overlay{
@@ -488,9 +508,14 @@
         <div class="sub">Pipeline, sager og økonomi — opdateret 21. apr 2026</div>
       </div>
     </div>
-    <div class="topmeta">
-      <div>Christian · cgallstar@gmail.com</div>
-      <div style="color:#8fa3b8">SMG · Ejer · smg@nstsf.dk</div>
+    <div class="topbar-right">
+      <div class="topmeta">
+        <div>Christian · cgallstar@gmail.com</div>
+        <div style="color:#8fa3b8">SMG · Ejer · smg@nstsf.dk</div>
+      </div>
+      <div class="header-actions">
+        <button id="settingsBtn" class="gear-btn hidden" type="button" title="Indstillinger" aria-label="Indstillinger" onclick="openSettings()">⚙</button>
+      </div>
     </div>
   </div>
 </header>
@@ -502,6 +527,7 @@
   <button class="tab-btn" data-tab="likviditet">Likviditet</button>
   <button class="tab-btn" data-tab="betalinger">Betalinger</button>
   <button class="tab-btn" data-tab="marginer">Marginer</button>
+  <button class="tab-btn" data-tab="settings" style="display:none">Indstillinger</button>
 </nav>
 
 <div id="authOverlay" class="auth-overlay">
@@ -518,65 +544,6 @@
 </div>
 
 <main>
-
-<div class="sync-panel" id="statusPanel">
-  <div>
-    <div class="sync-title">Dashboard status</div>
-    <div id="syncStatus" class="sync-state">Tjekker login og central datalagring...</div>
-  </div>
-  <div class="sync-actions">
-    <button class="btn" onclick="loadRemoteState(true)">Hent fra backend</button>
-    <button class="btn" onclick="saveState(true)">Gem nu</button>
-    <span id="authIdentity" class="auth-identity"></span>
-    <button class="btn" id="logoutBtn" style="display:none" onclick="logoutDashboard()">Log ud</button>
-  </div>
-</div>
-
-<section id="adminPanel" class="admin-panel">
-  <div class="panel-hd">
-    <h2>Brugeradministration</h2>
-    <div class="dim" style="font-size:12px">Kun synlig for admins. Brugere gemmes centralt.</div>
-  </div>
-  <div class="admin-grid">
-    <div class="admin-users">
-      <table>
-        <thead>
-          <tr>
-            <th>Navn</th>
-            <th>E-mail</th>
-            <th>Rolle</th>
-            <th></th>
-          </tr>
-        </thead>
-        <tbody id="adminUsersBody">
-          <tr><td colspan="4" class="admin-empty">Henter brugere...</td></tr>
-        </tbody>
-      </table>
-    </div>
-    <div class="admin-form">
-      <div class="panel-hd" style="margin-bottom:10px">
-        <h3 id="adminFormTitle">Opret bruger</h3>
-        <button class="btn" type="button" onclick="resetUserForm()">Nulstil</button>
-      </div>
-      <div class="admin-form-grid">
-        <label>Navn<input id="userName" type="text" placeholder="Navn"></label>
-        <label>Rolle
-          <select id="userRole">
-            <option value="user">Bruger</option>
-            <option value="admin">Admin</option>
-          </select>
-        </label>
-        <label class="wide">E-mail<input id="userEmail" type="email" placeholder="bruger@firma.dk"></label>
-        <label class="wide">Adgangskode<input id="userPassword" type="password" placeholder="Ny adgangskode"></label>
-      </div>
-      <div class="admin-actions">
-        <button class="btn primary" type="button" onclick="submitUserForm()">Gem bruger</button>
-        <button class="btn" type="button" onclick="resetUserForm()">Annuller</button>
-      </div>
-      <div id="adminMessage" class="admin-message"></div>
-    </div>
-  </div>
-</section>
 
 <section id="dashboard" class="section active">
 
@@ -862,6 +829,78 @@
   </div>
 </section>
 
+<section id="settings" class="section">
+  <div class="settings-layout">
+    <div class="panel">
+      <div class="panel-hd">
+        <div>
+          <h2>Indstillinger</h2>
+          <div class="settings-note">Central datalagring, adgang og administration af brugere.</div>
+        </div>
+      </div>
+      <div class="sync-panel" id="statusPanel" style="margin:0">
+        <div>
+          <div class="sync-title">Dashboard status</div>
+          <div id="syncStatus" class="sync-state">Tjekker login og central datalagring...</div>
+        </div>
+        <div class="sync-actions">
+          <button class="btn" onclick="loadRemoteState(true)">Hent fra backend</button>
+          <button class="btn" onclick="saveState(true)">Gem nu</button>
+          <span id="authIdentity" class="auth-identity"></span>
+          <button class="btn" id="logoutBtn" style="display:none" onclick="logoutDashboard()">Log ud</button>
+        </div>
+      </div>
+    </div>
+
+    <section id="adminPanel" class="admin-panel">
+      <div class="panel-hd">
+        <h2>Brugeradministration</h2>
+        <div class="dim" style="font-size:12px">Kun synlig for admins. Brugere gemmes centralt.</div>
+      </div>
+      <div class="admin-grid">
+        <div class="admin-users">
+          <table>
+            <thead>
+              <tr>
+                <th>Navn</th>
+                <th>E-mail</th>
+                <th>Rolle</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="adminUsersBody">
+              <tr><td colspan="4" class="admin-empty">Henter brugere...</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="admin-form">
+          <div class="panel-hd" style="margin-bottom:10px">
+            <h3 id="adminFormTitle">Opret bruger</h3>
+            <button class="btn" type="button" onclick="resetUserForm()">Nulstil</button>
+          </div>
+          <div class="admin-form-grid">
+            <label>Navn<input id="userName" type="text" placeholder="Navn"></label>
+            <label>Rolle
+              <select id="userRole">
+                <option value="user">Bruger</option>
+                <option value="admin">Admin</option>
+              </select>
+            </label>
+            <label class="wide">E-mail<input id="userEmail" type="email" placeholder="bruger@firma.dk"></label>
+            <label class="wide">Adgangskode<input id="userPassword" type="password" placeholder="Ny adgangskode"></label>
+          </div>
+          <div class="admin-actions">
+            <button class="btn primary" type="button" onclick="submitUserForm()">Gem bruger</button>
+            <button class="btn" type="button" onclick="resetUserForm()">Annuller</button>
+          </div>
+          <div id="adminMessage" class="admin-message"></div>
+        </div>
+      </div>
+      <div id="adminLocked" class="admin-locked" style="display:none">Du er logget ind som bruger. Kun admins kan se og redigere brugerrettigheder.</div>
+    </section>
+  </div>
+</section>
+
 </main>
 
 <footer>
@@ -898,6 +937,7 @@ let isApplyingRemoteState = false;
 let authUser = null;
 let adminUsers = [];
 let editingUserEmail = null;
+let currentTab = 'dashboard';
 function setSyncStatus(text, tone){ const el = document.getElementById('syncStatus'); if(!el) return; el.textContent = text; el.style.color = tone === 'error' ? 'var(--red)' : tone === 'ok' ? 'var(--green)' : 'var(--muted)'; }
 function setAdminMessage(text='', tone=''){ const el = document.getElementById('adminMessage'); if(!el) return; el.textContent = text; el.style.color = tone === 'error' ? 'var(--red)' : tone === 'ok' ? 'var(--green)' : 'var(--muted)'; }
 function textValue(value, fallback=''){ if(value === null || value === undefined) return fallback; return String(value); }
@@ -914,7 +954,9 @@ function queueRemoteSave(){ clearTimeout(remoteSaveTimer); remoteSaveTimer = set
 function saveState(manual=false){ try{ persistLocalState(); if(!isApplyingRemoteState) manual ? saveRemoteState(true) : queueRemoteSave(); }catch(e){ setSyncStatus(`Kunne ikke gemme lokalt: ${e.message}`, 'error'); } }
 async function loadRemoteState(manual=false){ if(!authUser){ if(manual) setSyncStatus('Du skal være logget ind for at hente central data.', 'error'); return; } if(location.protocol === 'file:'){ if(manual) setSyncStatus('Backend kan ikke hentes fra file://. Test på Netlify-linket efter deploy.', 'error'); return; } try{ setSyncStatus('Henter central data...'); const res = await fetch(STATE_API, {credentials:'include'}); const data = await res.json().catch(()=>({})); if(res.status === 404 && data.error === 'no_state'){ await saveRemoteState(true); return; } if(res.status === 401){ authUser = null; updateAuthUi(); showAuthOverlay('Session udløbet. Log ind igen.'); return; } if(!res.ok) throw new Error(data.error || `HTTP ${res.status}`); isApplyingRemoteState = true; applyState(data.state); persistLocalState(); isApplyingRemoteState = false; render(); renderBetalinger(); renderCapacity(); setSyncStatus(`Central data hentet ${new Date(data.savedAt || Date.now()).toLocaleString('da-DK')}`, 'ok'); }catch(err){ isApplyingRemoteState = false; setSyncStatus(`Kunne ikke hente central data: ${err.message}`, 'error'); } }
 loadState();
-function updateAuthUi(){ const idEl = document.getElementById('authIdentity'); const logoutBtn = document.getElementById('logoutBtn'); const adminPanel = document.getElementById('adminPanel'); if(idEl) idEl.textContent = authUser ? `${authUser.name} · ${authUser.email}` : 'Ikke logget ind'; if(logoutBtn) logoutBtn.style.display = authUser ? 'inline-flex' : 'none'; if(adminPanel) adminPanel.classList.toggle('visible', !!authUser && authUser.role === 'admin'); document.body.classList.toggle('login-mode', !authUser); }
+function setActiveTab(tab){ currentTab = tab; document.querySelectorAll('.tab-btn').forEach((btn)=>btn.classList.toggle('active', btn.dataset.tab === tab)); document.querySelectorAll('.section').forEach((section)=>section.classList.toggle('active', section.id === tab)); }
+function openSettings(){ if(!authUser) return; setActiveTab('settings'); }
+function updateAuthUi(){ const idEl = document.getElementById('authIdentity'); const logoutBtn = document.getElementById('logoutBtn'); const adminPanel = document.getElementById('adminPanel'); const adminLocked = document.getElementById('adminLocked'); const settingsBtn = document.getElementById('settingsBtn'); if(idEl) idEl.textContent = authUser ? `${authUser.name} · ${authUser.email}` : 'Ikke logget ind'; if(logoutBtn) logoutBtn.style.display = authUser ? 'inline-flex' : 'none'; if(settingsBtn) settingsBtn.classList.toggle('hidden', !authUser); if(adminPanel) adminPanel.classList.toggle('visible', !!authUser && authUser.role === 'admin'); if(adminLocked) adminLocked.style.display = authUser && authUser.role !== 'admin' ? 'block' : 'none'; document.body.classList.toggle('login-mode', !authUser); if(!authUser && currentTab === 'settings') setActiveTab('dashboard'); }
 function renderAdminUsers(){ const body = document.getElementById('adminUsersBody'); if(!body) return; if(!adminUsers.length){ body.innerHTML = '<tr><td colspan="4" class="admin-empty">Ingen brugere fundet.</td></tr>'; return; } body.innerHTML = adminUsers.map((user)=>`<tr><td>${user.name || '—'}</td><td>${user.email}</td><td>${user.role === 'admin' ? 'Admin' : 'Bruger'}</td><td class="row-actions"><button class="icon-btn" onclick="editUser('${String(user.email).replace(/'/g,"&#39;")}')">Rediger</button><button class="icon-btn" onclick="deleteUser('${String(user.email).replace(/'/g,"&#39;")}')">Slet</button></td></tr>`).join(''); }
 async function loadUsers(){ if(!authUser || authUser.role !== 'admin') return; try{ const res = await fetch(USERS_API, {credentials:'include'}); const data = await res.json().catch(()=>({})); if(!res.ok) throw new Error(data.error || `HTTP ${res.status}`); adminUsers = Array.isArray(data.users) ? data.users : []; renderAdminUsers(); }catch(err){ setAdminMessage(`Kunne ikke hente brugere: ${err.message}`, 'error'); } }
 function resetUserForm(){ editingUserEmail = null; document.getElementById('adminFormTitle').textContent = 'Opret bruger'; document.getElementById('userName').value = ''; document.getElementById('userEmail').value = ''; document.getElementById('userEmail').disabled = false; document.getElementById('userRole').value = 'user'; document.getElementById('userPassword').value = ''; setAdminMessage(''); }
@@ -958,11 +1000,13 @@ function clearEmployeeWeekStatus(){ const emp = employees.find(e=>e.id === docum
 function renderCapacity(){ const calendar = document.getElementById('capacityCalendar'); const capacityInput = document.getElementById('capacityHours'); if(!calendar || !capacityInput) return; const defaultHours = +capacityInput.value || 37; const firstWeek = startOfWeek(new Date()); const yearEnd = new Date(new Date().getFullYear(), 11, 31); const weekCount = Math.ceil((startOfWeek(yearEnd) - firstWeek) / (7 * 86400000)) + 1; const rows = []; for(let w=0; w<weekCount; w++){ const weekStart = addDays(firstWeek, w*7); const weekEnd = addDays(weekStart, 6); const weekKey = weekStart.toISOString().slice(0,10); const details = []; let hours = 0; sager.forEach(s=>{ if(![2,3,4,5].includes(+s.k) || !s.start || !s.slut) return; const start = new Date(s.start + 'T00:00:00'); const end = new Date(s.slut + 'T00:00:00'); if(Number.isNaN(start.getTime()) || Number.isNaN(end.getTime()) || end < start) return; const days = overlapDays(start, end, weekStart, weekEnd); if(!days) return; const totalDays = Math.max(1, overlapDays(start, end, start, end)); const h = estimatedHours(s) * days / totalDays; if(!h) return; hours += h; details.push({kunde:s.kunde, hours:h}); }); const staff = employees.map(emp=>({emp, ...employeeWeek(emp, weekKey, w, defaultHours)})); const capacity = staff.reduce((sum,e)=>sum + e.hours, 0); details.sort((a,b)=>b.hours-a.hours); rows.push({weekStart, weekEnd, weekKey, weekNo:isoWeek(weekStart), hours, capacity, details, staff}); } renderEmployees(rows); calendar.innerHTML = rows.map(r=>{ const pct = r.capacity ? Math.round(r.hours / r.capacity * 100) : 0; const cls = pct > 100 ? 'over' : (pct >= 85 ? 'warn' : ''); const top = r.details.slice(0,2).map(d=>`${d.kunde} (${Math.round(d.hours)} t)`).join(', ') || '—'; const away = r.staff.filter(s=>s.status !== 'work'); const working = r.staff.filter(s=>s.status === 'work').length; return `<div class="week-card ${cls}"><div class="week-head"><div><div class="week-title">Uge ${r.weekNo}</div><div class="week-dates">(${displayDate(r.weekStart.toISOString().slice(0,10))} - ${displayDate(r.weekEnd.toISOString().slice(0,10))})</div></div><div class="week-pct">${pct}%</div></div><div class="capacity-bar"><div class="capacity-fill ${cls}" style="width:${Math.min(100,pct)}%"></div></div><div class="week-meta"><span>${Math.round(r.hours)} t planlagt</span><span>${Math.round(r.capacity)} t kapacitet</span></div><div class="week-section">Sager</div><div class="week-list"><div>${top}</div></div><div class="week-section">Mandskab</div><div class="week-list"><div><span class="status-dot status-work"></span>${working} på arbejde</div>${away.slice(0,3).map(a=>`<div><span class="status-dot status-${a.status}"></span>${a.emp.name}: ${statusLabel(a.status)}</div>`).join('') || '<div class="dim">Ingen fravær</div>'}</div></div>`; }).join(''); }
 function renderBetalinger(){ const body = document.getElementById('betalingBody'); const rows = betalinger.filter(b=>b.status !== 'betalt'); body.innerHTML = rows.map(b=>{ const idx = betalinger.indexOf(b); const isDke = String(b.kunde || '').toLowerCase().includes('dke'); const kunde = isDke ? `${b.kunde} <span class="chip tag-dke">DKE</span>` : b.kunde; return `<tr><td>${b.nr || '<span class="dim">—</span>'}</td><td>${kunde}</td><td>${b.milepael}</td><td>${b.dato || '<span class="dim">—</span>'}</td><td class="num">${b.beloeb} kr.</td><td>${b.fak || '<span class="dim">—</span>'}</td><td><select class="pay-status udestaaende" onchange="changeBetaling(${idx}, this.value)"><option value="udestaaende" selected>Udestående</option><option value="betalt">Betalt</option></select></td></tr>`; }).join('') || '<tr><td colspan="7" class="dim">Ingen udestående rater.</td></tr>'; }
 function changeBetaling(i,v){ betalinger[i].status = v; saveState(); renderBetalinger(); }
+document.querySelectorAll('.tab-btn').forEach((btn)=>btn.addEventListener('click', ()=>setActiveTab(btn.dataset.tab)));
 document.getElementById('sagerSoeg').addEventListener('input',render);
 document.getElementById('filterKat').addEventListener('change',render);
 render();
 renderBetalinger();
 updateAuthUi();
+setActiveTab('dashboard');
 checkAuth();
 </script>
 
