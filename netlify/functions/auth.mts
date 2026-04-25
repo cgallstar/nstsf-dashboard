@@ -1,8 +1,11 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
+import { getStore } from "@netlify/blobs";
 
 const SESSION_COOKIE = "nstsf_session";
 const AUTH_SECRET = Netlify.env.get("DASHBOARD_AUTH_SECRET") || "nstsf-auth-fallback-2026";
 const DEFAULT_PASSWORD = "NSTSF-Login-2026!";
+const USER_STORE = "nstsf-dashboard-auth";
+const USER_KEY = "users-v1";
 
 const json = (body, status = 200, headers = {}) =>
   new Response(JSON.stringify(body, null, 2), {
@@ -38,15 +41,22 @@ function clearCookie() {
   return `${SESSION_COOKIE}=; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=0`;
 }
 
-function getUsers() {
-  const raw = Netlify.env.get("DASHBOARD_USERS_JSON");
-  if (raw) {
-    try {
-      const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed)) return parsed;
-    } catch {}
-  }
+function sanitizeUser(user) {
+  return {
+    email: String(user?.email || "").trim().toLowerCase(),
+    name: String(user?.name || user?.email || "").trim(),
+    role: String(user?.role || "user").trim() || "user",
+  };
+}
 
+function normalizeStoredUser(user) {
+  return {
+    ...sanitizeUser(user),
+    password: String(user?.password || ""),
+  };
+}
+
+function defaultUsers() {
   return [
     { email: "christian@nstsf.dk", name: "Christian", role: "admin", password: DEFAULT_PASSWORD },
     { email: "cgallstar@gmail.com", name: "Christian", role: "admin", password: DEFAULT_PASSWORD },
@@ -54,8 +64,33 @@ function getUsers() {
   ];
 }
 
-function sanitizeUser(user) {
-  return { email: user.email, name: user.name || user.email, role: user.role || "user" };
+function parseEnvUsers() {
+  const raw = Netlify.env.get("DASHBOARD_USERS_JSON");
+  if (!raw) return null;
+
+  try {
+    const parsed = JSON.parse(raw);
+    if (Array.isArray(parsed) && parsed.length) {
+      return parsed.map(normalizeStoredUser).filter((user) => user.email && user.password);
+    }
+  } catch {}
+
+  return null;
+}
+
+function store() {
+  return getStore(USER_STORE, { consistency: "strong" });
+}
+
+async function getUsers() {
+  const saved = await store().get(USER_KEY, { type: "json" });
+  if (Array.isArray(saved) && saved.length) {
+    return saved.map(normalizeStoredUser).filter((user) => user.email && user.password);
+  }
+
+  const seeded = parseEnvUsers() || defaultUsers();
+  await store().setJSON(USER_KEY, seeded);
+  return seeded.map(normalizeStoredUser);
 }
 
 function createSession(user) {
@@ -77,7 +112,6 @@ function readSession(request) {
   const payload = token.slice(0, idx);
   const signature = token.slice(idx + 1);
   const expected = sign(payload);
-
   const a = Buffer.from(signature);
   const b = Buffer.from(expected);
   if (a.length !== b.length || !timingSafeEqual(a, b)) return null;
@@ -85,7 +119,7 @@ function readSession(request) {
   try {
     const session = JSON.parse(Buffer.from(payload, "base64url").toString("utf8"));
     if (!session.exp || session.exp < Date.now()) return null;
-    return session;
+    return sanitizeUser(session);
   } catch {
     return null;
   }
@@ -95,7 +129,7 @@ export default async (request) => {
   if (request.method === "GET") {
     const session = readSession(request);
     if (!session) return json({ ok: false, error: "unauthorized" }, 401);
-    return json({ ok: true, user: sanitizeUser(session) });
+    return json({ ok: true, user: session });
   }
 
   if (request.method === "POST") {
@@ -108,8 +142,7 @@ export default async (request) => {
 
     const email = String(body?.email || "").trim().toLowerCase();
     const password = String(body?.password || "");
-    const user = getUsers().find((entry) => String(entry.email || "").trim().toLowerCase() === email && String(entry.password || "") === password);
-
+    const user = (await getUsers()).find((entry) => entry.email === email && entry.password === password);
     if (!user) return json({ ok: false, error: "invalid_credentials" }, 401);
 
     return json(
