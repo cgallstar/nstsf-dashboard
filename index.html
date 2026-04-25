@@ -220,24 +220,54 @@
   .pay-status.betalt{background:var(--green-soft);color:var(--green);border-color:#b7dcc9}
   .pay-status.udestaaende{background:var(--red-soft);color:var(--red);border-color:#efc3ba}
   .pay-note{font-size:12px;color:var(--muted);margin-top:10px}
-  .priority-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px}
-  .priority-card{border:1px solid var(--line);border-radius:12px;background:#fff;padding:16px}
-  .priority-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:10px}
-  .priority-head h3{margin:0;font-size:14px}
-  .priority-section{margin-top:12px}
-  .priority-section-title{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:700;margin-bottom:8px}
-  .priority-list{display:grid;gap:10px}
-  .priority-item{border:1px solid #e8edf4;border-radius:10px;padding:12px;background:#fbfcfe}
-  .priority-item.today{border-color:#d8e6d8;background:#f7fbf7}
-  .priority-item.later{background:#fcfcfd}
-  .priority-item-title{font-size:13px;font-weight:700}
-  .priority-item-meta{font-size:12px;color:var(--muted);margin-top:3px}
-  .priority-item-links{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
-  .priority-pill{display:inline-flex;align-items:center;padding:3px 8px;border-radius:999px;font-size:11px;font-weight:700}
-  .priority-pill.sales{background:var(--amber-soft);color:var(--amber)}
-  .priority-pill.todo{background:var(--blue-soft);color:var(--blue)}
-  .priority-pill.high{background:var(--red-soft);color:var(--red)}
-  .priority-empty{font-size:12px;color:var(--muted);padding:10px 0}
+  .priority-shell{background:#f5f2ec;border:1px solid rgba(0,0,0,.06);border-radius:18px;overflow:hidden}
+  .priority-topbar{display:flex;align-items:center;justify-content:space-between;padding:14px 24px;background:#fff;border-bottom:.5px solid rgba(0,0,0,.08);gap:16px;position:sticky;top:0;z-index:1}
+  .priority-topbar-title{font-size:13px;font-weight:600;color:#8a8680;text-transform:uppercase;letter-spacing:.08em}
+  .priority-topbar-right{display:flex;align-items:center;gap:12px;flex-wrap:wrap;justify-content:flex-end}
+  .priority-updated{font-size:11px;color:#b8b5b0}
+  .priority-toggle{display:flex;background:#f5f2ec;border:.5px solid rgba(0,0,0,.08);border-radius:7px;padding:3px;gap:2px}
+  .priority-toggle button{font-size:12px;font-weight:600;padding:5px 14px;border-radius:5px;border:none;background:transparent;color:#8a8680;cursor:pointer;transition:background .15s,color .15s,box-shadow .15s}
+  .priority-toggle button.active{background:#fff;color:#1a1a18;box-shadow:0 1px 3px rgba(0,0,0,.08)}
+  .priority-layout{display:grid;grid-template-columns:minmax(0,1fr) 280px;min-height:560px}
+  .priority-main{border-right:.5px solid rgba(0,0,0,.08);background:#fff}
+  .priority-side{background:#fafaf8}
+  .priority-view{display:none}
+  .priority-view.active{display:block}
+  .priority-main-head{padding:20px 24px 16px;border-bottom:.5px solid rgba(0,0,0,.08)}
+  .priority-main-title{font-size:20px;font-weight:600;color:#1a1a18}
+  .priority-main-sub{font-size:11px;color:#8a8680;margin-top:3px}
+  .priority-divider{padding:12px 24px 4px;font-size:10px;font-weight:600;color:#b8b5b0;text-transform:uppercase;letter-spacing:.08em;display:flex;align-items:center;gap:8px}
+  .priority-divider::after{content:'';flex:1;height:.5px;background:rgba(0,0,0,.08)}
+  .priority-row{display:flex;gap:16px;padding:14px 24px;border-bottom:.5px solid rgba(0,0,0,.08);align-items:flex-start;background:#fff}
+  .priority-row.later{background:#fafaf8}
+  .priority-rank{font-size:20px;font-weight:500;color:#b8b5b0;min-width:24px;line-height:1.3;flex-shrink:0}
+  .priority-rank.now{color:#1a1a18}
+  .priority-body{flex:1;min-width:0}
+  .priority-name{font-size:14px;font-weight:600;color:#1a1a18;margin-bottom:2px}
+  .priority-meta{font-size:11px;color:#8a8680;margin-bottom:4px}
+  .priority-reason{font-size:12px;color:#1a1a18}
+  .priority-actions{display:flex;gap:6px;margin-top:9px;flex-wrap:wrap}
+  .priority-actions .btn,.priority-side-actions .side-btn{background:#fff}
+  .priority-actions .btn.primary-cta{background:#1a1a18;color:#fff;border-color:#1a1a18}
+  .priority-type{flex-shrink:0;margin-top:3px}
+  .priority-dot{width:8px;height:8px;border-radius:50%;margin-top:6px}
+  .priority-dot.sales{background:#e8a020}
+  .priority-dot.todo{background:#3a6aaa}
+  .priority-side-head{padding:20px 18px 14px;border-bottom:.5px solid rgba(0,0,0,.08)}
+  .priority-side-title{font-size:10px;font-weight:600;color:#8a8680;text-transform:uppercase;letter-spacing:.07em}
+  .priority-side-view{display:none}
+  .priority-side-item{padding:12px 18px;border-bottom:.5px solid rgba(0,0,0,.08);display:flex;gap:10px;align-items:flex-start}
+  .priority-side-dot{width:7px;height:7px;border-radius:50%;margin-top:5px;flex-shrink:0}
+  .priority-side-dot.sales{background:#e8a020}
+  .priority-side-dot.todo{background:#3a6aaa}
+  .priority-side-body{min-width:0}
+  .priority-side-name{font-size:12px;font-weight:600;color:#1a1a18;margin-bottom:2px}
+  .priority-side-meta{font-size:10px;color:#8a8680;margin-bottom:2px}
+  .priority-side-reason{font-size:10px;color:#1a1a18;margin-bottom:6px}
+  .priority-side-actions{display:flex;gap:6px;flex-wrap:wrap}
+  .side-btn{font-size:10px;padding:3px 9px;border-radius:5px;border:.5px solid rgba(0,0,0,.08);background:#fff;color:#1a1a18;cursor:pointer}
+  .priority-empty-state{font-size:12px;color:#8a8680;padding:16px 24px}
+  .priority-side-empty{font-size:11px;color:#8a8680;padding:14px 18px}
   .rel-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
   .mini-list{display:grid;gap:8px}
   .mini-item{padding:9px 10px;border:1px solid #e8edf4;border-radius:8px;background:#fff}
@@ -374,7 +404,10 @@
   .status-poland{background:var(--red)}
   .capacity-note{font-size:12px;color:var(--muted);margin-top:10px}
   @media (max-width: 960px){
-    .priority-grid,.grid-2,.rel-grid{grid-template-columns:1fr}
+    .priority-layout,.grid-2,.rel-grid{grid-template-columns:1fr}
+    .priority-main{border-right:none;border-bottom:.5px solid rgba(0,0,0,.08)}
+    .priority-topbar{padding:14px 16px}
+    .priority-main-head,.priority-divider,.priority-row{padding-left:16px;padding-right:16px}
     .capacity-grid{grid-template-columns:120px repeat(5,minmax(140px,1fr));overflow:auto}
     .upcoming-row{grid-template-columns:1fr;gap:10px}
     .coming-case{grid-template-columns:1fr;gap:8px}
@@ -844,49 +877,47 @@
 </section>
 
 <section id="prioriteringer" class="section">
-  <div class="panel">
-    <div class="panel-hd">
-      <div>
-        <h2>Prioriteringer</h2>
-        <div class="dim" style="font-size:12px">Regelbaseret prioritering ud fra sager, mails og opfølgning. Kl. 06-automation kobles på senere.</div>
+  <div class="priority-shell">
+    <div class="priority-topbar">
+      <span class="priority-topbar-title">Prioriteringer</span>
+      <div class="priority-topbar-right">
+        <span class="priority-updated" id="priorityGeneratedAt"></span>
+        <div class="priority-toggle">
+          <button class="active" id="priorityBtnTodos" onclick="setPriorityView('todos')">To-do's</button>
+          <button id="priorityBtnSalg" onclick="setPriorityView('salg')">Salgsrelateret</button>
+        </div>
       </div>
-      <div class="dim" id="priorityGeneratedAt" style="font-size:12px"></div>
     </div>
-    <div class="priority-grid">
-      <div class="priority-card">
-        <div class="priority-head">
-          <div>
-            <h3>Salgsrelateret arbejde</h3>
-            <div class="dim" style="font-size:12px">Leads, tilbud og opfølgning der kan flytte omsætning.</div>
+    <div class="priority-layout">
+      <div class="priority-main">
+        <div class="priority-view active" id="priorityViewTodos">
+          <div class="priority-main-head">
+            <div class="priority-main-title">To-do's</div>
+            <div class="priority-main-sub">Fremdrift, underskrifter, aflevering, faktura og opfølgning i aktive sager.</div>
           </div>
-          <span class="priority-pill sales">Salg</span>
+          <div class="priority-divider">Nu</div>
+          <div id="priorityTodoNow"></div>
+          <div class="priority-divider">Senere</div>
+          <div id="priorityTodoLater"></div>
         </div>
-        <div class="priority-section">
-          <div class="priority-section-title">I dag</div>
-          <div id="prioritySalesToday" class="priority-list"></div>
-        </div>
-        <div class="priority-section">
-          <div class="priority-section-title">Senere</div>
-          <div id="prioritySalesLater" class="priority-list"></div>
+        <div class="priority-view" id="priorityViewSalg">
+          <div class="priority-main-head">
+            <div class="priority-main-title">Salgsrelateret</div>
+            <div class="priority-main-sub">Leads, tilbud og opfølgning der kan flytte omsætning.</div>
+          </div>
+          <div class="priority-divider">Nu</div>
+          <div id="prioritySalesNow"></div>
+          <div class="priority-divider">Senere</div>
+          <div id="prioritySalesLater"></div>
         </div>
       </div>
-      <div class="priority-card">
-        <div class="priority-head">
-          <div>
-            <h3>To-do's</h3>
-            <div class="dim" style="font-size:12px">Fremdrift, underskrifter, aflevering, faktura og opfølgning i aktive sager.</div>
-          </div>
-          <span class="priority-pill todo">Drift</span>
+      <aside class="priority-side">
+        <div class="priority-side-head">
+          <div class="priority-side-title">Ventende</div>
         </div>
-        <div class="priority-section">
-          <div class="priority-section-title">I dag</div>
-          <div id="priorityTodoToday" class="priority-list"></div>
-        </div>
-        <div class="priority-section">
-          <div class="priority-section-title">Senere</div>
-          <div id="priorityTodoLater" class="priority-list"></div>
-        </div>
-      </div>
+        <div class="priority-side-view" id="prioritySideTodos"></div>
+        <div class="priority-side-view" id="prioritySideSalg"></div>
+      </aside>
     </div>
   </div>
 </section>
@@ -1173,6 +1204,7 @@ let editingUserEmail = null;
 let currentTab = 'dashboard';
 let inboxFilter = 'alle';
 let selectedEmailId = null;
+let priorityView = 'todos';
 const ACTIVE_CASE_CATEGORIES = new Set([1,2,3,4,5]);
 function setSyncStatus(text, tone){ const el = document.getElementById('syncStatus'); if(!el) return; el.textContent = text; el.style.color = tone === 'error' ? 'var(--red)' : tone === 'ok' ? 'var(--green)' : 'var(--muted)'; }
 function setAdminMessage(text='', tone=''){ const el = document.getElementById('adminMessage'); if(!el) return; el.textContent = text; el.style.color = tone === 'error' ? 'var(--red)' : tone === 'ok' ? 'var(--green)' : 'var(--muted)'; }
@@ -1217,6 +1249,9 @@ function latestOfferDate(s){ const related = getRelatedEmails(s).filter((mail)=>
 function daysUntil(dateValue){ if(!dateValue) return null; const today = new Date(); today.setHours(0,0,0,0); const date = new Date(`${dateValue}T00:00:00`); if(Number.isNaN(date.getTime())) return null; return Math.round((date - today) / 86400000); }
 function paymentSummaryRows(){ return betalinger.filter((b)=>b.status !== 'betalt').sort((a,b)=> String(a.dato).localeCompare(String(b.dato))); }
 function priorityLink(type, index, label){ return `<button class="icon-btn" onclick="${type === 'sag' ? `setActiveTab('sager'); openSag(${index})` : `setActiveTab('indbakke'); openEmail('${index}')`}">${label}</button>`; }
+function parsePriorityActions(links=''){
+  return [...String(links).matchAll(/onclick="([^"]+)"[^>]*>([^<]+)</g)].map((match)=>({onclick:match[1], label:match[2]}));
+}
 function buildPriorities(){
   const sales = [];
   const todos = [];
@@ -1267,20 +1302,70 @@ function buildPriorities(){
   const sortItems = (items)=>items.sort((a,b)=>b.score-a.score || a.title.localeCompare(b.title));
   return { sales: sortItems(sales), todos: sortItems(todos) };
 }
-function renderPriorityColumn(targetId, items, bucket){
+function priorityActionButtons(links='', mode='main'){
+  const actions = parsePriorityActions(links);
+  if(!actions.length) return '';
+  return actions.map((action, index)=>{
+    const klass = mode === 'side' ? 'side-btn' : `btn${index === 0 ? ' primary-cta' : ''}`;
+    return `<button class="${klass}" onclick="${action.onclick}">${action.label}</button>`;
+  }).join('');
+}
+function renderPriorityRows(targetId, items, bucket, type){
+  const el = document.getElementById(targetId);
+  if(!el) return [];
+  const rows = items.filter((item)=>item.bucket === bucket);
+  el.innerHTML = rows.length ? rows.map((item, index)=>`<div class="priority-row ${bucket === 'later' ? 'later' : ''}">
+    <div class="priority-rank ${bucket === 'today' ? 'now' : ''}">${index + 1}</div>
+    <div class="priority-body">
+      <div class="priority-name">${escapeAttr(item.title)}</div>
+      <div class="priority-meta">${escapeAttr(item.meta)}</div>
+      <div class="priority-reason">${escapeAttr(item.reason)}</div>
+      <div class="priority-actions">${priorityActionButtons(item.links, 'main')}</div>
+    </div>
+    <div class="priority-type"><div class="priority-dot ${type === 'sales' ? 'sales' : 'todo'}"></div></div>
+  </div>`).join('') : '<div class="priority-empty-state">Ingen punkter her.</div>';
+  return rows;
+}
+function renderPrioritySide(targetId, items, type){
   const el = document.getElementById(targetId);
   if(!el) return;
-  const rows = items.filter((item)=>item.bucket === bucket);
-  el.innerHTML = rows.length ? rows.map((item)=>`<div class="priority-item ${bucket}"><div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start"><div><div class="priority-item-title">${item.title}</div><div class="priority-item-meta">${item.meta}</div></div><span class="priority-pill high">prio ${item.score}</span></div><div class="priority-item-meta" style="margin-top:8px">${item.reason}</div><div class="priority-item-links">${item.links}</div></div>`).join('') : '<div class="priority-empty">Ingen punkter her.</div>';
+  el.innerHTML = items.length ? items.map((item)=>`<div class="priority-side-item">
+    <div class="priority-side-dot ${type === 'sales' ? 'sales' : 'todo'}"></div>
+    <div class="priority-side-body">
+      <div class="priority-side-name">${escapeAttr(item.title)}</div>
+      <div class="priority-side-meta">${escapeAttr(item.meta)}</div>
+      <div class="priority-side-reason">${escapeAttr(item.reason)}</div>
+      <div class="priority-side-actions">${priorityActionButtons(item.links, 'side')}</div>
+    </div>
+  </div>`).join('') : '<div class="priority-side-empty">Intet ventende her.</div>';
+}
+function setPriorityView(view){
+  priorityView = view === 'salg' ? 'salg' : 'todos';
+  const todosActive = priorityView === 'todos';
+  const todosBtn = document.getElementById('priorityBtnTodos');
+  const salgBtn = document.getElementById('priorityBtnSalg');
+  const todosView = document.getElementById('priorityViewTodos');
+  const salgView = document.getElementById('priorityViewSalg');
+  const todosSide = document.getElementById('prioritySideTodos');
+  const salgSide = document.getElementById('prioritySideSalg');
+  if(todosBtn) todosBtn.classList.toggle('active', todosActive);
+  if(salgBtn) salgBtn.classList.toggle('active', !todosActive);
+  if(todosView) todosView.classList.toggle('active', todosActive);
+  if(salgView) salgView.classList.toggle('active', !todosActive);
+  if(todosSide) todosSide.style.display = todosActive ? 'block' : 'none';
+  if(salgSide) salgSide.style.display = todosActive ? 'none' : 'block';
 }
 function renderPriorities(){
   const priorities = buildPriorities();
-  renderPriorityColumn('prioritySalesToday', priorities.sales, 'today');
-  renderPriorityColumn('prioritySalesLater', priorities.sales, 'later');
-  renderPriorityColumn('priorityTodoToday', priorities.todos, 'today');
-  renderPriorityColumn('priorityTodoLater', priorities.todos, 'later');
+  const salesLater = renderPriorityRows('prioritySalesLater', priorities.sales, 'later', 'sales');
+  const todoLater = renderPriorityRows('priorityTodoLater', priorities.todos, 'later', 'todo');
+  renderPriorityRows('prioritySalesNow', priorities.sales, 'today', 'sales');
+  renderPriorityRows('priorityTodoNow', priorities.todos, 'today', 'todo');
+  renderPrioritySide('prioritySideSalg', salesLater, 'sales');
+  renderPrioritySide('prioritySideTodos', todoLater, 'todo');
   const stamp = document.getElementById('priorityGeneratedAt');
   if(stamp) stamp.textContent = `Opdateret ${new Date().toLocaleString('da-DK')}`;
+  setPriorityView(priorityView);
 }
 function updateCaseTabCount(){ const count = sager.filter((s)=>ACTIVE_CASE_CATEGORIES.has(+s.k)).length; const tab = document.querySelector('.tab-btn[data-tab="sager"]'); if(tab) tab.innerHTML = `Sager <span style="opacity:.6">(${count})</span>`; }
 function render(){ const tbody = document.getElementById('sagerBody'); const q = (document.getElementById('sagerSoeg').value || '').toLowerCase(); const katF = document.getElementById('filterKat').value; const rows = sager.filter(s=>{ if(!ACTIVE_CASE_CATEGORIES.has(+s.k)) return false; if(katF && String(s.k)!==katF) return false; if(q){ const hay = `${s.nr} ${s.kunde} ${s.adr} ${s.opg}`.toLowerCase(); if(!hay.includes(q)) return false; } return true; }).sort((a,b)=>a.k-b.k || a.sort-b.sort); tbody.innerHTML = rows.map(s=>{ const idx = sager.indexOf(s); const kundeLower = String(s.kunde || '').toLowerCase(); const isDke = kundeLower.includes('dke'); const kundeCell = isDke ? `${s.kunde} <span class="chip tag-dke" style="font-size:10px">DKE</span>` : s.kunde; return `<tr data-kat="${s.k}"><td><select class="kategori kat-${s.k}" onchange="changeKat(${idx}, this.value)">${Object.entries(KAT).map(([k,v])=>`<option value="${k}"${+k===s.k?' selected':''}>${v}</option>`).join('')}</select></td><td>${s.nr || '—'}</td><td title="${escapeAttr(s.kunde)}"><button class="kunde-link" onclick="openSag(${idx})">${kundeCell}</button></td><td title="${escapeAttr(s.adr)}" class="dim">${s.adr || '—'}</td><td class="wrap" title="${escapeAttr(s.opg)}">${s.opg || '—'}</td><td class="num">${s.b && s.b !== '0' ? s.b + ' kr.' : '—'}</td><td class="num">${s.u && s.u !== '0' ? '<span class="chip chip-amber">' + s.u + ' kr.</span>' : '—'}</td><td class="dim date-cell">${displayDate(s.dato)}</td><td class="dim date-cell">${displayDate(s.start)}</td><td class="dim date-cell">${displayDate(s.slut)}</td><td><select class="status-sel" onchange="changeStatus(${idx}, this.value)"><option${s.status==='—'?' selected':''}>—</option><option${s.status==='Faktura sendt'?' selected':''}>Faktura sendt</option><option${s.status==='Ingen udeståender'?' selected':''}>Ingen udeståender</option><option${s.status==='Semi-godkendt'?' selected':''}>Semi-godkendt</option><option${s.status==='Afsendt'?' selected':''}>Afsendt</option></select></td><td class="dim">${s.fak || '—'}</td><td><button class="icon-btn" onclick="openEditSag(${idx})">Rediger</button></td></tr>`; }).join(''); document.getElementById('count').textContent = `${rows.length} aktive/potentielle sager`; updateCaseTabCount(); }
