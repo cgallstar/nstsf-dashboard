@@ -923,26 +923,24 @@
 </section>
 
 <section id="sager" class="section">
-  <div class="panel">
-    <div class="panel-hd">
-      <h2>Sager</h2>
+  <div class="sager-wrap">
+    <div class="sager-tools">
+      <input id="sagerSoeg" type="search" placeholder="Søg kunde, sagsnr., adresse...">
+      <select id="filterKat">
+        <option value="">Alle kategorier</option>
+        <option value="1">01. Arbejde færdigt</option>
+        <option value="2">02. Aktive kunder</option>
+        <option value="3">03. Kunde (ikke startet)</option>
+        <option value="4">04. Tilbud sendt</option>
+        <option value="5">05. Pipeline</option>
+        <option value="6">06. Afsluttet</option>
+        <option value="7">07. Ikke relevant</option>
+      </select>
       <button class="btn primary" onclick="addSag()">Tilføj ny</button>
+      <span style="font-size:12px;color:var(--muted)">Skift kategori eller status direkte i tabellen</span>
+      <span id="count" class="count"></span>
     </div>
-    <div class="sager-wrap">
-      <div class="sager-tools">
-        <input id="sagerSoeg" type="search" placeholder="Søg på sagsnr., kunde, adresse eller opgave">
-        <select id="filterKat">
-          <option value="">Alle kategorier</option>
-          <option value="1">01. Arbejde færdigt</option>
-          <option value="2">02. Aktive kunder</option>
-          <option value="3">03. Kunde (ikke startet)</option>
-          <option value="4">04. Tilbud sendt</option>
-          <option value="5">05. Pipeline</option>
-          <option value="6">06. Afsluttet</option>
-          <option value="7">07. Ikke relevant</option>
-        </select>
-        <div id="count" class="count"></div>
-      </div>
+    <div style="overflow-x:auto">
       <table id="sagerTable">
         <thead>
           <tr>
@@ -950,12 +948,12 @@
             <th>Sagsnr.</th>
             <th>Kundenavn</th>
             <th>Adresse</th>
-            <th>Opgave</th>
+            <th class="wrap">Opgave</th>
             <th class="num">Est. beløb</th>
             <th class="num">Udestående</th>
             <th>Betalingsdato</th>
-            <th>Startdato</th>
-            <th>Slutdato</th>
+            <th>Start</th>
+            <th>Slut</th>
             <th>Fin. status</th>
             <th>Fakturanr.</th>
             <th></th>
@@ -963,8 +961,8 @@
         </thead>
         <tbody id="sagerBody"></tbody>
       </table>
-      <div id="caseDetail" class="case-detail"></div>
     </div>
+    <div id="caseDetail" class="case-detail"></div>
   </div>
 </section>
 
