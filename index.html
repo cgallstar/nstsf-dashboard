@@ -218,10 +218,10 @@
   .pay-status.betalt{background:var(--green-soft);color:var(--green);border-color:#b7dcc9}
   .pay-status.udestaaende{background:var(--red-soft);color:var(--red);border-color:#efc3ba}
   .pay-note{font-size:12px;color:var(--muted);margin-top:10px}
-  .capacity-tools{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12px}
+  .capacity-tools{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:16px}
   .capacity-tools input{width:80px;padding:6px 8px;border:1px solid var(--line);border-radius:6px;text-align:right}
-  .capacity-layout{display:grid;grid-template-columns:320px 1fr;gap:18px;align-items:start}
-  .employee-panel{border:1px solid var(--line);border-radius:12px;background:#f8fafc;padding:14px;position:sticky;top:18px}
+  .capacity-layout{display:grid;grid-template-columns:1fr;gap:18px}
+  .employee-panel{border:1px solid var(--line);border-radius:14px;background:#fff;padding:16px}
   .employee-panel h3{margin-bottom:10px}
   .employee-list{display:grid;gap:8px;margin-bottom:12px}
   .employee-row{display:grid;grid-template-columns:1fr 70px 28px;gap:6px;align-items:center}
@@ -230,80 +230,107 @@
   .employee-status-editor{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}
   .employee-status-editor label{display:grid;gap:4px;font-size:11px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.04em}
   .employee-status-editor select,.employee-status-editor input{padding:6px 8px;border:1px solid var(--line);border-radius:6px;font-size:12px;background:#fff}
-  .capacity-board{display:grid;gap:16px}
-  .featured-weeks{display:grid;grid-template-columns:1.2fr .8fr;gap:14px}
-  .week-card{border:1px solid var(--line);border-radius:14px;background:#fff;padding:14px;min-height:132px}
-  .week-card.over{border-color:#efc3ba;background:#fff8f6}
-  .week-card.warn{border-color:#efd28f;background:#fffcf4}
-  .week-card.featured{
-    background:linear-gradient(180deg,#ffffff 0%, #f8fafd 100%);
-    box-shadow:0 8px 24px rgba(15,30,46,.06);
+  .capacity-board{display:grid;gap:18px}
+  .capacity-summary-bar{
+    display:flex;justify-content:space-between;align-items:flex-start;gap:16px;
+    color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.08em;font-weight:700;
   }
-  .week-card.secondary{
-    background:linear-gradient(180deg,#ffffff 0%, #fbfcfe 100%);
+  .capacity-summary-bar .meta-right{
+    text-align:right;text-transform:none;letter-spacing:0;font-size:12px;font-weight:500;
   }
-  .week-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;margin-bottom:12px}
-  .week-title{font-weight:700;font-size:17px;letter-spacing:-.01em}
-  .week-kicker{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:700;margin-bottom:4px}
-  .week-dates{font-size:12px;color:var(--muted);margin-top:2px}
-  .week-pct{font-size:22px;font-weight:700;letter-spacing:-.02em}
-  .capacity-bar{height:9px;background:#edf1f6;border-radius:999px;overflow:hidden;min-width:120px}
-  .capacity-fill{height:100%;background:var(--green)}
-  .capacity-fill.warn{background:var(--amber)}
-  .capacity-fill.over{background:var(--red)}
-  .week-meta{display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin:8px 0}
-  .week-section{font-size:10px;font-weight:700;color:#4a5968;text-transform:uppercase;letter-spacing:.04em;margin-top:6px}
-  .week-list{display:grid;gap:2px;margin-top:3px;font-size:11px}
-  .week-summary-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:12px}
-  .week-summary-stat{padding:10px 12px;border:1px solid #e7edf4;border-radius:10px;background:#fff}
-  .week-summary-stat .label{font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:700}
-  .week-summary-stat .value{font-size:16px;font-weight:700;margin-top:4px}
-  .week-summary-stat .meta{font-size:11px;color:var(--muted);margin-top:2px}
-  .week-pill{display:inline-flex;align-items:center;padding:4px 8px;border-radius:999px;font-size:11px;font-weight:700}
-  .week-pill.current{background:var(--brand-soft);color:var(--brand)}
-  .week-pill.next{background:#eef3fb;color:#476a92}
-  .day-strip{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px;margin-top:14px}
-  .day-column{border:1px solid #e7edf4;border-radius:12px;background:#fff;padding:10px;min-height:210px}
-  .day-column.past{background:#f5f7fa;color:#95a1af}
-  .day-column.past .day-project,
-  .day-column.past .employee-chip{opacity:.6}
-  .day-head{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:10px}
-  .day-name{font-size:12px;font-weight:700}
-  .day-date{font-size:11px;color:var(--muted);margin-top:2px}
-  .day-load{font-size:11px;font-weight:700;color:#445469}
-  .day-employees{display:grid;gap:8px}
-  .day-employee{padding:8px;border-radius:10px;background:#f8fafd;border:1px solid #edf1f6}
-  .day-employee.away{background:#fbfcfd}
-  .employee-chip{display:flex;justify-content:space-between;gap:8px;align-items:center;font-size:11px;font-weight:700;margin-bottom:6px}
-  .employee-tag{font-size:10px;color:var(--muted);font-weight:600}
-  .day-project{font-size:11px;line-height:1.35;color:#233140}
-  .day-project + .day-project{margin-top:3px}
-  .day-project.empty{color:var(--muted)}
-  .simple-weeks{display:grid;grid-template-columns:repeat(3,minmax(180px,1fr));gap:10px}
-  .simple-week{padding:12px;border:1px solid #e7edf4;border-radius:12px;background:#fff}
-  .simple-top{display:flex;justify-content:space-between;gap:8px;align-items:flex-start}
-  .simple-title{font-size:13px;font-weight:700}
-  .simple-meta{font-size:11px;color:var(--muted);margin-top:2px}
-  .simple-badges{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
-  .simple-badge{padding:4px 7px;border-radius:999px;background:#f3f6fa;font-size:11px;color:#445469;font-weight:600}
-  .simple-badge.over{background:var(--red-soft);color:var(--red)}
-  .simple-badge.warn{background:var(--amber-soft);color:var(--amber)}
+  .capacity-section-label{
+    color:#9c9388;font-size:11px;text-transform:uppercase;letter-spacing:.14em;font-weight:700;
+    margin-bottom:10px;
+  }
+  .capacity-hero{
+    border:1px solid #e9e3da;border-radius:18px;background:#fff;overflow:hidden;
+  }
+  .capacity-hero-head{
+    display:flex;justify-content:space-between;gap:18px;align-items:flex-start;
+    padding:22px 28px 20px;border-bottom:1px solid #efe8de;
+  }
+  .capacity-kicker{font-size:11px;color:#a59c91;text-transform:uppercase;letter-spacing:.12em;font-weight:700;margin-bottom:6px}
+  .capacity-week-title{font-size:24px;font-weight:700;letter-spacing:-.02em}
+  .capacity-week-range{font-size:12px;color:var(--muted);margin-top:2px}
+  .capacity-load{text-align:right}
+  .capacity-load .pct{font-size:38px;font-weight:700;letter-spacing:-.03em;color:#8d1f1f}
+  .capacity-load .meta{font-size:12px;color:var(--muted);margin-top:2px}
+  .capacity-grid{
+    display:grid;grid-template-columns:158px repeat(5,minmax(0,1fr));
+  }
+  .capacity-grid .cell{
+    min-height:86px;padding:12px;border-right:1px solid #efe8de;border-bottom:1px solid #efe8de;background:#fff;
+  }
+  .capacity-grid .cell:nth-child(6n){border-right:none}
+  .capacity-grid .day-header{
+    min-height:72px;text-align:center;color:#857e76;font-weight:700;text-transform:uppercase;
+    letter-spacing:.1em;font-size:11px;background:#fcfbf8;
+  }
+  .capacity-grid .day-header .date{
+    display:block;margin-top:4px;color:#2a2a2a;text-transform:none;letter-spacing:0;font-size:12px;font-weight:600;
+  }
+  .capacity-grid .day-header.today{
+    background:#fff;border-top:3px solid var(--brand);padding-top:9px;color:var(--brand-dark);
+  }
+  .employee-label{
+    display:flex;align-items:center;gap:12px;font-size:12px;font-weight:600;color:#2f2f2f;background:#fcfbf8;
+  }
+  .employee-avatar{
+    width:34px;height:34px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;
+    color:#fff;font-size:12px;font-weight:700;flex:none;
+  }
+  .employee-name{font-size:14px;font-weight:600}
+  .capacity-assignment{
+    display:inline-flex;align-items:center;min-height:34px;padding:8px 12px;border-radius:9px;
+    font-size:12px;font-weight:600;line-height:1.2;min-width:100%;
+  }
+  .assignment-work{background:#eef5ef;color:#496d53}
+  .assignment-alt{background:#e9eff8;color:#415f83}
+  .assignment-school{background:#f2ece8;color:#7b6456}
+  .assignment-idle{background:transparent;color:#c6c0b8;padding:0;min-height:auto}
+  .assignment-suggestion{background:#f5ead7;color:#876026}
+  .cell.past .capacity-assignment{opacity:.5}
+  .cell.past .assignment-idle{opacity:.75}
+  .free-row{
+    display:flex;align-items:center;gap:12px;padding:14px 28px;color:#7d7366;font-size:12px;background:#fff;
+  }
+  .free-row .free-people{display:flex;gap:6px}
+  .free-row .free-text{font-style:italic}
+  .free-row .free-count{color:#2f6f2f;font-weight:700;font-style:normal}
+  .upcoming-list{
+    border:1px solid #e9e3da;border-radius:18px;background:#fff;overflow:hidden;
+  }
+  .upcoming-row{
+    display:grid;grid-template-columns:160px 1fr 260px 90px;gap:16px;align-items:center;
+    padding:16px 18px;border-top:1px solid #efe8de;
+  }
+  .upcoming-row:first-child{border-top:none}
+  .upcoming-title{font-size:15px;font-weight:700}
+  .upcoming-dates{font-size:11px;color:#a29a90;margin-top:4px}
+  .upcoming-projects{display:grid;gap:6px}
+  .project-line{display:flex;align-items:center;gap:8px;font-size:13px}
+  .project-tag{
+    display:inline-flex;align-items:center;padding:4px 7px;border-radius:7px;
+    font-size:11px;font-weight:700;
+  }
+  .project-tag.active{background:#eef5ef;color:#496d53}
+  .project-tag.quote{background:#e9eff8;color:#415f83}
+  .project-tag.pipeline{background:#f5ead7;color:#876026}
+  .upcoming-staff{text-align:right}
+  .staff-icons{display:flex;justify-content:flex-end;gap:6px;flex-wrap:wrap}
+  .staff-note{margin-top:8px;font-size:11px;color:#876026}
+  .upcoming-pct{text-align:right;font-size:20px;font-weight:700;color:#8d1f1f}
   .status-dot{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:5px}
   .status-work{background:var(--green)}
   .status-vacation{background:var(--amber)}
   .status-school{background:var(--blue)}
   .status-poland{background:var(--red)}
   .capacity-note{font-size:12px;color:var(--muted);margin-top:10px}
-  @media (max-width: 1200px){
-    .featured-weeks{grid-template-columns:1fr}
-    .day-strip{grid-template-columns:repeat(2,minmax(0,1fr))}
-    .simple-weeks{grid-template-columns:repeat(2,minmax(180px,1fr))}
-  }
   @media (max-width: 960px){
-    .capacity-layout{grid-template-columns:1fr}
-    .employee-panel{position:static}
-    .day-strip{grid-template-columns:1fr}
-    .simple-weeks{grid-template-columns:1fr}
+    .capacity-grid{grid-template-columns:120px repeat(5,minmax(140px,1fr));overflow:auto}
+    .upcoming-row{grid-template-columns:1fr;gap:10px}
+    .upcoming-staff,.upcoming-pct{text-align:left}
+    .staff-icons{justify-content:flex-start}
   }
   .integration-grid{display:grid;grid-template-columns:1.2fr 1fr;gap:16px}
   .integration-status{
@@ -721,47 +748,47 @@
   <div class="panel">
     <div class="panel-hd">
       <h2>Kapacitetskalender — resten af 2026</h2>
-      <div class="capacity-tools">
-        <label for="capacityHours" class="dim" style="font-size:12px;font-weight:600">Timer pr. medarbejder pr. uge</label>
-        <input id="capacityHours" type="number" min="1" step="1" value="37">
-        <span class="dim" style="font-size:12px">Timer fordeles lineært mellem start- og slutdato.</span>
-      </div>
     </div>
     <div class="capacity-layout">
-      <div class="employee-panel">
-        <h3>Medarbejdere</h3>
-        <div id="employeeList" class="employee-list"></div>
-        <button class="btn" type="button" onclick="addEmployee()">Tilføj medarbejder</button>
-
-        <div class="employee-status-editor">
-          <label>Medarbejder
-            <select id="statusEmployee"></select>
-          </label>
-          <label>Uge
-            <select id="statusWeek"></select>
-          </label>
-          <label>Status
-            <select id="statusType">
-              <option value="work">På arbejde</option>
-              <option value="vacation">Ferie</option>
-              <option value="school">Skole</option>
-              <option value="poland">Polen</option>
-            </select>
-          </label>
-          <label>Timer override
-            <input id="statusHours" type="number" min="0" step="1" placeholder="valgfri">
-          </label>
-        </div>
-
-        <div class="admin-actions">
-          <button class="btn primary" type="button" onclick="setEmployeeWeekStatus()">Gem uge</button>
-          <button class="btn" type="button" onclick="clearEmployeeWeekStatus()">Nulstil uge</button>
-        </div>
-        <div class="capacity-note">Udenlandske medarbejdere har automatisk 5 uger i DK og 2 uger i Polen. Lærlinge kan markeres som skole uge for uge.</div>
-      </div>
-
       <div>
         <div id="capacityCalendar" class="capacity-board"></div>
+        <div class="employee-panel" style="margin-top:18px">
+          <h3>Planlægning og medarbejdere</h3>
+          <div id="employeeList" class="employee-list"></div>
+          <button class="btn" type="button" onclick="addEmployee()">Tilføj medarbejder</button>
+
+          <div class="capacity-tools">
+            <label for="capacityHours" class="dim" style="font-size:12px;font-weight:600">Timer pr. medarbejder pr. uge</label>
+            <input id="capacityHours" type="number" min="1" step="1" value="37">
+            <span class="dim" style="font-size:12px">Bruges til kapacitetsprocenten.</span>
+          </div>
+
+          <div class="employee-status-editor">
+            <label>Medarbejder
+              <select id="statusEmployee"></select>
+            </label>
+            <label>Uge
+              <select id="statusWeek"></select>
+            </label>
+            <label>Status
+              <select id="statusType">
+                <option value="work">På arbejde</option>
+                <option value="vacation">Ferie</option>
+                <option value="school">Skole</option>
+                <option value="poland">Polen</option>
+              </select>
+            </label>
+            <label>Timer override
+              <input id="statusHours" type="number" min="0" step="1" placeholder="valgfri">
+            </label>
+          </div>
+
+          <div class="admin-actions">
+            <button class="btn primary" type="button" onclick="setEmployeeWeekStatus()">Gem uge</button>
+            <button class="btn" type="button" onclick="clearEmployeeWeekStatus()">Nulstil uge</button>
+          </div>
+          <div class="capacity-note">Udenlandske medarbejdere har automatisk 5 uger i DK og 2 uger i Polen. Lærlinge kan markeres som skole uge for uge.</div>
+        </div>
       </div>
     </div>
   </div>
@@ -1095,10 +1122,36 @@ function employeeWeek(emp, weekKey, index, defaultHours){ const override = (emp.
 function statusLabel(status){ return ({work:'På arbejde', vacation:'Ferie', school:'Skole', poland:'Polen'})[status] || status; }
 function dayName(date){ return date.toLocaleDateString('da-DK', { weekday:'short' }).replace('.', ''); }
 function dayMonth(date){ return date.toLocaleDateString('da-DK', { day:'2-digit', month:'short' }); }
-function clampPercent(value){ return Math.max(0, Math.min(100, value)); }
-function featuredLabel(offset, weekendMode){ if(offset === 0) return weekendMode ? 'Næste uge' : 'Aktuel uge'; if(offset === 1) return weekendMode ? 'Ugen efter' : 'Næste uge'; return `Om ${offset} uger`; }
+function weekdayLong(date){ return date.toLocaleDateString('da-DK', { weekday:'long' }); }
+function fullDateLabel(date){ return date.toLocaleDateString('da-DK', { day:'numeric', month:'long', year:'numeric' }); }
 function projectSnippet(name=''){ const clean = String(name || '').trim(); if(!clean) return 'Projekt ikke navngivet'; return clean.length > 22 ? clean.slice(0, 22).trim() + '…' : clean; }
 function summarizeWeekStaff(staff){ const counts = {work:0, vacation:0, school:0, poland:0}; staff.forEach((item)=>{ counts[item.status] = (counts[item.status] || 0) + 1; }); return counts; }
+function employeeBadgeColor(index){
+  return ['#2f6a43','#234c7c','#6b4317','#7a456d','#8c8b84','#777772'][index % 6];
+}
+function employeeInitials(name=''){
+  const parts = String(name || '').trim().split(/\s+/).filter(Boolean);
+  if(!parts.length) return '??';
+  if(parts.length === 1) return parts[0].slice(0,2).toUpperCase();
+  return `${parts[0][0] || ''}${parts[1][0] || ''}`.toUpperCase();
+}
+function projectTagClass(project){
+  if(!project) return 'project-tag active';
+  const label = String(project.tag || project.type || '').toLowerCase();
+  if(label.includes('tilbud')) return 'project-tag quote';
+  if(label.includes('pipeline')) return 'project-tag pipeline';
+  return 'project-tag active';
+}
+function assignmentClass(entry){
+  if(!entry) return 'assignment-idle';
+  if(entry.type === 'status'){
+    if(entry.label === 'Skole') return 'assignment-school';
+    return 'assignment-idle';
+  }
+  if(entry.type === 'suggestion') return 'assignment-suggestion';
+  if(entry.type === 'alt') return 'assignment-alt';
+  return 'assignment-work';
+}
 function buildDayAssignments(week, baseDate){
   const days = Array.from({length:5}, (_, i)=> {
     const date = addDays(week.weekStart, i);
@@ -1107,7 +1160,8 @@ function buildDayAssignments(week, baseDate){
       date,
       iso,
       isPast: startOfWeek(baseDate).getTime() === week.weekStart.getTime() && date < new Date(baseDate.getFullYear(), baseDate.getMonth(), baseDate.getDate()),
-      employees: week.staff.map((member)=>({ id:member.emp.id, name:member.emp.name, status:member.status, projects:[], load:0 })),
+      isToday: new Date(baseDate.getFullYear(), baseDate.getMonth(), baseDate.getDate()).getTime() === date.getTime(),
+      employees: week.staff.map((member, idx)=>({ id:member.emp.id, index:idx, name:member.emp.name, status:member.status, project:null, load:0 })),
       projects:[]
     };
   });
@@ -1119,6 +1173,7 @@ function buildDayAssignments(week, baseDate){
     return Number.isNaN(start.getTime()) || Number.isNaN(end.getTime()) || end < start || !totalDays ? null : {
       kunde: s.kunde || 'Ukendt kunde',
       project: projectSnippet(s.opg || s.kunde || 'Projekt'),
+      tag: +s.k === 4 ? 'Tilbud' : +s.k === 5 ? 'Pipeline' : 'Aktiv',
       start,
       end,
       dailyHours: estimatedHours(s) / totalDays
@@ -1131,115 +1186,87 @@ function buildDayAssignments(week, baseDate){
     const dayProjects = activeProjects.filter((project)=> day.date >= project.start && day.date <= project.end).sort((a,b)=>b.dailyHours-a.dailyHours);
     day.projects = dayProjects;
     if(!dayProjects.length){
-      working.forEach((item)=>item.projects.push({label:'Intern tid / buffer', type:'buffer'}));
+      working.forEach((item)=>item.project = {label:'Ledig', type:'status'});
       return;
     }
     dayProjects.forEach((project)=>{
       const seats = Math.max(1, Math.min(working.length, Math.round(project.dailyHours / 6) || 1));
       for(let n=0; n<seats; n++){
         const target = [...working].sort((a,b)=>a.load-b.load)[0];
-        target.projects.push({label:project.project, kunde:project.kunde, type:'project'});
+        target.project = {label:project.project, kunde:project.kunde, tag:project.tag, type: n === 0 ? 'project' : 'alt'};
         target.load += project.dailyHours / seats;
       }
     });
     working.forEach((item)=>{
-      if(!item.projects.length) item.projects.push({label:'Service / småopgaver', type:'buffer'});
+      if(!item.project) item.project = {label:'Ledig', type:'status'};
+    });
+    day.employees.forEach((employee)=>{
+      if(employee.status !== 'work'){
+        employee.project = {label: statusLabel(employee.status), type:'status'};
+      }
     });
   });
 
   return days;
 }
-function renderFeaturedWeekCard(week, options = {}){
-  const baseDate = options.baseDate || new Date();
+function renderCurrentWeekBoard(week, baseDate){
   const pct = week.capacity ? Math.round(week.hours / week.capacity * 100) : 0;
-  const cls = pct > 100 ? 'over' : (pct >= 85 ? 'warn' : '');
   const staffCounts = summarizeWeekStaff(week.staff);
   const days = buildDayAssignments(week, baseDate);
-  return `<div class="week-card featured ${cls}">
-    <div class="week-head">
-      <div>
-        <div class="week-kicker">${options.kicker || ''}</div>
-        <div class="week-title">${options.title || `Uge ${week.weekNo}`}</div>
-        <div class="week-dates">${displayDate(week.weekStart.toISOString().slice(0,10))} - ${displayDate(week.weekEnd.toISOString().slice(0,10))}</div>
-      </div>
-      <div style="text-align:right">
-        <div class="week-pill ${options.pillClass || 'current'}">${options.pillLabel || 'Fokus'}</div>
-        <div class="week-pct" style="margin-top:8px">${pct}%</div>
-      </div>
-    </div>
-    <div class="capacity-bar"><div class="capacity-fill ${cls}" style="width:${clampPercent(pct)}%"></div></div>
-    <div class="week-meta"><span>${Math.round(week.hours)} t planlagt</span><span>${Math.round(week.capacity)} t kapacitet</span></div>
-    <div class="week-summary-grid">
-      <div class="week-summary-stat"><div class="label">På arbejde</div><div class="value">${staffCounts.work}</div><div class="meta">aktive medarbejdere</div></div>
-      <div class="week-summary-stat"><div class="label">Fravær</div><div class="value">${staffCounts.vacation + staffCounts.school + staffCounts.poland}</div><div class="meta">${staffCounts.vacation} ferie · ${staffCounts.school} skole · ${staffCounts.poland} Polen</div></div>
-      <div class="week-summary-stat"><div class="label">Belægning</div><div class="value">${pct > 100 ? `${pct}%` : `${pct}%`}</div><div class="meta">${pct > 100 ? `${pct - 100}% overbooked` : pct >= 85 ? 'tæt på fuld kapacitet' : 'luft i planen'}</div></div>
-    </div>
-    <div class="day-strip">
-      ${days.map((day)=>`<div class="day-column ${day.isPast ? 'past' : ''}">
-        <div class="day-head">
-          <div>
-            <div class="day-name">${dayName(day.date)}</div>
-            <div class="day-date">${dayMonth(day.date)}</div>
-          </div>
-          <div class="day-load">${day.projects.length ? `${day.projects.length} projekter` : 'Ingen sager'}</div>
+  const freePeople = days[days.length - 1].employees.filter((employee)=>employee.project && employee.project.label === 'Ledig');
+  return `<div>
+    <div class="capacity-section-label">Denne uge</div>
+    <div class="capacity-hero">
+      <div class="capacity-hero-head">
+        <div>
+          <div class="capacity-kicker">Aktuel uge</div>
+          <div class="capacity-week-title">Uge ${week.weekNo}</div>
+          <div class="capacity-week-range">${displayDate(week.weekStart.toISOString().slice(0,10))}-${displayDate(week.weekEnd.toISOString().slice(0,10))}</div>
         </div>
-        <div class="day-employees">
-          ${day.employees.map((employee)=>`<div class="day-employee ${employee.status !== 'work' ? 'away' : ''}">
-            <div class="employee-chip"><span>${employee.name}</span><span class="employee-tag">${employee.status === 'work' ? 'På arbejde' : statusLabel(employee.status)}</span></div>
-            ${employee.status === 'work'
-              ? employee.projects.slice(0,3).map((project)=>`<div class="day-project">${project.label}</div>`).join('') || '<div class="day-project empty">Ikke planlagt</div>'
-              : `<div class="day-project empty">${statusLabel(employee.status)}</div>`
-            }
-          </div>`).join('')}
+        <div class="capacity-load">
+          <div class="pct">${pct}%</div>
+          <div class="meta">${Math.round(week.hours)} t planlagt / ${Math.round(week.capacity)} t kapacitet</div>
         </div>
-      </div>`).join('')}
+      </div>
+      <div class="capacity-grid">
+        <div class="cell day-header"></div>
+        ${days.map((day)=>`<div class="cell day-header ${day.isToday ? 'today' : ''}"><div>${day.isToday ? `${dayName(day.date).toUpperCase()} · I DAG` : dayName(day.date).toUpperCase()}</div><span class="date">${dayMonth(day.date)}</span></div>`).join('')}
+        ${employees.map((employee, employeeIndex)=>{
+          return `<div class="cell employee-label"><span class="employee-avatar" style="background:${employeeBadgeColor(employeeIndex)}">${employeeInitials(employee.name)}</span><div class="employee-name">${employee.name}</div></div>${
+            days.map((day)=>{
+              const assignment = day.employees.find((entry)=>entry.id === employee.id);
+              return `<div class="cell ${day.isPast ? 'past' : ''}">
+                <div class="capacity-assignment ${assignmentClass(assignment.project)}">${assignment?.project?.label || 'Ledig'}</div>
+              </div>`;
+            }).join('')
+          }`;
+        }).join('')}
+      </div>
+      <div class="free-row">
+        <div class="free-text">Ledige til løse opgaver</div>
+        <div class="free-people">${freePeople.map((employee)=>`<span class="employee-avatar" style="width:30px;height:30px;background:${employeeBadgeColor(employee.index)}">${employeeInitials(employee.name)}</span>`).join('')}</div>
+        <div class="free-count">${freePeople.length} ledige mand</div>
+      </div>
     </div>
   </div>`;
 }
-function renderSecondaryWeekCard(week, options = {}){
+function renderUpcomingWeekRow(week){
   const pct = week.capacity ? Math.round(week.hours / week.capacity * 100) : 0;
-  const cls = pct > 100 ? 'over' : (pct >= 85 ? 'warn' : '');
   const staffCounts = summarizeWeekStaff(week.staff);
-  const topProjects = week.details.slice(0,3).map((item)=>`${item.kunde} (${Math.round(item.hours)} t)`);
-  return `<div class="week-card secondary ${cls}">
-    <div class="week-head">
-      <div>
-        <div class="week-kicker">${options.kicker || 'Oversigt'}</div>
-        <div class="week-title">${options.title || `Uge ${week.weekNo}`}</div>
-        <div class="week-dates">${displayDate(week.weekStart.toISOString().slice(0,10))} - ${displayDate(week.weekEnd.toISOString().slice(0,10))}</div>
-      </div>
-      <div style="text-align:right">
-        <div class="week-pill next">${options.pillLabel || 'Kommende'}</div>
-        <div class="week-pct" style="margin-top:8px">${pct}%</div>
-      </div>
+  const active = week.details.slice(0,2);
+  return `<div class="upcoming-row">
+    <div>
+      <div class="upcoming-title">Uge ${week.weekNo}</div>
+      <div class="upcoming-dates">${displayDate(week.weekStart.toISOString().slice(0,10))}-${displayDate(week.weekEnd.toISOString().slice(0,10))}</div>
     </div>
-    <div class="capacity-bar"><div class="capacity-fill ${cls}" style="width:${clampPercent(pct)}%"></div></div>
-    <div class="week-summary-grid">
-      <div class="week-summary-stat"><div class="label">På arbejde</div><div class="value">${staffCounts.work}</div><div class="meta">${staffCounts.vacation} ferie · ${staffCounts.school} skole · ${staffCounts.poland} Polen</div></div>
-      <div class="week-summary-stat"><div class="label">Belægning</div><div class="value">${pct}%</div><div class="meta">${Math.round(week.hours)} t af ${Math.round(week.capacity)} t</div></div>
-      <div class="week-summary-stat"><div class="label">Største sager</div><div class="value">${week.details.length}</div><div class="meta">${topProjects[0] || 'Ingen aktive sager'}</div></div>
+    <div class="upcoming-projects">
+      ${active.length ? active.map((item, index)=>`<div class="project-line"><span class="${index === 0 ? 'project-tag active' : 'project-tag quote'}">${index === 0 ? 'Aktiv' : 'Tilbud'}</span><span>${item.kunde} — ${projectSnippet(item.kunde)}</span></div>`).join('') : '<div class="project-line"><span class="project-tag pipeline">Ledig</span><span>Ingen planlagte projekter</span></div>'}
     </div>
-  </div>`;
-}
-function renderSimpleWeekCard(week){
-  const pct = week.capacity ? Math.round(week.hours / week.capacity * 100) : 0;
-  const cls = pct > 100 ? 'over' : (pct >= 85 ? 'warn' : '');
-  const staffCounts = summarizeWeekStaff(week.staff);
-  return `<div class="simple-week">
-    <div class="simple-top">
-      <div>
-        <div class="simple-title">Uge ${week.weekNo}</div>
-        <div class="simple-meta">${displayDate(week.weekStart.toISOString().slice(0,10))} - ${displayDate(week.weekEnd.toISOString().slice(0,10))}</div>
-      </div>
-      <div class="week-pct" style="font-size:18px">${pct}%</div>
+    <div class="upcoming-staff">
+      <div class="staff-icons">${week.staff.map((member, idx)=>`<span class="employee-avatar" style="width:34px;height:34px;background:${member.status === 'work' ? employeeBadgeColor(idx) : '#8c8b84'}">${employeeInitials(member.emp.name)}</span>`).join('')}</div>
+      <div class="staff-note">${staffCounts.poland ? `${staffCounts.poland} i Polen · ` : ''}${staffCounts.work} på arbejde</div>
     </div>
-    <div class="simple-badges">
-      <span class="simple-badge">${staffCounts.work} på arbejde</span>
-      ${staffCounts.vacation ? `<span class="simple-badge">${staffCounts.vacation} ferie</span>` : ''}
-      ${staffCounts.school ? `<span class="simple-badge">${staffCounts.school} skole</span>` : ''}
-      ${staffCounts.poland ? `<span class="simple-badge">${staffCounts.poland} Polen</span>` : ''}
-      <span class="simple-badge ${cls}">${pct > 100 ? `${pct - 100}% overbooked` : `${Math.round(week.hours)} t planlagt`}</span>
-    </div>
+    <div class="upcoming-pct">${pct}%</div>
   </div>`;
 }
 function renderEmployees(rows){ const list = document.getElementById('employeeList'); const empSel = document.getElementById('statusEmployee'); const weekSel = document.getElementById('statusWeek'); if(!list || !empSel || !weekSel) return; list.innerHTML = employees.map((e,i)=>`<div class="employee-row"><input value="${escapeAttr(e.name)}" oninput="updateEmployee(${i}, 'name', this.value)"><input type="number" value="${e.hours}" oninput="updateEmployee(${i}, 'hours', this.value)"><button onclick="removeEmployee(${i})">×</button></div>`).join(''); const weeks = rows.slice(0, 16); empSel.innerHTML = employees.map(e=>`<option value="${e.id}">${e.name}</option>`).join(''); weekSel.innerHTML = weeks.map(w=>`<option value="${w.weekKey}">Uge ${w.weekNo} (${displayDate(w.weekStart.toISOString().slice(0,10))} - ${displayDate(w.weekEnd.toISOString().slice(0,10))})</option>`).join(''); }
@@ -1248,7 +1275,7 @@ function updateEmployee(i, field, value){ if(!employees[i]) return; employees[i]
 function removeEmployee(i){ employees.splice(i, 1); saveState(); renderCapacity(); }
 function setEmployeeWeekStatus(){ const emp = employees.find(e=>e.id === document.getElementById('statusEmployee').value); if(!emp) return; emp.overrides = emp.overrides || {}; const weekKey = document.getElementById('statusWeek').value; const hours = document.getElementById('statusHours').value; emp.overrides[weekKey] = {status:document.getElementById('statusType').value}; if(hours !== '') emp.overrides[weekKey].hours = +hours; saveState(); renderCapacity(); }
 function clearEmployeeWeekStatus(){ const emp = employees.find(e=>e.id === document.getElementById('statusEmployee').value); if(!emp || !emp.overrides) return; delete emp.overrides[document.getElementById('statusWeek').value]; saveState(); renderCapacity(); }
-function renderCapacity(){ const calendar = document.getElementById('capacityCalendar'); const capacityInput = document.getElementById('capacityHours'); if(!calendar || !capacityInput) return; const defaultHours = +capacityInput.value || 37; const now = new Date(); const weekendMode = [0,6].includes(now.getDay()); const focusBase = weekendMode ? addDays(now, now.getDay() === 6 ? 2 : 1) : now; const firstWeek = startOfWeek(focusBase); const yearEnd = new Date(new Date().getFullYear(), 11, 31); const weekCount = Math.ceil((startOfWeek(yearEnd) - firstWeek) / (7 * 86400000)) + 1; const rows = []; for(let w=0; w<weekCount; w++){ const weekStart = addDays(firstWeek, w*7); const weekEnd = addDays(weekStart, 6); const weekKey = weekStart.toISOString().slice(0,10); const details = []; let hours = 0; sager.forEach(s=>{ if(![2,3,4,5].includes(+s.k) || !s.start || !s.slut) return; const start = new Date(s.start + 'T00:00:00'); const end = new Date(s.slut + 'T00:00:00'); if(Number.isNaN(start.getTime()) || Number.isNaN(end.getTime()) || end < start) return; const days = overlapDays(start, end, weekStart, weekEnd); if(!days) return; const totalDays = Math.max(1, overlapDays(start, end, start, end)); const h = estimatedHours(s) * days / totalDays; if(!h) return; hours += h; details.push({kunde:s.kunde, hours:h}); }); const staff = employees.map(emp=>({emp, ...employeeWeek(emp, weekKey, w, defaultHours)})); const capacity = staff.reduce((sum,e)=>sum + e.hours, 0); details.sort((a,b)=>b.hours-a.hours); rows.push({weekStart, weekEnd, weekKey, weekNo:isoWeek(weekStart), hours, capacity, details, staff}); } renderEmployees(rows); const featured = rows.slice(0,2); const simple = rows.slice(2); calendar.innerHTML = `<div class="featured-weeks">${featured.map((week, index)=> index === 0 ? renderFeaturedWeekCard(week, { baseDate:focusBase, title:`Uge ${week.weekNo}`, kicker: featuredLabel(index, weekendMode), pillLabel: weekendMode ? 'Fokus' : 'Nu', pillClass:'current' }) : renderSecondaryWeekCard(week, { title:`Uge ${week.weekNo}`, kicker: featuredLabel(index, weekendMode), pillLabel:'Næste' })).join('')}</div><div class="simple-weeks">${simple.map(renderSimpleWeekCard).join('')}</div>`; }
+function renderCapacity(){ const calendar = document.getElementById('capacityCalendar'); const capacityInput = document.getElementById('capacityHours'); if(!calendar || !capacityInput) return; const defaultHours = +capacityInput.value || 37; const now = new Date(); const weekendMode = [0,6].includes(now.getDay()); const focusBase = weekendMode ? addDays(now, now.getDay() === 6 ? 2 : 1) : now; const firstWeek = startOfWeek(focusBase); const yearEnd = new Date(new Date().getFullYear(), 11, 31); const weekCount = Math.ceil((startOfWeek(yearEnd) - firstWeek) / (7 * 86400000)) + 1; const rows = []; for(let w=0; w<weekCount; w++){ const weekStart = addDays(firstWeek, w*7); const weekEnd = addDays(weekStart, 6); const weekKey = weekStart.toISOString().slice(0,10); const details = []; let hours = 0; sager.forEach(s=>{ if(![2,3,4,5].includes(+s.k) || !s.start || !s.slut) return; const start = new Date(s.start + 'T00:00:00'); const end = new Date(s.slut + 'T00:00:00'); if(Number.isNaN(start.getTime()) || Number.isNaN(end.getTime()) || end < start) return; const days = overlapDays(start, end, weekStart, weekEnd); if(!days) return; const totalDays = Math.max(1, overlapDays(start, end, start, end)); const h = estimatedHours(s) * days / totalDays; if(!h) return; hours += h; details.push({kunde:s.kunde, hours:h}); }); const staff = employees.map(emp=>({emp, ...employeeWeek(emp, weekKey, w, defaultHours)})); const capacity = staff.reduce((sum,e)=>sum + e.hours, 0); details.sort((a,b)=>b.hours-a.hours); rows.push({weekStart, weekEnd, weekKey, weekNo:isoWeek(weekStart), hours, capacity, details, staff}); } renderEmployees(rows); const currentWeek = rows[0]; const upcoming = rows.slice(1, 6); calendar.innerHTML = `<div class="capacity-summary-bar"><div>Kapacitetskalender — ${new Date().getFullYear()}</div><div class="meta-right">${employees.length} medarbejdere · ${defaultHours} t/uge · I dag: ${weekdayLong(now)} ${fullDateLabel(now)}</div></div>${currentWeek ? renderCurrentWeekBoard(currentWeek, focusBase) : ''}<div><div class="capacity-section-label">Kommende uger</div><div class="upcoming-list">${upcoming.map(renderUpcomingWeekRow).join('')}</div></div>`; }
 function renderBetalinger(){ const body = document.getElementById('betalingBody'); const rows = betalinger.filter(b=>b.status !== 'betalt'); body.innerHTML = rows.map(b=>{ const idx = betalinger.indexOf(b); const isDke = String(b.kunde || '').toLowerCase().includes('dke'); const kunde = isDke ? `${b.kunde} <span class="chip tag-dke">DKE</span>` : b.kunde; return `<tr><td>${b.nr || '<span class="dim">—</span>'}</td><td>${kunde}</td><td>${b.milepael}</td><td>${b.dato || '<span class="dim">—</span>'}</td><td class="num">${b.beloeb} kr.</td><td>${b.fak || '<span class="dim">—</span>'}</td><td><select class="pay-status udestaaende" onchange="changeBetaling(${idx}, this.value)"><option value="udestaaende" selected>Udestående</option><option value="betalt">Betalt</option></select></td></tr>`; }).join('') || '<tr><td colspan="7" class="dim">Ingen udestående rater.</td></tr>'; }
 function changeBetaling(i,v){ betalinger[i].status = v; saveState(); renderBetalinger(); }
 document.querySelectorAll('.tab-btn').forEach((btn)=>btn.addEventListener('click', ()=>setActiveTab(btn.dataset.tab)));
