@@ -2,10 +2,10 @@ import { createHmac, timingSafeEqual } from "node:crypto";
 import { getStore } from "@netlify/blobs";
 
 const SESSION_COOKIE = "nstsf_session";
-const AUTH_SECRET = Netlify.env.get("DASHBOARD_AUTH_SECRET") || "nstsf-auth-fallback-2026";
-const DEFAULT_PASSWORD = "NSTSF-Login-2026!";
+const AUTH_SECRET = Netlify.env.get("DASHBOARD_AUTH_SECRET") || "";
 const USER_STORE = "nstsf-dashboard-auth";
 const USER_KEY = "users-v1";
+const AUDIT_KEY = "user-audit-v1";
 
 const json = (body, status = 200) =>
   new Response(JSON.stringify(body, null, 2), {
@@ -45,14 +45,6 @@ function normalizeStoredUser(user) {
   };
 }
 
-function defaultUsers() {
-  return [
-    { email: "christian@nstsf.dk", name: "Christian", role: "admin", password: DEFAULT_PASSWORD },
-    { email: "cgallstar@gmail.com", name: "Christian", role: "admin", password: DEFAULT_PASSWORD },
-    { email: "smg@nstsf.dk", name: "SMG", role: "admin", password: DEFAULT_PASSWORD },
-  ];
-}
-
 function parseEnvUsers() {
   const raw = Netlify.env.get("DASHBOARD_USERS_JSON");
   if (!raw) return null;
@@ -77,15 +69,37 @@ async function getUsers() {
     return saved.map(normalizeStoredUser).filter((user) => user.email && user.password);
   }
 
-  const seeded = parseEnvUsers() || defaultUsers();
-  await store().setJSON(USER_KEY, seeded);
-  return seeded.map(normalizeStoredUser);
+  const seeded = parseEnvUsers();
+  if (seeded?.length) {
+    await store().setJSON(USER_KEY, seeded);
+    return seeded.map(normalizeStoredUser);
+  }
+
+  return [];
 }
 
 async function saveUsers(users) {
   const normalized = users.map(normalizeStoredUser).filter((user) => user.email && user.password);
   await store().setJSON(USER_KEY, normalized);
   return normalized;
+}
+
+async function appendAudit(actor, action, target, details = {}) {
+  const current = await store().get(AUDIT_KEY, { type: "json" });
+  const entries = Array.isArray(current) ? current : [];
+  entries.unshift({
+    at: new Date().toISOString(),
+    actor: sanitizeUser(actor),
+    action,
+    target,
+    details,
+  });
+  await store().setJSON(AUDIT_KEY, entries.slice(0, 100));
+}
+
+async function getAuditEntries() {
+  const current = await store().get(AUDIT_KEY, { type: "json" });
+  return Array.isArray(current) ? current : [];
 }
 
 function readSession(request) {
@@ -123,12 +137,16 @@ function safeList(users) {
 }
 
 export default async (request) => {
+  if (!AUTH_SECRET) {
+    return json({ ok: false, error: "missing_auth_secret" }, 500);
+  }
+
   const auth = requireAdmin(request);
   if (!auth.ok) return auth.response;
 
   if (request.method === "GET") {
     const users = await getUsers();
-    return json({ ok: true, users: safeList(users) });
+    return json({ ok: true, users: safeList(users), audit: await getAuditEntries() });
   }
 
   if (request.method === "POST") {
@@ -150,7 +168,8 @@ export default async (request) => {
 
     users.push({ email, name: name || email, password, role });
     const saved = await saveUsers(users);
-    return json({ ok: true, users: safeList(saved) });
+    await appendAudit(auth.session, "create_user", email, { role, name: name || email });
+    return json({ ok: true, users: safeList(saved), audit: await getAuditEntries() });
   }
 
   if (request.method === "PUT") {
@@ -180,7 +199,12 @@ export default async (request) => {
     if (!users.some((user) => user.role === "admin")) return json({ ok: false, error: "admin_required" }, 400);
 
     const saved = await saveUsers(users);
-    return json({ ok: true, users: safeList(saved) });
+    await appendAudit(auth.session, "update_user", email, {
+      role: next.role,
+      name: next.name,
+      passwordChanged: Boolean(body?.password),
+    });
+    return json({ ok: true, users: safeList(saved), audit: await getAuditEntries() });
   }
 
   if (request.method === "DELETE") {
@@ -200,7 +224,8 @@ export default async (request) => {
     if (!next.some((user) => user.role === "admin")) return json({ ok: false, error: "admin_required" }, 400);
 
     const saved = await saveUsers(next);
-    return json({ ok: true, users: safeList(saved) });
+    await appendAudit(auth.session, "delete_user", email);
+    return json({ ok: true, users: safeList(saved), audit: await getAuditEntries() });
   }
 
   return json({ ok: false, error: "method_not_allowed" }, 405);
