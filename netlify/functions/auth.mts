@@ -2,8 +2,7 @@ import { createHmac, timingSafeEqual } from "node:crypto";
 import { getStore } from "@netlify/blobs";
 
 const SESSION_COOKIE = "nstsf_session";
-const AUTH_SECRET = Netlify.env.get("DASHBOARD_AUTH_SECRET") || "nstsf-auth-fallback-2026";
-const DEFAULT_PASSWORD = "NSTSF-Login-2026!";
+const AUTH_SECRET = Netlify.env.get("DASHBOARD_AUTH_SECRET") || "";
 const USER_STORE = "nstsf-dashboard-auth";
 const USER_KEY = "users-v1";
 
@@ -56,14 +55,6 @@ function normalizeStoredUser(user) {
   };
 }
 
-function defaultUsers() {
-  return [
-    { email: "christian@nstsf.dk", name: "Christian", role: "admin", password: DEFAULT_PASSWORD },
-    { email: "cgallstar@gmail.com", name: "Christian", role: "admin", password: DEFAULT_PASSWORD },
-    { email: "smg@nstsf.dk", name: "SMG", role: "admin", password: DEFAULT_PASSWORD },
-  ];
-}
-
 function parseEnvUsers() {
   const raw = Netlify.env.get("DASHBOARD_USERS_JSON");
   if (!raw) return null;
@@ -88,9 +79,13 @@ async function getUsers() {
     return saved.map(normalizeStoredUser).filter((user) => user.email && user.password);
   }
 
-  const seeded = parseEnvUsers() || defaultUsers();
-  await store().setJSON(USER_KEY, seeded);
-  return seeded.map(normalizeStoredUser);
+  const seeded = parseEnvUsers();
+  if (seeded?.length) {
+    await store().setJSON(USER_KEY, seeded);
+    return seeded.map(normalizeStoredUser);
+  }
+
+  return [];
 }
 
 function createSession(user) {
@@ -126,6 +121,10 @@ function readSession(request) {
 }
 
 export default async (request) => {
+  if (!AUTH_SECRET) {
+    return json({ ok: false, error: "missing_auth_secret" }, 500);
+  }
+
   if (request.method === "GET") {
     const session = readSession(request);
     if (!session) return json({ ok: false, error: "unauthorized" }, 401);
@@ -142,7 +141,9 @@ export default async (request) => {
 
     const email = String(body?.email || "").trim().toLowerCase();
     const password = String(body?.password || "");
-    const user = (await getUsers()).find((entry) => entry.email === email && entry.password === password);
+    const users = await getUsers();
+    if (!users.length) return json({ ok: false, error: "setup_required" }, 503);
+    const user = users.find((entry) => entry.email === email && entry.password === password);
     if (!user) return json({ ok: false, error: "invalid_credentials" }, 401);
 
     return json(
