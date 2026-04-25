@@ -1178,6 +1178,16 @@ const docDemo = {
   byggereferater:[{titel:"Byggereferat fra seneste møde", dato:"Afventer upload", url:""}],
   transkripter:[{titel:"Gemini transkript", dato:"Afventer upload", url:""}],
 };
+const DOC_DEFAULTS = {
+  tilbud: [],
+  referater: [],
+  ks: [],
+  billeder: [],
+  ekstraarbejde: [],
+  betaling: [],
+  kontrakter: [],
+  mails: [],
+};
 const sager = [];
 const betalinger = [];
 const emails = [
@@ -1207,8 +1217,60 @@ const ACTIVE_CASE_CATEGORIES = new Set([1,2,3,4,5]);
 function setSyncStatus(text, tone){ const el = document.getElementById('syncStatus'); if(!el) return; el.textContent = text; el.style.color = tone === 'error' ? 'var(--red)' : tone === 'ok' ? 'var(--green)' : 'var(--muted)'; }
 function setAdminMessage(text='', tone=''){ const el = document.getElementById('adminMessage'); if(!el) return; el.textContent = text; el.style.color = tone === 'error' ? 'var(--red)' : tone === 'ok' ? 'var(--green)' : 'var(--muted)'; }
 function textValue(value, fallback=''){ if(value === null || value === undefined) return fallback; return String(value); }
-function cloneDocs(docs={}, drive=''){ return { drive: textValue(docs?.drive ?? drive, ''), byggereferater: Array.isArray(docs?.byggereferater) ? docs.byggereferater : [...docDemo.byggereferater], transkripter: Array.isArray(docs?.transkripter) ? docs.transkripter : [...docDemo.transkripter] }; }
-function normalizeSag(saved={}, i=0){ return { ...saved, k:+saved.k || 5, nr:textValue(saved.nr, ''), kunde:textValue(saved.kunde, 'Ukendt kunde'), adr:textValue(saved.adr, ''), opg:textValue(saved.opg, ''), b:textValue(saved.b, '0'), u:textValue(saved.u, '0'), dato:textValue(saved.dato, ''), status:textValue(saved.status, '—'), timer:textValue(saved.timer, ''), fak:textValue(saved.fak, ''), start:textValue(saved.start, ''), slut:textValue(saved.slut, ''), info:textValue(saved.info, ''), mail:textValue(saved.mail, ''), tlf:textValue(saved.tlf, ''), drive:textValue(saved.drive, ''), sort: typeof saved.sort === 'number' ? saved.sort : i, docs: cloneDocs(saved.docs, saved.drive) }; }
+function cloneDocs(docs={}, drive=''){
+  return {
+    drive: textValue(docs?.drive ?? drive, ''),
+    byggereferater: Array.isArray(docs?.byggereferater) ? docs.byggereferater : [...docDemo.byggereferater],
+    transkripter: Array.isArray(docs?.transkripter) ? docs.transkripter : [...docDemo.transkripter],
+    tilbud: Array.isArray(docs?.tilbud) ? docs.tilbud : [...DOC_DEFAULTS.tilbud],
+    referater: Array.isArray(docs?.referater) ? docs.referater : [...DOC_DEFAULTS.referater],
+    ks: Array.isArray(docs?.ks) ? docs.ks : [...DOC_DEFAULTS.ks],
+    billeder: Array.isArray(docs?.billeder) ? docs.billeder : [...DOC_DEFAULTS.billeder],
+    ekstraarbejde: Array.isArray(docs?.ekstraarbejde) ? docs.ekstraarbejde : [...DOC_DEFAULTS.ekstraarbejde],
+    betaling: Array.isArray(docs?.betaling) ? docs.betaling : [...DOC_DEFAULTS.betaling],
+    kontrakter: Array.isArray(docs?.kontrakter) ? docs.kontrakter : [...DOC_DEFAULTS.kontrakter],
+    mails: Array.isArray(docs?.mails) ? docs.mails : [...DOC_DEFAULTS.mails],
+  };
+}
+function normalizeSag(saved={}, i=0){
+  return {
+    ...saved,
+    k:+saved.k || 5,
+    nr:textValue(saved.nr, ''),
+    kunde:textValue(saved.kunde, 'Ukendt kunde'),
+    adr:textValue(saved.adr, ''),
+    opg:textValue(saved.opg, ''),
+    b:textValue(saved.b, '0'),
+    u:textValue(saved.u, '0'),
+    dato:textValue(saved.dato, ''),
+    status:textValue(saved.status, '—'),
+    timer:textValue(saved.timer, ''),
+    fak:textValue(saved.fak, ''),
+    start:textValue(saved.start, ''),
+    slut:textValue(saved.slut, ''),
+    info:textValue(saved.info, ''),
+    mail:textValue(saved.mail, ''),
+    tlf:textValue(saved.tlf, ''),
+    drive:textValue(saved.drive, ''),
+    sort: typeof saved.sort === 'number' ? saved.sort : i,
+    docs: cloneDocs(saved.docs, saved.drive),
+    workflow: {
+      nextAction: textValue(saved?.workflow?.nextAction, ''),
+      summaryStatus: textValue(saved?.workflow?.summaryStatus, ''),
+      progressPct: Number(saved?.workflow?.progressPct) || 0,
+      signatureStatus: textValue(saved?.workflow?.signatureStatus, ''),
+      acceptedScope: textValue(saved?.workflow?.acceptedScope, ''),
+      exclusions: textValue(saved?.workflow?.exclusions, ''),
+      currentStage: textValue(saved?.workflow?.currentStage, ''),
+      nextStep: textValue(saved?.workflow?.nextStep, ''),
+    },
+    tasks: Array.isArray(saved?.tasks) ? saved.tasks : [],
+    stageLog: Array.isArray(saved?.stageLog) ? saved.stageLog : [],
+    changeOrders: Array.isArray(saved?.changeOrders) ? saved.changeOrders : [],
+    mailDrafts: Array.isArray(saved?.mailDrafts) ? saved.mailDrafts : [],
+    activityLog: Array.isArray(saved?.activityLog) ? saved.activityLog : [],
+  };
+}
 function normalizeBetaling(saved={}){ return { ...saved, nr:textValue(saved.nr, ''), kunde:textValue(saved.kunde, 'Ukendt kunde'), milepael:textValue(saved.milepael, 'Udestående betaling'), dato:textValue(saved.dato, ''), beloeb:textValue(saved.beloeb, '0'), fak:textValue(saved.fak, ''), status:textValue(saved.status, 'udestaaende') }; }
 function normalizeEmployee(saved={}, i=0){ return { id:textValue(saved.id, `employee-${i + 1}`), name:textValue(saved.name, `Medarbejder ${i + 1}`), hours:Number(saved.hours) || 37, type:textValue(saved.type, 'employee'), overrides: saved && typeof saved.overrides === 'object' && !Array.isArray(saved.overrides) ? saved.overrides : {} }; }
 function collectState(){ const capacityHours = document.getElementById('capacityHours') ? +document.getElementById('capacityHours').value || 37 : 37; return { schema:'nstsf-dashboard-state-v1', savedFrom:location.hostname || 'local-file', savedAt:new Date().toISOString(), sager:sager, betalinger:betalinger, employees:employees, settings:{capacityHours} }; }
@@ -1373,7 +1435,62 @@ function openSag(i){ renderSagDetail(i); }
 function renderDocs(items){ if(!items || !items.length) return '<div class="doc-empty">Ingen dokumenter registreret endnu.</div>'; return items.map(d=>`<div class="doc-item"><div><strong>${d.titel}</strong><div class="doc-meta">${d.dato || 'Dato mangler'}</div></div>${d.url ? `<a href="${d.url}" target="_blank" rel="noopener">Åbn</a>` : '<span class="dim">Mangler link</span>'}</div>`).join(''); }
 function renderCasePayments(s){ const rows = getSagPayments(s); return rows.length ? `<table class="payment-inline-table"><thead><tr><th>Milepæl</th><th>Dato</th><th class="num">Beløb</th><th>Status</th></tr></thead><tbody>${rows.map((p)=>`<tr><td>${p.milepael}</td><td>${displayDate(p.dato)}</td><td class="num">${p.beloeb} kr.</td><td>${p.status === 'betalt' ? 'Betalt' : 'Udestående'}</td></tr>`).join('')}</tbody></table>` : '<div class="doc-empty">Ingen betalinger registreret på kunden endnu.</div>'; }
 function renderRelatedMailList(s){ const related = getRelatedEmails(s).slice(0,4); return related.length ? related.map((mail)=>`<div class="mini-item"><strong>${mail.subject}</strong><div class="meta">${displayDate(mail.date)} · ${mail.from}</div><div class="priority-item-links" style="margin-top:6px"><button class="icon-btn" onclick="setActiveTab('indbakke'); openEmail('${mail.id}')">Åbn mail</button></div></div>`).join('') : '<div class="doc-empty">Ingen relateret dialog fundet endnu.</div>'; }
-function renderSagDetail(i){ const s = sager[i]; const caseDetail = document.getElementById('caseDetail'); if(!s || !caseDetail) return; const driveUrl = getSagDrive(s); const driveLink = driveUrl ? `<a class="btn primary" href="${driveUrl}" target="_blank" rel="noopener">Åbn kundemappe</a>` : `<a class="btn" href="${CUSTOMER_DRIVE_ROOT}" target="_blank" rel="noopener">Find/opret kundemappe</a>`; const latestDialog = latestDialogDate(s); const offerDate = latestOfferDate(s); caseDetail.classList.add('active'); caseDetail.innerHTML = `<div class="panel-hd"><div><h2>${s.kunde}</h2><div class="dim">${s.nr ? 'Sag ' + s.nr + ' · ' : ''}${s.adr || 'Adresse mangler'} · ${KAT[s.k]}</div></div><div style="display:flex;gap:8px"><button class="btn" onclick="openEditSag(${i})">Rediger</button><button class="btn ghost" onclick="closeSag()">Luk</button></div></div><div class="case-grid"><div class="case-card"><h3>Sagsinfo</h3><table><tbody><tr><td>Sagsnr.</td><td>${s.nr || '—'}</td></tr><tr><td>Opgave</td><td>${s.opg || '—'}</td></tr><tr><td>Est. beløb</td><td class="num">${s.b && s.b !== '0' ? s.b + ' kr.' : '—'}</td></tr><tr><td>Udestående</td><td class="num">${s.u && s.u !== '0' ? s.u + ' kr.' : '—'}</td></tr><tr><td>Tilbud sendt</td><td>${offerDate ? displayDate(offerDate) : '—'}</td></tr><tr><td>Seneste dialog</td><td>${latestDialog ? displayDate(latestDialog) : '—'}</td></tr><tr><td>Startdato</td><td>${displayDate(s.start)}</td></tr><tr><td>Slutdato</td><td>${displayDate(s.slut)}</td></tr><tr><td>Mail</td><td>${s.mail || '—'}</td></tr><tr><td>Telefon</td><td>${s.tlf || '—'}</td></tr><tr><td>Fin. status</td><td>${s.status || '—'}</td></tr><tr><td>Fakturanr.</td><td>${s.fak || '—'}</td></tr></tbody></table><div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap">${driveLink}<a class="btn" href="${DRIVE_ROOT}" target="_blank" rel="noopener">Åbn fælles Drive-root</a></div></div><div class="case-card"><h3>Mødenoter og referater</h3><div class="doc-list"><strong>Byggereferater fra SMG</strong>${renderDocs(s.docs.byggereferater)}<strong style="margin-top:6px">Gemini transkripter</strong>${renderDocs(s.docs.transkripter)}</div></div></div><div class="rel-grid" style="margin-top:12px"><div class="case-card"><h3>Betalinger</h3>${renderCasePayments(s)}</div><div class="case-card"><h3>Dialog og tilbud</h3><div class="mini-list">${renderRelatedMailList(s)}</div></div></div>`; }
+function renderDrafts(items=[]){ return items.length ? `<div class="mini-list">${items.map((item)=>`<div class="mini-item"><strong>${item.subject || item.type || 'Draft'}</strong><div class="meta">${item.status || 'Afventer'}${item.createdAt ? ` · ${displayDate(String(item.createdAt).slice(0,10))}` : ''}</div></div>`).join('')}</div>` : '<div class="doc-empty">Ingen drafts oprettet endnu.</div>'; }
+function renderTaskList(items=[]){ return items.length ? `<div class="mini-list">${items.map((item)=>`<div class="mini-item"><strong>${item.title || 'Opgave'}</strong><div class="meta">${item.status || 'Åben'}${item.dueDate ? ` · frist ${displayDate(item.dueDate)}` : ''}</div><div class="meta">${item.owner || 'Ingen ansvarlig'}${item.notes ? ` · ${item.notes}` : ''}</div></div>`).join('')}</div>` : '<div class="doc-empty">Ingen to-do&apos;s registreret endnu.</div>'; }
+function renderStageLog(items=[]){ return items.length ? `<div class="mini-list">${items.slice(0,5).map((item)=>`<div class="mini-item"><strong>${item.title || item.status || 'Stadeopdatering'}</strong><div class="meta">${item.date ? displayDate(item.date) : 'Dato mangler'}${item.progressPct !== undefined ? ` · ${item.progressPct}%` : ''}</div><div class="meta">${item.notes || ''}</div></div>`).join('')}</div>` : '<div class="doc-empty">Ingen stadeopgørelser registreret endnu.</div>'; }
+function renderChangeOrders(items=[]){ return items.length ? `<table class="payment-inline-table"><thead><tr><th>Ekstraarbejde</th><th>Status</th><th class="num">Pris</th></tr></thead><tbody>${items.map((item)=>`<tr><td>${item.title || 'Ekstraarbejde'}</td><td>${item.status || 'Afventer'}</td><td class="num">${item.amount ? `${item.amount} kr.` : '—'}</td></tr>`).join('')}</tbody></table>` : '<div class="doc-empty">Ingen ekstraarbejder registreret endnu.</div>'; }
+function renderSagDetail(i){
+  const s = sager[i];
+  const caseDetail = document.getElementById('caseDetail');
+  if(!s || !caseDetail) return;
+  const driveUrl = getSagDrive(s);
+  const driveLink = driveUrl ? `<a class="btn primary" href="${driveUrl}" target="_blank" rel="noopener">Åbn kundemappe</a>` : `<a class="btn" href="${CUSTOMER_DRIVE_ROOT}" target="_blank" rel="noopener">Find/opret kundemappe</a>`;
+  const latestDialog = latestDialogDate(s);
+  const offerDate = latestOfferDate(s);
+  const wf = s.workflow || {};
+  caseDetail.classList.add('active');
+  caseDetail.innerHTML = `<div class="panel-hd"><div><h2>${s.kunde}</h2><div class="dim">${s.nr ? 'Sag ' + s.nr + ' · ' : ''}${s.adr || 'Adresse mangler'} · ${KAT[s.k]}</div></div><div style="display:flex;gap:8px"><button class="btn" onclick="openEditSag(${i})">Rediger</button><button class="btn ghost" onclick="closeSag()">Luk</button></div></div>
+  <div class="case-grid">
+    <div class="case-card"><h3>Overblik</h3><table><tbody>
+      <tr><td>Status</td><td>${wf.summaryStatus || s.status || '—'}</td></tr>
+      <tr><td>Næste handling</td><td>${wf.nextAction || 'Ikke sat endnu'}</td></tr>
+      <tr><td>Seneste dialog</td><td>${latestDialog ? displayDate(latestDialog) : '—'}</td></tr>
+      <tr><td>Tilbud sendt</td><td>${offerDate ? displayDate(offerDate) : '—'}</td></tr>
+      <tr><td>Underskriftsstatus</td><td>${wf.signatureStatus || 'Ikke registreret'}</td></tr>
+      <tr><td>Progression</td><td>${wf.progressPct ? `${wf.progressPct}%` : 'Ikke registreret'}</td></tr>
+      <tr><td>Aktuelt stade</td><td>${wf.currentStage || 'Ikke registreret'}</td></tr>
+      <tr><td>Næste skridt</td><td>${wf.nextStep || 'Ikke registreret'}</td></tr>
+    </tbody></table><div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap">${driveLink}<a class="btn" href="${DRIVE_ROOT}" target="_blank" rel="noopener">Åbn fælles Drive-root</a></div></div>
+    <div class="case-card"><h3>Tilbud og aftalegrundlag</h3><table><tbody>
+      <tr><td>Sagsnr.</td><td>${s.nr || '—'}</td></tr>
+      <tr><td>Opgave</td><td>${s.opg || '—'}</td></tr>
+      <tr><td>Est. beløb</td><td class="num">${s.b && s.b !== '0' ? s.b + ' kr.' : '—'}</td></tr>
+      <tr><td>Accepteret scope</td><td>${wf.acceptedScope || 'Ikke udfyldt endnu'}</td></tr>
+      <tr><td>Undtagelser</td><td>${wf.exclusions || 'Ingen registreret endnu'}</td></tr>
+      <tr><td>Mail</td><td>${s.mail || '—'}</td></tr>
+      <tr><td>Telefon</td><td>${s.tlf || '—'}</td></tr>
+    </tbody></table></div>
+  </div>
+  <div class="rel-grid" style="margin-top:12px">
+    <div class="case-card"><h3>Udført arbejde / stade</h3>${renderStageLog(s.stageLog)}</div>
+    <div class="case-card"><h3>Ekstraarbejde</h3>${renderChangeOrders(s.changeOrders)}</div>
+  </div>
+  <div class="rel-grid" style="margin-top:12px">
+    <div class="case-card"><h3>Betalinger</h3>${renderCasePayments(s)}</div>
+    <div class="case-card"><h3>To-do&apos;s</h3>${renderTaskList(s.tasks)}</div>
+  </div>
+  <div class="rel-grid" style="margin-top:12px">
+    <div class="case-card"><h3>Dialog og tilbud</h3><div class="mini-list">${renderRelatedMailList(s)}</div><div style="margin-top:12px"><strong>Mail drafts</strong>${renderDrafts(s.mailDrafts)}</div></div>
+    <div class="case-card"><h3>Dokumenter</h3><div class="doc-list">
+      <strong>Referater</strong>${renderDocs(s.docs.referater.length ? s.docs.referater : s.docs.byggereferater)}
+      <strong style="margin-top:6px">Transkripter</strong>${renderDocs(s.docs.transkripter)}
+      <strong style="margin-top:6px">Tilbud</strong>${renderDocs(s.docs.tilbud)}
+      <strong style="margin-top:6px">KS / dokumentation</strong>${renderDocs(s.docs.ks)}
+      <strong style="margin-top:6px">Billeder</strong>${renderDocs(s.docs.billeder)}
+      <strong style="margin-top:6px">Kontrakt / underskrifter</strong>${renderDocs(s.docs.kontrakter)}
+    </div></div>
+  </div>`;
+}
 function closeSag(){ const caseDetail = document.getElementById('caseDetail'); if(caseDetail){ caseDetail.classList.remove('active'); caseDetail.innerHTML = ''; } }
 function addSag(){ const idx = sager.length; sager.push(normalizeSag({ k:3,nr:"",kunde:"Ny kunde",adr:"",opg:"",b:"0",u:"0",dato:"",status:"—",timer:"",fak:"",start:"",slut:"",info:"",mail:"",tlf:"",drive:"",sort:idx,docs:{drive:"",byggereferater:docDemo.byggereferater,transkripter:docDemo.transkripter}}, idx)); saveState(); openEditSag(idx); render(); }
 let editSagIndex = null;

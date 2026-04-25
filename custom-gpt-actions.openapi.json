@@ -1,0 +1,267 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "NSTSF Dashboard Intake API",
+    "version": "1.0.0",
+    "description": "Custom GPT Actions endpoint for writing structured meeting notes, tasks, drafts, progress updates and document links into NSTSF dashboard cases."
+  },
+  "servers": [
+    {
+      "url": "https://willowy-parfait-a287e5.netlify.app"
+    }
+  ],
+  "paths": {
+    "/api/intake": {
+      "get": {
+        "operationId": "getIntakeStatus",
+        "summary": "Get intake endpoint capabilities",
+        "responses": {
+          "200": {
+            "description": "Capabilities",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "submitCaseIntake",
+        "summary": "Write structured case intake into NSTSF dashboard",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "customerName",
+                  "noteText"
+                ],
+                "properties": {
+                  "caseNumber": {
+                    "type": "string"
+                  },
+                  "customerName": {
+                    "type": "string"
+                  },
+                  "source": {
+                    "type": "string",
+                    "default": "custom-gpt"
+                  },
+                  "meetingType": {
+                    "type": "string"
+                  },
+                  "noteText": {
+                    "type": "string"
+                  },
+                  "transcriptText": {
+                    "type": "string"
+                  },
+                  "decisions": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "todos": {
+                    "type": "array",
+                    "items": {
+                      "oneOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "object",
+                          "properties": {
+                            "title": {
+                              "type": "string"
+                            },
+                            "status": {
+                              "type": "string"
+                            },
+                            "dueDate": {
+                              "type": "string"
+                            },
+                            "owner": {
+                              "type": "string"
+                            },
+                            "notes": {
+                              "type": "string"
+                            }
+                          }
+                        }
+                      ]
+                    }
+                  },
+                  "changeOrders": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "title": {
+                          "type": "string"
+                        },
+                        "amount": {
+                          "type": "string"
+                        },
+                        "status": {
+                          "type": "string"
+                        },
+                        "notes": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  },
+                  "nextAction": {
+                    "type": "string"
+                  },
+                  "summaryStatus": {
+                    "type": "string"
+                  },
+                  "signatureStatus": {
+                    "type": "string"
+                  },
+                  "acceptedScope": {
+                    "type": "string"
+                  },
+                  "exclusions": {
+                    "type": "string"
+                  },
+                  "currentStage": {
+                    "type": "string"
+                  },
+                  "nextStep": {
+                    "type": "string"
+                  },
+                  "progressPct": {
+                    "type": "number"
+                  },
+                  "stageNote": {
+                    "type": "string"
+                  },
+                  "draft": {
+                    "type": "object",
+                    "properties": {
+                      "subject": {
+                        "type": "string"
+                      },
+                      "body": {
+                        "type": "string"
+                      },
+                      "recipients": {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        }
+                      },
+                      "gmailDraftId": {
+                        "type": "string"
+                      },
+                      "status": {
+                        "type": "string",
+                        "default": "Klar til godkendelse"
+                      }
+                    }
+                  },
+                  "documents": {
+                    "type": "object",
+                    "properties": {
+                      "references": {
+                        "type": "array",
+                        "items": {
+                          "$ref": "#/components/schemas/DocumentLink"
+                        }
+                      },
+                      "transcripts": {
+                        "type": "array",
+                        "items": {
+                          "$ref": "#/components/schemas/DocumentLink"
+                        }
+                      },
+                      "offers": {
+                        "type": "array",
+                        "items": {
+                          "$ref": "#/components/schemas/DocumentLink"
+                        }
+                      },
+                      "ks": {
+                        "type": "array",
+                        "items": {
+                          "$ref": "#/components/schemas/DocumentLink"
+                        }
+                      },
+                      "photos": {
+                        "type": "array",
+                        "items": {
+                          "$ref": "#/components/schemas/DocumentLink"
+                        }
+                      },
+                      "contracts": {
+                        "type": "array",
+                        "items": {
+                          "$ref": "#/components/schemas/DocumentLink"
+                        }
+                      },
+                      "extraWork": {
+                        "type": "array",
+                        "items": {
+                          "$ref": "#/components/schemas/DocumentLink"
+                        }
+                      },
+                      "emails": {
+                        "type": "array",
+                        "items": {
+                          "$ref": "#/components/schemas/DocumentLink"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Stored successfully"
+          },
+          "404": {
+            "description": "Case not found"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "DocumentLink": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string"
+          },
+          "titel": {
+            "type": "string"
+          },
+          "date": {
+            "type": "string"
+          },
+          "dato": {
+            "type": "string"
+          },
+          "url": {
+            "type": "string"
+          },
+          "fileId": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  }
+}
