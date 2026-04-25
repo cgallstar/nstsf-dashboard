@@ -102,6 +102,8 @@
     margin-bottom:12px;
   }
   .panel-hd h2{margin:0}
+  .stack{display:grid;gap:20px}
+  .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:20px}
   table{width:100%;border-collapse:collapse;font-size:13px}
   th{
     text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);
@@ -218,6 +220,30 @@
   .pay-status.betalt{background:var(--green-soft);color:var(--green);border-color:#b7dcc9}
   .pay-status.udestaaende{background:var(--red-soft);color:var(--red);border-color:#efc3ba}
   .pay-note{font-size:12px;color:var(--muted);margin-top:10px}
+  .priority-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+  .priority-card{border:1px solid var(--line);border-radius:12px;background:#fff;padding:16px}
+  .priority-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:10px}
+  .priority-head h3{margin:0;font-size:14px}
+  .priority-section{margin-top:12px}
+  .priority-section-title{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:700;margin-bottom:8px}
+  .priority-list{display:grid;gap:10px}
+  .priority-item{border:1px solid #e8edf4;border-radius:10px;padding:12px;background:#fbfcfe}
+  .priority-item.today{border-color:#d8e6d8;background:#f7fbf7}
+  .priority-item.later{background:#fcfcfd}
+  .priority-item-title{font-size:13px;font-weight:700}
+  .priority-item-meta{font-size:12px;color:var(--muted);margin-top:3px}
+  .priority-item-links{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+  .priority-pill{display:inline-flex;align-items:center;padding:3px 8px;border-radius:999px;font-size:11px;font-weight:700}
+  .priority-pill.sales{background:var(--amber-soft);color:var(--amber)}
+  .priority-pill.todo{background:var(--blue-soft);color:var(--blue)}
+  .priority-pill.high{background:var(--red-soft);color:var(--red)}
+  .priority-empty{font-size:12px;color:var(--muted);padding:10px 0}
+  .rel-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .mini-list{display:grid;gap:8px}
+  .mini-item{padding:9px 10px;border:1px solid #e8edf4;border-radius:8px;background:#fff}
+  .mini-item strong{display:block;font-size:12px}
+  .mini-item .meta{font-size:11px;color:var(--muted);margin-top:2px}
+  .payment-inline-table td,.payment-inline-table th{font-size:12px;padding:8px 9px}
   .capacity-tools{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:16px}
   .capacity-tools input{width:80px;padding:6px 8px;border:1px solid var(--line);border-radius:6px;text-align:right}
   .capacity-layout{display:grid;grid-template-columns:1fr;gap:18px}
@@ -348,6 +374,7 @@
   .status-poland{background:var(--red)}
   .capacity-note{font-size:12px;color:var(--muted);margin-top:10px}
   @media (max-width: 960px){
+    .priority-grid,.grid-2,.rel-grid{grid-template-columns:1fr}
     .capacity-grid{grid-template-columns:120px repeat(5,minmax(140px,1fr));overflow:auto}
     .upcoming-row{grid-template-columns:1fr;gap:10px}
     .coming-case{grid-template-columns:1fr;gap:8px}
@@ -625,10 +652,10 @@
 
 <nav class="tabs">
   <button class="tab-btn active" data-tab="dashboard">Dashboard</button>
+  <button class="tab-btn" data-tab="prioriteringer">Prioriteringer</button>
   <button class="tab-btn" data-tab="sager">Sager <span style="opacity:.6">(29)</span></button>
   <button class="tab-btn" data-tab="indbakke">Indbakke <span class="badge" style="background:var(--green);color:#fff;font-size:10px;padding:1px 6px;border-radius:8px;margin-left:4px;font-weight:600">8</span></button>
   <button class="tab-btn" data-tab="likviditet">Likviditet</button>
-  <button class="tab-btn" data-tab="betalinger">Betalinger</button>
   <button class="tab-btn" data-tab="marginer">Marginer</button>
   <button class="tab-btn" data-tab="settings" style="display:none">Indstillinger</button>
 </nav>
@@ -816,6 +843,54 @@
   </div>
 </section>
 
+<section id="prioriteringer" class="section">
+  <div class="panel">
+    <div class="panel-hd">
+      <div>
+        <h2>Prioriteringer</h2>
+        <div class="dim" style="font-size:12px">Regelbaseret prioritering ud fra sager, mails og opfølgning. Kl. 06-automation kobles på senere.</div>
+      </div>
+      <div class="dim" id="priorityGeneratedAt" style="font-size:12px"></div>
+    </div>
+    <div class="priority-grid">
+      <div class="priority-card">
+        <div class="priority-head">
+          <div>
+            <h3>Salgsrelateret arbejde</h3>
+            <div class="dim" style="font-size:12px">Leads, tilbud og opfølgning der kan flytte omsætning.</div>
+          </div>
+          <span class="priority-pill sales">Salg</span>
+        </div>
+        <div class="priority-section">
+          <div class="priority-section-title">I dag</div>
+          <div id="prioritySalesToday" class="priority-list"></div>
+        </div>
+        <div class="priority-section">
+          <div class="priority-section-title">Senere</div>
+          <div id="prioritySalesLater" class="priority-list"></div>
+        </div>
+      </div>
+      <div class="priority-card">
+        <div class="priority-head">
+          <div>
+            <h3>To-do's</h3>
+            <div class="dim" style="font-size:12px">Fremdrift, underskrifter, aflevering, faktura og opfølgning i aktive sager.</div>
+          </div>
+          <span class="priority-pill todo">Drift</span>
+        </div>
+        <div class="priority-section">
+          <div class="priority-section-title">I dag</div>
+          <div id="priorityTodoToday" class="priority-list"></div>
+        </div>
+        <div class="priority-section">
+          <div class="priority-section-title">Senere</div>
+          <div id="priorityTodoLater" class="priority-list"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
 <section id="sager" class="section">
   <div class="panel">
     <div class="panel-hd">
@@ -909,11 +984,8 @@
     </table>
     <div class="status-note"><strong>OBS:</strong> Likviditetsoversigten er fortsat et statisk forecast. Næste skridt er at koble betalinger, Minuba og evt. bankfeed på.</div>
   </div>
-</section>
-
-<section id="betalinger" class="section">
   <div class="panel">
-    <h2>Betalingsplan — udestående rater</h2>
+    <h2>Betalinger — udestående rater</h2>
     <table>
       <thead>
         <tr>
@@ -1079,6 +1151,16 @@ const docDemo = {
 };
 const sager = [];
 const betalinger = [];
+const emails = [
+  {id:'m1', kunde:'Henrik', from:'Henrik <henrik@mail.dk>', subject:'Kan du sende opdateret tilbud på facade?', date:'2026-04-26', preview:'Vil gerne have svar i denne uge.', body:'Hej Christian\nKan du sende opdateret tilbud på facade?\nMvh Henrik', tags:['tilbud','opfoelg'], handled:false, type:'sales'},
+  {id:'m2', kunde:'Helle Fortland', from:'Helle <helle@mail.dk>', subject:'Underskrift på aftale mangler', date:'2026-04-25', preview:'Vi mangler den sidste underskrift.', body:'Aftalen er klar men mangler sidste underskrift.', tags:['sag','opfoelg'], handled:false, type:'todo'},
+  {id:'m3', kunde:'N&V', from:'N&V <kontakt@nv.dk>', subject:'Tilbud modtaget - spørgsmål til carport', date:'2026-04-24', preview:'Vi vil gerne have afklaret leveringstid.', body:'Vi har modtaget tilbuddet på carport og vil gerne kende leveringstid.', tags:['tilbud'], handled:false, type:'sales'},
+  {id:'m4', kunde:'Brandskole, Helsingør', from:'Projektleder <projekt@brandskole.dk>', subject:'Aflevering torsdag?', date:'2026-04-24', preview:'Kan I bekræfte aflevering torsdag.', body:'Kan I bekræfte om sagen afleveres torsdag?', tags:['sag'], handled:false, type:'todo'},
+  {id:'m5', kunde:'DKE', from:'Charlotte <charlotte@dke.dk>', subject:'Nyt terrasse-projekt i pipeline', date:'2026-04-23', preview:'Vil I komme med oplæg og estimat?', body:'Vi har et nyt terrasse-projekt som vi gerne vil drøfte.', tags:['tilbud','new'], handled:false, type:'sales'},
+  {id:'m6', kunde:'Henrik', from:'Bogholderi <faktura@henrik.dk>', subject:'Faktura 1122 modtaget', date:'2026-04-22', preview:'Tak, vi forventer betaling mandag.', body:'Faktura 1122 er modtaget. Vi forventer betaling mandag.', tags:['faktura'], handled:true, type:'todo'},
+  {id:'m7', kunde:'Helle Fortland', from:'Helle <helle@mail.dk>', subject:'Tak for tilbud - vender tilbage', date:'2026-04-21', preview:'Vi vender tilbage efter weekenden.', body:'Tak for tilbuddet, vi vender tilbage efter weekenden.', tags:['tilbud'], handled:true, type:'sales'},
+  {id:'m8', kunde:'SMG / NSTSF', from:'Intern note', subject:'Byggereferat skal uploades', date:'2026-04-26', preview:'Referat fra sidste møde mangler i kundemappen.', body:'Upload byggereferat og send til kunden.', tags:['opfoelg'], handled:false, type:'todo'}
+];
 const STORAGE_KEY = 'nstsf-dashboard-state-v3';
 const AUTH_API = '/api/auth';
 const STATE_API = '/api/state';
@@ -1089,6 +1171,8 @@ let authUser = null;
 let adminUsers = [];
 let editingUserEmail = null;
 let currentTab = 'dashboard';
+let inboxFilter = 'alle';
+let selectedEmailId = null;
 function setSyncStatus(text, tone){ const el = document.getElementById('syncStatus'); if(!el) return; el.textContent = text; el.style.color = tone === 'error' ? 'var(--red)' : tone === 'ok' ? 'var(--green)' : 'var(--muted)'; }
 function setAdminMessage(text='', tone=''){ const el = document.getElementById('adminMessage'); if(!el) return; el.textContent = text; el.style.color = tone === 'error' ? 'var(--red)' : tone === 'ok' ? 'var(--green)' : 'var(--muted)'; }
 function textValue(value, fallback=''){ if(value === null || value === undefined) return fallback; return String(value); }
@@ -1103,7 +1187,7 @@ function loadState(){ try{ const state = JSON.parse(localStorage.getItem(STORAGE
 async function saveRemoteState(manual=false){ if(!authUser){ if(manual) setSyncStatus('Du skal være logget ind for at gemme centralt.', 'error'); return; } if(location.protocol === 'file:'){ if(manual) setSyncStatus('Backend virker først på Netlify eller via netlify dev. Lokal fil er kun browser-kopi.', 'error'); return; } try{ setSyncStatus('Gemmer til central backend...'); const res = await fetch(STATE_API, { method:'PUT', credentials:'include', headers:{'content-type':'application/json'}, body:JSON.stringify(collectState()) }); const data = await res.json().catch(()=>({})); if(!res.ok) throw new Error(data.error || `HTTP ${res.status}`); setSyncStatus(`Gemt centralt ${new Date(data.savedAt || Date.now()).toLocaleString('da-DK')}`, 'ok'); }catch(err){ setSyncStatus(`Kun lokal kopi gemt. Backend-fejl: ${err.message}`, 'error'); } }
 function queueRemoteSave(){ clearTimeout(remoteSaveTimer); remoteSaveTimer = setTimeout(()=>saveRemoteState(false), 700); }
 function saveState(manual=false){ try{ persistLocalState(); if(!isApplyingRemoteState) manual ? saveRemoteState(true) : queueRemoteSave(); }catch(e){ setSyncStatus(`Kunne ikke gemme lokalt: ${e.message}`, 'error'); } }
-async function loadRemoteState(manual=false){ if(!authUser){ if(manual) setSyncStatus('Du skal være logget ind for at hente central data.', 'error'); return; } if(location.protocol === 'file:'){ if(manual) setSyncStatus('Backend kan ikke hentes fra file://. Test på Netlify-linket efter deploy.', 'error'); return; } try{ setSyncStatus('Henter central data...'); const res = await fetch(STATE_API, {credentials:'include'}); const data = await res.json().catch(()=>({})); if(res.status === 404 && data.error === 'no_state'){ await saveRemoteState(true); return; } if(res.status === 401){ authUser = null; updateAuthUi(); showAuthOverlay('Session udløbet. Log ind igen.'); return; } if(!res.ok) throw new Error(data.error || `HTTP ${res.status}`); isApplyingRemoteState = true; applyState(data.state); persistLocalState(); isApplyingRemoteState = false; render(); renderBetalinger(); renderCapacity(); setSyncStatus(`Central data hentet ${new Date(data.savedAt || Date.now()).toLocaleString('da-DK')}`, 'ok'); }catch(err){ isApplyingRemoteState = false; setSyncStatus(`Kunne ikke hente central data: ${err.message}`, 'error'); } }
+async function loadRemoteState(manual=false){ if(!authUser){ if(manual) setSyncStatus('Du skal være logget ind for at hente central data.', 'error'); return; } if(location.protocol === 'file:'){ if(manual) setSyncStatus('Backend kan ikke hentes fra file://. Test på Netlify-linket efter deploy.', 'error'); return; } try{ setSyncStatus('Henter central data...'); const res = await fetch(STATE_API, {credentials:'include'}); const data = await res.json().catch(()=>({})); if(res.status === 404 && data.error === 'no_state'){ await saveRemoteState(true); return; } if(res.status === 401){ authUser = null; updateAuthUi(); showAuthOverlay('Session udløbet. Log ind igen.'); return; } if(!res.ok) throw new Error(data.error || `HTTP ${res.status}`); isApplyingRemoteState = true; applyState(data.state); persistLocalState(); isApplyingRemoteState = false; render(); renderBetalinger(); renderCapacity(); renderPriorities(); setSyncStatus(`Central data hentet ${new Date(data.savedAt || Date.now()).toLocaleString('da-DK')}`, 'ok'); }catch(err){ isApplyingRemoteState = false; setSyncStatus(`Kunne ikke hente central data: ${err.message}`, 'error'); } }
 loadState();
 function setActiveTab(tab){ currentTab = tab; document.querySelectorAll('.tab-btn').forEach((btn)=>btn.classList.toggle('active', btn.dataset.tab === tab)); document.querySelectorAll('.section').forEach((section)=>section.classList.toggle('active', section.id === tab)); }
 function openSettings(){ if(!authUser) return; setActiveTab('settings'); }
@@ -1124,18 +1208,93 @@ function parseNumber(value){ const n = Number(String(value || '').replace(/\./g,
 function estimatedHours(s){ const explicit = parseNumber(s.timer); if(explicit) return explicit; return Math.round(parseNumber(s.b) / 650); }
 function getSagDrive(s){ return (s.docs && s.docs.drive) || s.drive || ''; }
 function escapeAttr(str=''){ return String(str).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function matchCustomer(text='', customer=''){ const a = String(text || '').toLowerCase(); const b = String(customer || '').toLowerCase(); return !!b && a.includes(b); }
+function getSagPayments(s){ return betalinger.filter((b)=> (s.nr && b.nr === s.nr) || matchCustomer(b.kunde, s.kunde)); }
+function getRelatedEmails(s){ return emails.filter((mail)=> (s.nr && `${mail.subject} ${mail.body}`.includes(s.nr)) || matchCustomer(mail.kunde, s.kunde) || matchCustomer(mail.subject, s.kunde) || matchCustomer(mail.body, s.kunde)).sort((a,b)=> String(b.date).localeCompare(String(a.date))); }
+function latestDialogDate(s){ const related = getRelatedEmails(s); return related.length ? related[0].date : ''; }
+function latestOfferDate(s){ const related = getRelatedEmails(s).filter((mail)=>mail.tags.includes('tilbud')); return related.length ? related[0].date : ''; }
+function daysUntil(dateValue){ if(!dateValue) return null; const today = new Date(); today.setHours(0,0,0,0); const date = new Date(`${dateValue}T00:00:00`); if(Number.isNaN(date.getTime())) return null; return Math.round((date - today) / 86400000); }
+function paymentSummaryRows(){ return betalinger.filter((b)=>b.status !== 'betalt').sort((a,b)=> String(a.dato).localeCompare(String(b.dato))); }
+function priorityLink(type, index, label){ return `<button class="icon-btn" onclick="${type === 'sag' ? `setActiveTab('sager'); openSag(${index})` : `setActiveTab('indbakke'); openEmail('${index}')`}">${label}</button>`; }
+function buildPriorities(){
+  const sales = [];
+  const todos = [];
+  sager.forEach((s, i)=>{
+    const relatedEmails = getRelatedEmails(s);
+    const unpaid = getSagPayments(s).filter((p)=>p.status !== 'betalt');
+    const latestDialog = latestDialogDate(s);
+    const latestOffer = latestOfferDate(s);
+    const dueIn = daysUntil(s.dato);
+    if([3,4,5].includes(+s.k)){
+      const overdueDialog = latestDialog ? daysUntil(latestDialog) : null;
+      const score = (+s.k === 4 ? 4 : 2) + (relatedEmails.some((m)=>!m.handled) ? 3 : 0) + ((overdueDialog !== null && overdueDialog <= -3) ? 2 : 0);
+      sales.push({
+        bucket: relatedEmails.some((m)=>!m.handled) || (dueIn !== null && dueIn <= 2) ? 'today' : 'later',
+        score,
+        title: s.kunde,
+        meta: `${KAT[s.k]} · ${latestOffer ? `tilbud sendt ${displayDate(latestOffer)}` : 'mangler tydelig tilbudsdato'}${latestDialog ? ` · sidst dialog ${displayDate(latestDialog)}` : ''}`,
+        reason: relatedEmails.some((m)=>!m.handled) ? 'Ny eller ubesvaret dialog' : 'Bør følges op for at flytte salget',
+        links: `${priorityLink('sag', i, 'Åbn sag')}${relatedEmails[0] ? priorityLink('mail', relatedEmails[0].id, 'Seneste mail') : ''}`
+      });
+    }
+    if([1,2,6].includes(+s.k) || unpaid.length){
+      const needsToday = unpaid.some((p)=>{ const d = daysUntil(p.dato); return d !== null && d <= 1; }) || relatedEmails.some((m)=>!m.handled && m.type === 'todo') || (s.status && ['Semi-godkendt','Afsendt'].includes(s.status));
+      const score = (unpaid.length ? 3 : 0) + (needsToday ? 3 : 1) + ((dueIn !== null && dueIn <= 1) ? 2 : 0);
+      todos.push({
+        bucket: needsToday ? 'today' : 'later',
+        score,
+        title: s.kunde,
+        meta: `${KAT[s.k]} · ${unpaid.length ? `${unpaid.length} udestående betalinger` : 'ingen åbne betalinger'}${latestDialog ? ` · sidst dialog ${displayDate(latestDialog)}` : ''}`,
+        reason: unpaid.length ? 'Betaling, aflevering eller opfølgning mangler' : 'Sagen skal følges til dørs',
+        links: `${priorityLink('sag', i, 'Åbn sag')}${relatedEmails[0] ? priorityLink('mail', relatedEmails[0].id, 'Relevant mail') : ''}`
+      });
+    }
+  });
+  emails.filter((mail)=>!mail.handled).forEach((mail)=>{
+    const alreadyRepresented = [...sales, ...todos].some((item)=>item.title === mail.kunde && item.links.includes(mail.id));
+    if(alreadyRepresented) return;
+    const item = {
+      bucket:'today',
+      score: mail.type === 'sales' ? 4 : 3,
+      title: mail.kunde || mail.subject,
+      meta: `${mail.subject} · ${displayDate(mail.date)}`,
+      reason: mail.type === 'sales' ? 'Ny potentiel salgsdialog' : 'Ny opgave fra indbakken',
+      links: priorityLink('mail', mail.id, 'Åbn mail')
+    };
+    (mail.type === 'sales' ? sales : todos).push(item);
+  });
+  const sortItems = (items)=>items.sort((a,b)=>b.score-a.score || a.title.localeCompare(b.title));
+  return { sales: sortItems(sales), todos: sortItems(todos) };
+}
+function renderPriorityColumn(targetId, items, bucket){
+  const el = document.getElementById(targetId);
+  if(!el) return;
+  const rows = items.filter((item)=>item.bucket === bucket);
+  el.innerHTML = rows.length ? rows.map((item)=>`<div class="priority-item ${bucket}"><div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start"><div><div class="priority-item-title">${item.title}</div><div class="priority-item-meta">${item.meta}</div></div><span class="priority-pill high">prio ${item.score}</span></div><div class="priority-item-meta" style="margin-top:8px">${item.reason}</div><div class="priority-item-links">${item.links}</div></div>`).join('') : '<div class="priority-empty">Ingen punkter her.</div>';
+}
+function renderPriorities(){
+  const priorities = buildPriorities();
+  renderPriorityColumn('prioritySalesToday', priorities.sales, 'today');
+  renderPriorityColumn('prioritySalesLater', priorities.sales, 'later');
+  renderPriorityColumn('priorityTodoToday', priorities.todos, 'today');
+  renderPriorityColumn('priorityTodoLater', priorities.todos, 'later');
+  const stamp = document.getElementById('priorityGeneratedAt');
+  if(stamp) stamp.textContent = `Opdateret ${new Date().toLocaleString('da-DK')}`;
+}
 function render(){ const tbody = document.getElementById('sagerBody'); const q = (document.getElementById('sagerSoeg').value || '').toLowerCase(); const katF = document.getElementById('filterKat').value; const rows = sager.filter(s=>{ if(katF && String(s.k)!==katF) return false; if(q){ const hay = `${s.nr} ${s.kunde} ${s.adr} ${s.opg}`.toLowerCase(); if(!hay.includes(q)) return false; } return true; }).sort((a,b)=>a.k-b.k || a.sort-b.sort); tbody.innerHTML = rows.map(s=>{ const idx = sager.indexOf(s); const kundeLower = String(s.kunde || '').toLowerCase(); const isDke = kundeLower.includes('dke'); const kundeCell = isDke ? `${s.kunde} <span class="chip tag-dke" style="font-size:10px">DKE</span>` : s.kunde; return `<tr data-kat="${s.k}"><td><select class="kategori kat-${s.k}" onchange="changeKat(${idx}, this.value)">${Object.entries(KAT).map(([k,v])=>`<option value="${k}"${+k===s.k?' selected':''}>${v}</option>`).join('')}</select></td><td>${s.nr || '—'}</td><td title="${escapeAttr(s.kunde)}"><button class="kunde-link" onclick="openSag(${idx})">${kundeCell}</button></td><td title="${escapeAttr(s.adr)}" class="dim">${s.adr || '—'}</td><td class="wrap" title="${escapeAttr(s.opg)}">${s.opg || '—'}</td><td class="num">${s.b && s.b !== '0' ? s.b + ' kr.' : '—'}</td><td class="num">${s.u && s.u !== '0' ? '<span class="chip chip-amber">' + s.u + ' kr.</span>' : '—'}</td><td class="dim date-cell">${displayDate(s.dato)}</td><td class="dim date-cell">${displayDate(s.start)}</td><td class="dim date-cell">${displayDate(s.slut)}</td><td><select class="status-sel" onchange="changeStatus(${idx}, this.value)"><option${s.status==='—'?' selected':''}>—</option><option${s.status==='Faktura sendt'?' selected':''}>Faktura sendt</option><option${s.status==='Ingen udeståender'?' selected':''}>Ingen udeståender</option><option${s.status==='Semi-godkendt'?' selected':''}>Semi-godkendt</option><option${s.status==='Afsendt'?' selected':''}>Afsendt</option></select></td><td class="dim">${s.fak || '—'}</td><td><button class="icon-btn" onclick="openEditSag(${idx})">Rediger</button></td></tr>`; }).join(''); document.getElementById('count').textContent = `${rows.length} af ${sager.length} sager`; }
-function changeKat(i,v){ sager[i].k = +v; saveState(); render(); }
-function changeStatus(i,v){ sager[i].status = v; saveState(); render(); }
+function changeKat(i,v){ sager[i].k = +v; saveState(); render(); renderPriorities(); }
+function changeStatus(i,v){ sager[i].status = v; saveState(); render(); renderPriorities(); }
 function openSag(i){ renderSagDetail(i); }
 function renderDocs(items){ if(!items || !items.length) return '<div class="doc-empty">Ingen dokumenter registreret endnu.</div>'; return items.map(d=>`<div class="doc-item"><div><strong>${d.titel}</strong><div class="doc-meta">${d.dato || 'Dato mangler'}</div></div>${d.url ? `<a href="${d.url}" target="_blank" rel="noopener">Åbn</a>` : '<span class="dim">Mangler link</span>'}</div>`).join(''); }
-function renderSagDetail(i){ const s = sager[i]; const caseDetail = document.getElementById('caseDetail'); if(!s || !caseDetail) return; const driveUrl = getSagDrive(s); const driveLink = driveUrl ? `<a class="btn primary" href="${driveUrl}" target="_blank" rel="noopener">Åbn kundemappe</a>` : `<a class="btn" href="${CUSTOMER_DRIVE_ROOT}" target="_blank" rel="noopener">Find/opret kundemappe</a>`; caseDetail.classList.add('active'); caseDetail.innerHTML = `<div class="panel-hd"><div><h2>${s.kunde}</h2><div class="dim">${s.nr ? 'Sag ' + s.nr + ' · ' : ''}${s.adr || 'Adresse mangler'} · ${KAT[s.k]}</div></div><div style="display:flex;gap:8px"><button class="btn" onclick="openEditSag(${i})">Rediger</button><button class="btn ghost" onclick="closeSag()">Luk</button></div></div><div class="case-grid"><div class="case-card"><h3>Sagsinfo</h3><table><tbody><tr><td>Sagsnr.</td><td>${s.nr || '—'}</td></tr><tr><td>Opgave</td><td>${s.opg || '—'}</td></tr><tr><td>Est. beløb</td><td class="num">${s.b && s.b !== '0' ? s.b + ' kr.' : '—'}</td></tr><tr><td>Udestående</td><td class="num">${s.u && s.u !== '0' ? s.u + ' kr.' : '—'}</td></tr><tr><td>Startdato</td><td>${displayDate(s.start)}</td></tr><tr><td>Slutdato</td><td>${displayDate(s.slut)}</td></tr><tr><td>Mail</td><td>${s.mail || '—'}</td></tr><tr><td>Telefon</td><td>${s.tlf || '—'}</td></tr><tr><td>Fin. status</td><td>${s.status || '—'}</td></tr><tr><td>Fakturanr.</td><td>${s.fak || '—'}</td></tr></tbody></table><div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap">${driveLink}<a class="btn" href="${DRIVE_ROOT}" target="_blank" rel="noopener">Åbn fælles Drive-root</a></div></div><div class="case-card"><h3>Mødenoter og referater</h3><div class="doc-list"><strong>Byggereferater fra SMG</strong>${renderDocs(s.docs.byggereferater)}<strong style="margin-top:6px">Gemini transkripter</strong>${renderDocs(s.docs.transkripter)}</div></div></div>`; }
+function renderCasePayments(s){ const rows = getSagPayments(s); return rows.length ? `<table class="payment-inline-table"><thead><tr><th>Milepæl</th><th>Dato</th><th class="num">Beløb</th><th>Status</th></tr></thead><tbody>${rows.map((p)=>`<tr><td>${p.milepael}</td><td>${displayDate(p.dato)}</td><td class="num">${p.beloeb} kr.</td><td>${p.status === 'betalt' ? 'Betalt' : 'Udestående'}</td></tr>`).join('')}</tbody></table>` : '<div class="doc-empty">Ingen betalinger registreret på kunden endnu.</div>'; }
+function renderRelatedMailList(s){ const related = getRelatedEmails(s).slice(0,4); return related.length ? related.map((mail)=>`<div class="mini-item"><strong>${mail.subject}</strong><div class="meta">${displayDate(mail.date)} · ${mail.from}</div><div class="priority-item-links" style="margin-top:6px"><button class="icon-btn" onclick="setActiveTab('indbakke'); openEmail('${mail.id}')">Åbn mail</button></div></div>`).join('') : '<div class="doc-empty">Ingen relateret dialog fundet endnu.</div>'; }
+function renderSagDetail(i){ const s = sager[i]; const caseDetail = document.getElementById('caseDetail'); if(!s || !caseDetail) return; const driveUrl = getSagDrive(s); const driveLink = driveUrl ? `<a class="btn primary" href="${driveUrl}" target="_blank" rel="noopener">Åbn kundemappe</a>` : `<a class="btn" href="${CUSTOMER_DRIVE_ROOT}" target="_blank" rel="noopener">Find/opret kundemappe</a>`; const latestDialog = latestDialogDate(s); const offerDate = latestOfferDate(s); caseDetail.classList.add('active'); caseDetail.innerHTML = `<div class="panel-hd"><div><h2>${s.kunde}</h2><div class="dim">${s.nr ? 'Sag ' + s.nr + ' · ' : ''}${s.adr || 'Adresse mangler'} · ${KAT[s.k]}</div></div><div style="display:flex;gap:8px"><button class="btn" onclick="openEditSag(${i})">Rediger</button><button class="btn ghost" onclick="closeSag()">Luk</button></div></div><div class="case-grid"><div class="case-card"><h3>Sagsinfo</h3><table><tbody><tr><td>Sagsnr.</td><td>${s.nr || '—'}</td></tr><tr><td>Opgave</td><td>${s.opg || '—'}</td></tr><tr><td>Est. beløb</td><td class="num">${s.b && s.b !== '0' ? s.b + ' kr.' : '—'}</td></tr><tr><td>Udestående</td><td class="num">${s.u && s.u !== '0' ? s.u + ' kr.' : '—'}</td></tr><tr><td>Tilbud sendt</td><td>${offerDate ? displayDate(offerDate) : '—'}</td></tr><tr><td>Seneste dialog</td><td>${latestDialog ? displayDate(latestDialog) : '—'}</td></tr><tr><td>Startdato</td><td>${displayDate(s.start)}</td></tr><tr><td>Slutdato</td><td>${displayDate(s.slut)}</td></tr><tr><td>Mail</td><td>${s.mail || '—'}</td></tr><tr><td>Telefon</td><td>${s.tlf || '—'}</td></tr><tr><td>Fin. status</td><td>${s.status || '—'}</td></tr><tr><td>Fakturanr.</td><td>${s.fak || '—'}</td></tr></tbody></table><div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap">${driveLink}<a class="btn" href="${DRIVE_ROOT}" target="_blank" rel="noopener">Åbn fælles Drive-root</a></div></div><div class="case-card"><h3>Mødenoter og referater</h3><div class="doc-list"><strong>Byggereferater fra SMG</strong>${renderDocs(s.docs.byggereferater)}<strong style="margin-top:6px">Gemini transkripter</strong>${renderDocs(s.docs.transkripter)}</div></div></div><div class="rel-grid" style="margin-top:12px"><div class="case-card"><h3>Betalinger</h3>${renderCasePayments(s)}</div><div class="case-card"><h3>Dialog og tilbud</h3><div class="mini-list">${renderRelatedMailList(s)}</div></div></div>`; }
 function closeSag(){ const caseDetail = document.getElementById('caseDetail'); if(caseDetail){ caseDetail.classList.remove('active'); caseDetail.innerHTML = ''; } }
 function addSag(){ const idx = sager.length; sager.push(normalizeSag({ k:3,nr:"",kunde:"Ny kunde",adr:"",opg:"",b:"0",u:"0",dato:"",status:"—",timer:"",fak:"",start:"",slut:"",info:"",mail:"",tlf:"",drive:"",sort:idx,docs:{drive:"",byggereferater:docDemo.byggereferater,transkripter:docDemo.transkripter}}, idx)); saveState(); openEditSag(idx); render(); }
 let editSagIndex = null;
 function openEditSag(i){ const s = sager[i]; const caseDetail = document.getElementById('caseDetail'); if(!s || !caseDetail) return; editSagIndex = i; caseDetail.classList.add('active'); caseDetail.innerHTML = `<div class="panel-hd"><h2>Rediger sag</h2><button class="btn ghost" onclick="closeSag()">Luk</button></div><div class="case-form"><label>Kategori<select id="edit-k">${Object.entries(KAT).map(([k,v])=>`<option value="${k}"${+k===s.k?' selected':''}>${v}</option>`).join('')}</select></label><label>Sagsnr.<input id="edit-nr" value="${escapeAttr(s.nr)}"></label><label>Kundenavn<input id="edit-kunde" value="${escapeAttr(s.kunde)}"></label><label class="wide">Adresse<input id="edit-adr" value="${escapeAttr(s.adr === '—' ? '' : s.adr)}"></label><label class="wide">Opgave<textarea id="edit-opg">${escapeAttr(s.opg)}</textarea></label><label>Est. beløb<input id="edit-b" value="${escapeAttr(s.b)}"></label><label>Udestående<input id="edit-u" value="${escapeAttr(s.u)}"></label><label>Betalingsdato<input id="edit-dato" type="date" value="${escapeAttr(s.dato)}"></label><label>Startdato<input id="edit-start" type="date" value="${escapeAttr(s.start)}"></label><label>Slutdato<input id="edit-slut" type="date" value="${escapeAttr(s.slut)}"></label><label>Fin. status<input id="edit-status" value="${escapeAttr(s.status)}"></label><label>Est. timer<input id="edit-timer" value="${escapeAttr(s.timer)}"></label><label>Fakturanr.<input id="edit-fak" value="${escapeAttr(s.fak)}"></label><label>Mail<input id="edit-mail" value="${escapeAttr(s.mail)}"></label><label>Telefon<input id="edit-tlf" value="${escapeAttr(s.tlf)}"></label><label class="wide">Google Drive-folder URL<input id="edit-drive" value="${escapeAttr(getSagDrive(s))}" placeholder="Indsæt link til kundens Drive-mappe"></label><label class="wide">Noter/info<textarea id="edit-info">${escapeAttr(s.info)}</textarea></label></div><div style="display:flex;gap:8px;margin-top:14px"><button class="btn primary" onclick="saveSagEdit()">Gem</button><button class="btn" onclick="renderSagDetail(${i})">Annuller</button></div>`; }
 function readEdit(id){ return document.getElementById(id).value.trim(); }
-function saveSagEdit(){ if(editSagIndex === null || !sager[editSagIndex]) return; const s = sager[editSagIndex]; s.k = +readEdit('edit-k') || 3; s.nr = readEdit('edit-nr'); s.kunde = readEdit('edit-kunde') || 'Ukendt kunde'; s.adr = readEdit('edit-adr'); s.opg = readEdit('edit-opg'); s.b = readEdit('edit-b') || '0'; s.u = readEdit('edit-u') || '0'; s.dato = readEdit('edit-dato'); s.start = readEdit('edit-start'); s.slut = readEdit('edit-slut'); s.status = readEdit('edit-status') || '—'; s.timer = readEdit('edit-timer'); s.fak = readEdit('edit-fak'); s.mail = readEdit('edit-mail'); s.tlf = readEdit('edit-tlf'); s.drive = readEdit('edit-drive'); s.info = readEdit('edit-info'); s.docs = s.docs || {byggereferater:docDemo.byggereferater, transkripter:docDemo.transkripter}; s.docs.drive = s.drive; saveState(); render(); renderSagDetail(editSagIndex); }
+function saveSagEdit(){ if(editSagIndex === null || !sager[editSagIndex]) return; const s = sager[editSagIndex]; s.k = +readEdit('edit-k') || 3; s.nr = readEdit('edit-nr'); s.kunde = readEdit('edit-kunde') || 'Ukendt kunde'; s.adr = readEdit('edit-adr'); s.opg = readEdit('edit-opg'); s.b = readEdit('edit-b') || '0'; s.u = readEdit('edit-u') || '0'; s.dato = readEdit('edit-dato'); s.start = readEdit('edit-start'); s.slut = readEdit('edit-slut'); s.status = readEdit('edit-status') || '—'; s.timer = readEdit('edit-timer'); s.fak = readEdit('edit-fak'); s.mail = readEdit('edit-mail'); s.tlf = readEdit('edit-tlf'); s.drive = readEdit('edit-drive'); s.info = readEdit('edit-info'); s.docs = s.docs || {byggereferater:docDemo.byggereferater, transkripter:docDemo.transkripter}; s.docs.drive = s.drive; saveState(); render(); renderPriorities(); renderCapacity(); renderSagDetail(editSagIndex); }
 function startOfWeek(date){ const d = new Date(date); const day = (d.getDay() + 6) % 7; d.setDate(d.getDate() - day); d.setHours(0,0,0,0); return d; }
 function addDays(date, days){ const d = new Date(date); d.setDate(d.getDate() + days); return d; }
 function isoWeek(date){ const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate())); const dayNum = d.getUTCDay() || 7; d.setUTCDate(d.getUTCDate() + 4 - dayNum); const yearStart = new Date(Date.UTC(d.getUTCFullYear(),0,1)); return Math.ceil((((d - yearStart) / 86400000) + 1) / 7); }
@@ -1346,15 +1505,30 @@ function removeEmployee(i){ employees.splice(i, 1); saveState(); renderCapacity(
 function setEmployeeWeekStatus(){ const emp = employees.find(e=>e.id === document.getElementById('statusEmployee').value); if(!emp) return; emp.overrides = emp.overrides || {}; const weekKey = document.getElementById('statusWeek').value; const hours = document.getElementById('statusHours').value; emp.overrides[weekKey] = {status:document.getElementById('statusType').value}; if(hours !== '') emp.overrides[weekKey].hours = +hours; saveState(); renderCapacity(); }
 function clearEmployeeWeekStatus(){ const emp = employees.find(e=>e.id === document.getElementById('statusEmployee').value); if(!emp || !emp.overrides) return; delete emp.overrides[document.getElementById('statusWeek').value]; saveState(); renderCapacity(); }
 function renderCapacity(){ const calendar = document.getElementById('capacityCalendar'); const capacityInput = document.getElementById('capacityHours'); if(!calendar || !capacityInput) return; const defaultHours = +capacityInput.value || 37; const now = new Date(); const weekendMode = [0,6].includes(now.getDay()); const focusBase = weekendMode ? addDays(now, now.getDay() === 6 ? 2 : 1) : now; const firstWeek = startOfWeek(focusBase); const yearEnd = new Date(new Date().getFullYear(), 11, 31); const weekCount = Math.ceil((startOfWeek(yearEnd) - firstWeek) / (7 * 86400000)) + 1; const rows = []; for(let w=0; w<weekCount; w++){ const weekStart = addDays(firstWeek, w*7); const weekEnd = addDays(weekStart, 6); const weekKey = weekStart.toISOString().slice(0,10); const details = []; let hours = 0; sager.forEach(s=>{ if(![2,3,4,5].includes(+s.k) || !s.start || !s.slut) return; const start = new Date(s.start + 'T00:00:00'); const end = new Date(s.slut + 'T00:00:00'); if(Number.isNaN(start.getTime()) || Number.isNaN(end.getTime()) || end < start) return; const days = overlapDays(start, end, weekStart, weekEnd); if(!days) return; const totalDays = Math.max(1, overlapDays(start, end, start, end)); const h = estimatedHours(s) * days / totalDays; if(!h) return; hours += h; details.push({kunde:s.kunde, hours:h}); }); const staff = employees.map(emp=>({emp, ...employeeWeek(emp, weekKey, w, defaultHours)})); const capacity = staff.reduce((sum,e)=>sum + e.hours, 0); details.sort((a,b)=>b.hours-a.hours); rows.push({weekStart, weekEnd, weekKey, weekNo:isoWeek(weekStart), hours, capacity, details, staff}); } renderEmployees(rows); const currentWeek = rows[0]; const nextWeek = rows[1]; const upcoming = rows.slice(1, 6); calendar.innerHTML = `<div class="capacity-summary-bar"><div>Kapacitetskalender — ${new Date().getFullYear()}</div><div class="meta-right">${employees.length} medarbejdere · ${defaultHours} t/uge · I dag: ${weekdayLong(now)} ${fullDateLabel(now)}</div></div>${currentWeek ? renderCurrentWeekBoard(currentWeek, focusBase) : ''}${nextWeek ? renderComingWeekCases(nextWeek) : ''}<div><div class="capacity-section-label">Kommende uger</div><div class="upcoming-list">${upcoming.map(renderUpcomingWeekRow).join('')}</div></div>`; }
+function filteredEmails(){ return emails.filter((mail)=> inboxFilter === 'alle' ? true : inboxFilter === 'uhaandteret' ? !mail.handled : mail.handled).sort((a,b)=>String(b.date).localeCompare(String(a.date))); }
+function openEmail(id){ selectedEmailId = id; renderInbox(); }
+function renderInbox(){
+  const list = document.getElementById('emailList');
+  const view = document.getElementById('emailView');
+  if(!list || !view) return;
+  const items = filteredEmails();
+  if(!selectedEmailId && items[0]) selectedEmailId = items[0].id;
+  const active = items.find((mail)=>mail.id === selectedEmailId) || items[0] || null;
+  list.innerHTML = items.map((mail)=>`<div class="email-item ${mail.id === (active && active.id) ? 'active' : ''} ${mail.handled ? '' : 'unread'}" onclick="openEmail('${mail.id}')"><div class="meta"><span>${displayDate(mail.date)}</span><span>${mail.kunde || 'Ukendt'}</span></div><div class="from">${mail.from}</div><div class="subj">${mail.subject}</div><div class="preview">${mail.preview}</div></div>`).join('') || '<div class="email-item"><div class="preview">Ingen mails.</div></div>';
+  view.innerHTML = active ? `<div class="email-view"><div class="subject">${active.subject}</div><div class="meta-row"><div class="who"><strong>${active.from}</strong><div class="addr">${active.kunde || 'Ukendt kunde'}</div></div><div class="date">${displayDate(active.date)}</div></div><div style="margin-bottom:12px">${active.tags.map((tag)=>`<span class="tag tag-${tag === 'tilbud' ? 'tilbud' : tag === 'sag' ? 'sag' : tag === 'opfoelg' ? 'opfoelg' : tag === 'faktura' ? 'faktura' : 'new'}">${tag}</span>`).join(' ')}</div><div class="body">${active.body}</div></div>` : '<div class="dim">Ingen mail valgt.</div>';
+}
 function renderBetalinger(){ const body = document.getElementById('betalingBody'); const rows = betalinger.filter(b=>b.status !== 'betalt'); body.innerHTML = rows.map(b=>{ const idx = betalinger.indexOf(b); const isDke = String(b.kunde || '').toLowerCase().includes('dke'); const kunde = isDke ? `${b.kunde} <span class="chip tag-dke">DKE</span>` : b.kunde; return `<tr><td>${b.nr || '<span class="dim">—</span>'}</td><td>${kunde}</td><td>${b.milepael}</td><td>${b.dato || '<span class="dim">—</span>'}</td><td class="num">${b.beloeb} kr.</td><td>${b.fak || '<span class="dim">—</span>'}</td><td><select class="pay-status udestaaende" onchange="changeBetaling(${idx}, this.value)"><option value="udestaaende" selected>Udestående</option><option value="betalt">Betalt</option></select></td></tr>`; }).join('') || '<tr><td colspan="7" class="dim">Ingen udestående rater.</td></tr>'; }
-function changeBetaling(i,v){ betalinger[i].status = v; saveState(); renderBetalinger(); }
+function changeBetaling(i,v){ betalinger[i].status = v; saveState(); renderBetalinger(); renderPriorities(); }
 document.querySelectorAll('.tab-btn').forEach((btn)=>btn.addEventListener('click', ()=>setActiveTab(btn.dataset.tab)));
+document.querySelectorAll('.inbox-tab').forEach((btn)=>btn.addEventListener('click', ()=>{ inboxFilter = btn.dataset.filter; document.querySelectorAll('.inbox-tab').forEach((b)=>b.classList.toggle('active', b === btn)); selectedEmailId = null; renderInbox(); }));
 document.getElementById('sagerSoeg').addEventListener('input',render);
 document.getElementById('filterKat').addEventListener('change',render);
 document.getElementById('capacityHours').addEventListener('input', ()=>{ renderCapacity(); saveState(); });
 render();
 renderBetalinger();
 renderCapacity();
+renderInbox();
+renderPriorities();
 updateAuthUi();
 setActiveTab('dashboard');
 checkAuth();
