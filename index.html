@@ -300,6 +300,27 @@
   .upcoming-list{
     border:1px solid #e9e3da;border-radius:18px;background:#fff;overflow:hidden;
   }
+  .coming-cases{
+    border:1px solid #e9e3da;border-radius:18px;background:#fff;overflow:hidden;
+  }
+  .coming-cases-head{
+    padding:16px 18px;border-bottom:1px solid #efe8de;background:#fcfbf8;
+  }
+  .coming-cases-head h3{margin:0;font-size:15px}
+  .coming-cases-head .sub{margin-top:4px;font-size:12px;color:var(--muted)}
+  .coming-cases-list{display:grid}
+  .coming-case{
+    display:grid;grid-template-columns:1.3fr .8fr .7fr .7fr;gap:14px;align-items:center;
+    padding:14px 18px;border-top:1px solid #efe8de;
+  }
+  .coming-case:first-child{border-top:none}
+  .coming-case-title{font-size:14px;font-weight:700}
+  .coming-case-meta{font-size:12px;color:var(--muted);margin-top:3px}
+  .coming-case-share{font-size:13px;font-weight:700}
+  .coming-case-bar{height:8px;background:#edf1f6;border-radius:999px;overflow:hidden;margin-top:6px}
+  .coming-case-fill{height:100%;background:var(--brand)}
+  .coming-case-end,.coming-case-hours{font-size:12px;color:#655d56}
+  .coming-case-empty{padding:16px 18px;color:var(--muted);font-size:12px}
   .upcoming-row{
     display:grid;grid-template-columns:160px 1fr 260px 90px;gap:16px;align-items:center;
     padding:16px 18px;border-top:1px solid #efe8de;
@@ -329,6 +350,7 @@
   @media (max-width: 960px){
     .capacity-grid{grid-template-columns:120px repeat(5,minmax(140px,1fr));overflow:auto}
     .upcoming-row{grid-template-columns:1fr;gap:10px}
+    .coming-case{grid-template-columns:1fr;gap:8px}
     .upcoming-staff,.upcoming-pct{text-align:left}
     .staff-icons{justify-content:flex-start}
   }
@@ -710,41 +732,6 @@
     </table>
   </div>
 
-  <div class="grid-2" style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:20px">
-    <div class="panel">
-      <h2>Fordeling pr. kategori</h2>
-      <table>
-        <tbody>
-          <tr><td><span class="chip chip-green">Arbejde færdigt</span></td><td class="num">4 sager</td><td class="num">431.387 kr.</td></tr>
-          <tr><td><span class="chip chip-brand">Aktive kunder</span></td><td class="num">5 sager</td><td class="num">792.000 kr.</td></tr>
-          <tr><td><span class="chip chip-amber">Kunde (ikke startet)</span></td><td class="num">3 sager</td><td class="num">7.047.587 kr.</td></tr>
-          <tr><td><span class="chip chip-blue">Tilbud sendt</span></td><td class="num">5 sager</td><td class="num">4.987.000 kr.</td></tr>
-          <tr><td><span class="chip">Pipeline</span></td><td class="num">10 sager</td><td class="num">1.830.000 kr.</td></tr>
-          <tr><td><span class="chip">Afsluttet</span></td><td class="num">4 sager</td><td class="num">95.000 kr.</td></tr>
-          <tr><td><span class="chip chip-red">Ikke relevant</span></td><td class="num">2 sager</td><td class="num">1.000.000 kr.</td></tr>
-        </tbody>
-      </table>
-    </div>
-    <div class="panel">
-      <h2>Kundefordeling — top kunder</h2>
-      <table>
-        <tbody>
-          <tr><td><strong>DKE</strong> <span class="dim">(Charlotte · Lars · Nils)</span></td><td class="num">12 sager</td><td><span class="chip chip-brand">nøglekunde</span></td></tr>
-          <tr><td>Helle Fortland (+ kusine)</td><td class="num">2 sager</td><td></td></tr>
-          <tr><td>Brandskole, Helsingør</td><td class="num">1 sag</td><td><span class="chip chip-brand">storkunde</span></td></tr>
-          <tr><td>Henrik (nyt hus, Jyllinge)</td><td class="num">1 sag</td><td><span class="chip chip-amber">storsag</span></td></tr>
-          <tr><td>Øvrige privatkunder</td><td class="num">9 sager</td><td></td></tr>
-        </tbody>
-      </table>
-      <div class="status-note" style="border-left-color:var(--brand);margin-top:12px;background:#f6f9fc">
-        <strong style="color:var(--brand)">DKE-kontakter</strong><br>
-        Charlotte · 8 sager · charlotte@dke.dk<br>
-        Lars · 1 sag · lars@dke.dk<br>
-        Nils · 1 sag · nils@dke.dk
-      </div>
-    </div>
-  </div>
-
   <div class="panel">
     <div class="panel-hd">
       <h2>Kapacitetskalender — resten af 2026</h2>
@@ -789,6 +776,41 @@
           </div>
           <div class="capacity-note">Udenlandske medarbejdere har automatisk 5 uger i DK og 2 uger i Polen. Lærlinge kan markeres som skole uge for uge.</div>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="grid-2" style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:20px">
+    <div class="panel">
+      <h2>Fordeling pr. kategori</h2>
+      <table>
+        <tbody>
+          <tr><td><span class="chip chip-green">Arbejde færdigt</span></td><td class="num">4 sager</td><td class="num">431.387 kr.</td></tr>
+          <tr><td><span class="chip chip-brand">Aktive kunder</span></td><td class="num">5 sager</td><td class="num">792.000 kr.</td></tr>
+          <tr><td><span class="chip chip-amber">Kunde (ikke startet)</span></td><td class="num">3 sager</td><td class="num">7.047.587 kr.</td></tr>
+          <tr><td><span class="chip chip-blue">Tilbud sendt</span></td><td class="num">5 sager</td><td class="num">4.987.000 kr.</td></tr>
+          <tr><td><span class="chip">Pipeline</span></td><td class="num">10 sager</td><td class="num">1.830.000 kr.</td></tr>
+          <tr><td><span class="chip">Afsluttet</span></td><td class="num">4 sager</td><td class="num">95.000 kr.</td></tr>
+          <tr><td><span class="chip chip-red">Ikke relevant</span></td><td class="num">2 sager</td><td class="num">1.000.000 kr.</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="panel">
+      <h2>Kundefordeling — top kunder</h2>
+      <table>
+        <tbody>
+          <tr><td><strong>DKE</strong> <span class="dim">(Charlotte · Lars · Nils)</span></td><td class="num">12 sager</td><td><span class="chip chip-brand">nøglekunde</span></td></tr>
+          <tr><td>Helle Fortland (+ kusine)</td><td class="num">2 sager</td><td></td></tr>
+          <tr><td>Brandskole, Helsingør</td><td class="num">1 sag</td><td><span class="chip chip-brand">storkunde</span></td></tr>
+          <tr><td>Henrik (nyt hus, Jyllinge)</td><td class="num">1 sag</td><td><span class="chip chip-amber">storsag</span></td></tr>
+          <tr><td>Øvrige privatkunder</td><td class="num">9 sager</td><td></td></tr>
+        </tbody>
+      </table>
+      <div class="status-note" style="border-left-color:var(--brand);margin-top:12px;background:#f6f9fc">
+        <strong style="color:var(--brand)">DKE-kontakter</strong><br>
+        Charlotte · 8 sager · charlotte@dke.dk<br>
+        Lars · 1 sag · lars@dke.dk<br>
+        Nils · 1 sag · nils@dke.dk
       </div>
     </div>
   </div>
@@ -1152,6 +1174,28 @@ function assignmentClass(entry){
   if(entry.type === 'alt') return 'assignment-alt';
   return 'assignment-work';
 }
+function buildComingWeekCases(week){
+  if(!week) return [];
+  return sager.filter((s)=>[2,3,4,5].includes(+s.k) && s.start && s.slut).map((s)=>{
+    const start = new Date(`${s.start}T00:00:00`);
+    const end = new Date(`${s.slut}T00:00:00`);
+    if(Number.isNaN(start.getTime()) || Number.isNaN(end.getTime()) || end < start) return null;
+    const weekdays = Array.from({length:5}, (_, i)=>addDays(week.weekStart, i));
+    const activeDays = weekdays.filter((date)=>date >= start && date <= end);
+    if(!activeDays.length) return null;
+    const share = Math.round((activeDays.length / 5) * 100);
+    const endInWeek = end >= week.weekStart && end <= addDays(week.weekStart, 4);
+    return {
+      kunde: s.kunde || 'Ukendt kunde',
+      opgave: s.opg || s.kunde || 'Projekt',
+      share,
+      days: activeDays.length,
+      expectedEnd: endInWeek ? weekdayLong(end) : 'Efter ugen',
+      expectedEndDate: end.toISOString().slice(0,10),
+      hours: estimatedHours(s),
+    };
+  }).filter(Boolean).sort((a,b)=>b.share-a.share || b.hours-a.hours);
+}
 function buildDayAssignments(week, baseDate){
   const days = Array.from({length:5}, (_, i)=> {
     const date = addDays(week.weekStart, i);
@@ -1250,6 +1294,32 @@ function renderCurrentWeekBoard(week, baseDate){
     </div>
   </div>`;
 }
+function renderComingWeekCases(week){
+  const cases = buildComingWeekCases(week);
+  return `<div>
+    <div class="capacity-section-label">Aktive sager i kommende uge</div>
+    <div class="coming-cases">
+      <div class="coming-cases-head">
+        <h3>Hvad fylder næste uge?</h3>
+        <div class="sub">Viser hvor stor del af ugen hver aktiv sag optager, og om den forventes afleveret i løbet af ugen.</div>
+      </div>
+      <div class="coming-cases-list">
+        ${cases.length ? cases.map((item)=>`<div class="coming-case">
+          <div>
+            <div class="coming-case-title">${item.kunde}</div>
+            <div class="coming-case-meta">${projectSnippet(item.opgave)} · ${item.days} af 5 arbejdsdage</div>
+          </div>
+          <div>
+            <div class="coming-case-share">${item.share}% af ugen</div>
+            <div class="coming-case-bar"><div class="coming-case-fill" style="width:${item.share}%"></div></div>
+          </div>
+          <div class="coming-case-end">${item.expectedEnd === 'Efter ugen' ? 'Fortsætter efter ugen' : `Forventes færdig ${item.expectedEnd}`}</div>
+          <div class="coming-case-hours">${item.hours} est. timer</div>
+        </div>`).join('') : '<div class="coming-case-empty">Ingen aktive sager i den kommende uge.</div>'}
+      </div>
+    </div>
+  </div>`;
+}
 function renderUpcomingWeekRow(week){
   const pct = week.capacity ? Math.round(week.hours / week.capacity * 100) : 0;
   const staffCounts = summarizeWeekStaff(week.staff);
@@ -1275,7 +1345,7 @@ function updateEmployee(i, field, value){ if(!employees[i]) return; employees[i]
 function removeEmployee(i){ employees.splice(i, 1); saveState(); renderCapacity(); }
 function setEmployeeWeekStatus(){ const emp = employees.find(e=>e.id === document.getElementById('statusEmployee').value); if(!emp) return; emp.overrides = emp.overrides || {}; const weekKey = document.getElementById('statusWeek').value; const hours = document.getElementById('statusHours').value; emp.overrides[weekKey] = {status:document.getElementById('statusType').value}; if(hours !== '') emp.overrides[weekKey].hours = +hours; saveState(); renderCapacity(); }
 function clearEmployeeWeekStatus(){ const emp = employees.find(e=>e.id === document.getElementById('statusEmployee').value); if(!emp || !emp.overrides) return; delete emp.overrides[document.getElementById('statusWeek').value]; saveState(); renderCapacity(); }
-function renderCapacity(){ const calendar = document.getElementById('capacityCalendar'); const capacityInput = document.getElementById('capacityHours'); if(!calendar || !capacityInput) return; const defaultHours = +capacityInput.value || 37; const now = new Date(); const weekendMode = [0,6].includes(now.getDay()); const focusBase = weekendMode ? addDays(now, now.getDay() === 6 ? 2 : 1) : now; const firstWeek = startOfWeek(focusBase); const yearEnd = new Date(new Date().getFullYear(), 11, 31); const weekCount = Math.ceil((startOfWeek(yearEnd) - firstWeek) / (7 * 86400000)) + 1; const rows = []; for(let w=0; w<weekCount; w++){ const weekStart = addDays(firstWeek, w*7); const weekEnd = addDays(weekStart, 6); const weekKey = weekStart.toISOString().slice(0,10); const details = []; let hours = 0; sager.forEach(s=>{ if(![2,3,4,5].includes(+s.k) || !s.start || !s.slut) return; const start = new Date(s.start + 'T00:00:00'); const end = new Date(s.slut + 'T00:00:00'); if(Number.isNaN(start.getTime()) || Number.isNaN(end.getTime()) || end < start) return; const days = overlapDays(start, end, weekStart, weekEnd); if(!days) return; const totalDays = Math.max(1, overlapDays(start, end, start, end)); const h = estimatedHours(s) * days / totalDays; if(!h) return; hours += h; details.push({kunde:s.kunde, hours:h}); }); const staff = employees.map(emp=>({emp, ...employeeWeek(emp, weekKey, w, defaultHours)})); const capacity = staff.reduce((sum,e)=>sum + e.hours, 0); details.sort((a,b)=>b.hours-a.hours); rows.push({weekStart, weekEnd, weekKey, weekNo:isoWeek(weekStart), hours, capacity, details, staff}); } renderEmployees(rows); const currentWeek = rows[0]; const upcoming = rows.slice(1, 6); calendar.innerHTML = `<div class="capacity-summary-bar"><div>Kapacitetskalender — ${new Date().getFullYear()}</div><div class="meta-right">${employees.length} medarbejdere · ${defaultHours} t/uge · I dag: ${weekdayLong(now)} ${fullDateLabel(now)}</div></div>${currentWeek ? renderCurrentWeekBoard(currentWeek, focusBase) : ''}<div><div class="capacity-section-label">Kommende uger</div><div class="upcoming-list">${upcoming.map(renderUpcomingWeekRow).join('')}</div></div>`; }
+function renderCapacity(){ const calendar = document.getElementById('capacityCalendar'); const capacityInput = document.getElementById('capacityHours'); if(!calendar || !capacityInput) return; const defaultHours = +capacityInput.value || 37; const now = new Date(); const weekendMode = [0,6].includes(now.getDay()); const focusBase = weekendMode ? addDays(now, now.getDay() === 6 ? 2 : 1) : now; const firstWeek = startOfWeek(focusBase); const yearEnd = new Date(new Date().getFullYear(), 11, 31); const weekCount = Math.ceil((startOfWeek(yearEnd) - firstWeek) / (7 * 86400000)) + 1; const rows = []; for(let w=0; w<weekCount; w++){ const weekStart = addDays(firstWeek, w*7); const weekEnd = addDays(weekStart, 6); const weekKey = weekStart.toISOString().slice(0,10); const details = []; let hours = 0; sager.forEach(s=>{ if(![2,3,4,5].includes(+s.k) || !s.start || !s.slut) return; const start = new Date(s.start + 'T00:00:00'); const end = new Date(s.slut + 'T00:00:00'); if(Number.isNaN(start.getTime()) || Number.isNaN(end.getTime()) || end < start) return; const days = overlapDays(start, end, weekStart, weekEnd); if(!days) return; const totalDays = Math.max(1, overlapDays(start, end, start, end)); const h = estimatedHours(s) * days / totalDays; if(!h) return; hours += h; details.push({kunde:s.kunde, hours:h}); }); const staff = employees.map(emp=>({emp, ...employeeWeek(emp, weekKey, w, defaultHours)})); const capacity = staff.reduce((sum,e)=>sum + e.hours, 0); details.sort((a,b)=>b.hours-a.hours); rows.push({weekStart, weekEnd, weekKey, weekNo:isoWeek(weekStart), hours, capacity, details, staff}); } renderEmployees(rows); const currentWeek = rows[0]; const nextWeek = rows[1]; const upcoming = rows.slice(1, 6); calendar.innerHTML = `<div class="capacity-summary-bar"><div>Kapacitetskalender — ${new Date().getFullYear()}</div><div class="meta-right">${employees.length} medarbejdere · ${defaultHours} t/uge · I dag: ${weekdayLong(now)} ${fullDateLabel(now)}</div></div>${currentWeek ? renderCurrentWeekBoard(currentWeek, focusBase) : ''}${nextWeek ? renderComingWeekCases(nextWeek) : ''}<div><div class="capacity-section-label">Kommende uger</div><div class="upcoming-list">${upcoming.map(renderUpcomingWeekRow).join('')}</div></div>`; }
 function renderBetalinger(){ const body = document.getElementById('betalingBody'); const rows = betalinger.filter(b=>b.status !== 'betalt'); body.innerHTML = rows.map(b=>{ const idx = betalinger.indexOf(b); const isDke = String(b.kunde || '').toLowerCase().includes('dke'); const kunde = isDke ? `${b.kunde} <span class="chip tag-dke">DKE</span>` : b.kunde; return `<tr><td>${b.nr || '<span class="dim">—</span>'}</td><td>${kunde}</td><td>${b.milepael}</td><td>${b.dato || '<span class="dim">—</span>'}</td><td class="num">${b.beloeb} kr.</td><td>${b.fak || '<span class="dim">—</span>'}</td><td><select class="pay-status udestaaende" onchange="changeBetaling(${idx}, this.value)"><option value="udestaaende" selected>Udestående</option><option value="betalt">Betalt</option></select></td></tr>`; }).join('') || '<tr><td colspan="7" class="dim">Ingen udestående rater.</td></tr>'; }
 function changeBetaling(i,v){ betalinger[i].status = v; saveState(); renderBetalinger(); }
 document.querySelectorAll('.tab-btn').forEach((btn)=>btn.addEventListener('click', ()=>setActiveTab(btn.dataset.tab)));
