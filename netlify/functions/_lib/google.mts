@@ -166,6 +166,25 @@ export function googleIntegrationStatus() {
   };
 }
 
+function categoryCode(caseEntry: any) {
+  const raw = String(caseEntry?.k ?? caseEntry?.kategori ?? "").trim();
+  const numeric = Number(raw);
+  return Number.isFinite(numeric) ? numeric : null;
+}
+
+function resolveCustomerRootFolderId(caseEntry: any) {
+  const activeRootId = env("GOOGLE_DRIVE_ACTIVE_FOLDER_ID");
+  const pipelineRootId = env("GOOGLE_DRIVE_PIPELINE_FOLDER_ID");
+  const archiveRootId = env("GOOGLE_DRIVE_ARCHIVE_FOLDER_ID");
+  const fallbackRootId = env("GOOGLE_DRIVE_CUSTOMERS_FOLDER_ID");
+  const code = categoryCode(caseEntry);
+
+  if (code === 4 || code === 5) return pipelineRootId || fallbackRootId;
+  if (code === 6 || code === 7) return archiveRootId || fallbackRootId;
+  if (code === 1 || code === 2 || code === 3) return activeRootId || fallbackRootId;
+  return fallbackRootId;
+}
+
 export async function getGoogleAccessToken() {
   const clientId = env("GOOGLE_CLIENT_ID");
   const clientSecret = env("GOOGLE_CLIENT_SECRET");
@@ -253,7 +272,7 @@ export function extractDriveId(value = "") {
 }
 
 export async function ensureCaseDriveFolders(caseEntry: any, caseNumber: string, customerName: string) {
-  const rootFolderId = extractDriveId(caseEntry?.docs?.drive || "") || env("GOOGLE_DRIVE_CUSTOMERS_FOLDER_ID");
+  const rootFolderId = extractDriveId(caseEntry?.docs?.drive || "") || resolveCustomerRootFolderId(caseEntry);
   if (!rootFolderId) {
     throw new Error("drive_root_missing");
   }
