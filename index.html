@@ -180,6 +180,14 @@
   tr[data-kat="7"] td:first-child{border-left:3px solid var(--red)}
 
   .sager-wrap{background:transparent;border:none;border-radius:0;box-shadow:none;margin:0}
+  .customers-head{
+    display:flex;justify-content:space-between;align-items:flex-start;gap:18px;
+    padding:20px 28px 16px;
+  }
+  .customers-toggle{
+    display:flex;background:#f2f0eb;border-radius:12px;padding:4px;gap:2px;border:.5px solid rgba(0,0,0,.08);
+  }
+  .customers-toggle .subtab-btn{margin:0}
   .customers-layout{
     position:relative;border-top:.5px solid var(--line);background:#fff;
   }
@@ -202,7 +210,7 @@
   .page-head-right{display:flex;gap:8px;align-items:center}
   .page-updated{font-size:10px;color:#b0ada8;font-family:var(--mono)}
   .sager-tools{
-    padding:20px 28px 16px;border-bottom:.5px solid var(--line);
+    padding:0 28px 16px;border-bottom:.5px solid var(--line);
     display:flex;gap:12px;align-items:center;flex-wrap:wrap;
     background:var(--card);font-family:var(--table-font);
   }
@@ -215,20 +223,20 @@
     font-size:14px;background:#fff;min-width:224px;font-family:var(--table-font);font-weight:500;color:#32404d;
   }
   .sager-tools .count{margin-left:auto;font-size:12px;color:#9f978d;font-weight:500}
-  #sagerTable{width:100%;border-collapse:collapse;background:#fff;table-layout:fixed;font-family:var(--table-font)}
+  #sagerTable{width:100%;border-collapse:collapse;background:#fff;table-layout:fixed;font-family:var(--font)}
   #sagerTable thead tr{background:#fff;border-bottom:1px solid #d7e1eb}
-  #sagerTable th{white-space:nowrap;font-size:11px;padding:17px 18px 15px;text-transform:uppercase;letter-spacing:.1em;color:#78879a;font-weight:700}
-  #sagerTable td{font-size:13px;padding:16px 18px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:220px;border-bottom:.5px solid #edf1f4;vertical-align:middle;color:#24313d}
+  #sagerTable th{white-space:nowrap;font-size:11px;padding:15px 18px 13px;text-transform:uppercase;letter-spacing:.08em;color:#8995a3;font-weight:700}
+  #sagerTable td{font-size:12px;padding:14px 18px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:220px;border-bottom:.5px solid #edf1f4;vertical-align:middle;color:#24313d}
   #sagerTable td.wrap{white-space:normal;max-width:none}
-  #sagerTable .date-cell{font-variant-numeric:proportional-nums;letter-spacing:-.01em;color:#5f6d7a;font-size:14px}
+  #sagerTable .date-cell{font-variant-numeric:proportional-nums;letter-spacing:-.01em;color:#5f6d7a;font-size:13px}
   #sagerTable tr{background:#fff}
   #sagerTable tr:hover{background:#fbfcfd}
   #sagerTable tr[style*="background:#fcfbf8"]{background:#f7fafc !important}
   .kunde-link{
-    border:none;background:transparent;color:#30598a;font-weight:700;
+    border:none;background:transparent;color:#223142;font-weight:600;
     cursor:pointer;padding:0;text-align:left;font:inherit;
   }
-  .kunde-link:hover{color:#244a78;text-decoration:none}
+  .kunde-link:hover{color:#1d4e7c;text-decoration:none}
   #sagerTable .icon-btn{
     background:#fff;border:.5px solid #e7dfd3;border-radius:10px;padding:8px 14px;color:#7d766e;
   }
@@ -1208,6 +1216,16 @@
 
 <section id="sager" class="section">
   <div class="sager-wrap">
+    <div class="customers-head">
+      <div>
+        <div class="page-title">Kunder</div>
+        <div class="page-sub">Aktive og arkiverede kunder med sagsforløb, dokumentation og økonomi.</div>
+      </div>
+      <div class="customers-toggle">
+        <button class="subtab-btn active" data-customers-tab="active" onclick="setCustomerView('active')">Aktive kunder</button>
+        <button class="subtab-btn" data-customers-tab="archived" onclick="setCustomerView('archived')">Arkiverede kunder</button>
+      </div>
+    </div>
     <div class="customers-layout">
       <div class="customers-list-pane">
         <div class="sager-tools">
@@ -1647,7 +1665,9 @@ let priorityView = 'todos';
 let selectedAgentId = 'chief-of-staff';
 let handledEmailIds = [];
 let dismissedPriorityKeys = [];
+let customerView = 'active';
 const ACTIVE_CASE_CATEGORIES = new Set([1,2,3,4,5]);
+const ARCHIVED_CASE_CATEGORIES = new Set([6,7]);
 function getCustomerAccount(entry){
   const kunde = String(entry?.kunde || '').toLowerCase();
   const mail = String(entry?.mail || '').toLowerCase();
@@ -2174,7 +2194,14 @@ function updateCaseTabCount(){
   if(priorityTab) priorityTab.innerHTML = `Sager <span style="opacity:.6">(${counts.todoCount})</span>`;
 }
 let selectedCustomerIndex = null;
-function render(){ const tbody = document.getElementById('sagerBody'); const q = (document.getElementById('sagerSoeg').value || '').toLowerCase(); const katF = document.getElementById('filterKat').value; const rows = sager.filter(s=>{ if(!ACTIVE_CASE_CATEGORIES.has(+s.k)) return false; if(katF && String(s.k)!==katF) return false; if(q){ const hay = `${s.nr} ${s.kunde} ${s.adr} ${s.opg}`.toLowerCase(); if(!hay.includes(q)) return false; } return true; }).sort((a,b)=>a.k-b.k || a.sort-b.sort); tbody.innerHTML = rows.map(s=>{ const idx = sager.indexOf(s); const account = getCustomerAccount(s); const kundeCell = getCustomerDisplay(s); const portfolioMeta = account ? `<div class="kunde-portfolio">${escapeAttr(account.shortTitle)} · ${escapeAttr(s.adr || 'Ejendom ikke angivet')}</div>` : ''; const activeRow = selectedCustomerIndex === idx ? ' style="background:#fcfbf8"' : ''; return `<tr data-kat="${s.k}"${activeRow}><td><select class="kategori kat-${s.k}" onchange="changeKat(${idx}, this.value)">${Object.entries(KAT).map(([k,v])=>`<option value="${k}"${+k===s.k?' selected':''}>${v}</option>`).join('')}</select></td><td>${s.nr || '—'}</td><td title="${escapeAttr(`${s.kunde} ${s.adr || ''}`)}"><button class="kunde-link" onclick="openSag(${idx})"><strong>${escapeAttr(kundeCell)}</strong></button><div class="kunde-address">${escapeAttr(s.kunde || 'Kunde mangler')}</div>${portfolioMeta}</td><td class="wrap" title="${escapeAttr(s.opg)}"><div class="opg-main">${s.opg || '—'}</div><div class="opg-sub">${s.b && s.b !== '0' ? `Est. entreprise ${s.b} kr.` : 'Est. entreprise mangler'}</div></td><td class="num">${s.u && s.u !== '0' ? '<span class="chip chip-amber">' + s.u + ' kr.</span>' : '—'}</td><td class="dim date-cell">${displayDate(s.start)}</td><td class="dim date-cell">${displayDate(s.slut)}</td><td><button class="icon-btn" onclick="openEditSag(${idx})">Rediger</button></td></tr>`; }).join(''); document.getElementById('count').textContent = `${rows.length} aktive/potentielle kunder`; updateCaseTabCount(); renderAppendix(); }
+function setCustomerView(view){
+  customerView = view === 'archived' ? 'archived' : 'active';
+  document.querySelectorAll('[data-customers-tab]').forEach((button)=>button.classList.toggle('active', button.dataset.customersTab === customerView));
+  selectedCustomerIndex = null;
+  closeSag();
+  render();
+}
+function render(){ const tbody = document.getElementById('sagerBody'); const q = (document.getElementById('sagerSoeg').value || '').toLowerCase(); const katF = document.getElementById('filterKat').value; const allowed = customerView === 'archived' ? ARCHIVED_CASE_CATEGORIES : ACTIVE_CASE_CATEGORIES; const rows = sager.filter(s=>{ if(!allowed.has(+s.k)) return false; if(katF && String(s.k)!==katF) return false; if(q){ const hay = `${s.nr} ${s.kunde} ${s.adr} ${s.opg}`.toLowerCase(); if(!hay.includes(q)) return false; } return true; }).sort((a,b)=>a.k-b.k || a.sort-b.sort); tbody.innerHTML = rows.map(s=>{ const idx = sager.indexOf(s); const account = getCustomerAccount(s); const kundeCell = getCustomerDisplay(s); const portfolioMeta = account ? `<div class="kunde-portfolio">${escapeAttr(account.shortTitle)} · ${escapeAttr(s.adr || 'Ejendom ikke angivet')}</div>` : ''; const activeRow = selectedCustomerIndex === idx ? ' style="background:#fcfbf8"' : ''; return `<tr data-kat="${s.k}"${activeRow}><td><select class="kategori kat-${s.k}" onchange="changeKat(${idx}, this.value)">${Object.entries(KAT).map(([k,v])=>`<option value="${k}"${+k===s.k?' selected':''}>${v}</option>`).join('')}</select></td><td>${s.nr || '—'}</td><td title="${escapeAttr(`${s.kunde} ${s.adr || ''}`)}"><button class="kunde-link" onclick="openSag(${idx})"><strong>${escapeAttr(kundeCell)}</strong></button><div class="kunde-address">${escapeAttr(s.kunde || 'Kunde mangler')}</div>${portfolioMeta}</td><td class="wrap" title="${escapeAttr(s.opg)}"><div class="opg-main">${s.opg || '—'}</div><div class="opg-sub">${s.b && s.b !== '0' ? `Est. entreprise ${s.b} kr.` : 'Est. entreprise mangler'}</div></td><td class="num">${s.u && s.u !== '0' ? '<span class="chip chip-amber">' + s.u + ' kr.</span>' : '—'}</td><td class="dim date-cell">${displayDate(s.start)}</td><td class="dim date-cell">${displayDate(s.slut)}</td><td><button class="icon-btn" onclick="openEditSag(${idx})">Rediger</button></td></tr>`; }).join(''); document.getElementById('count').textContent = customerView === 'archived' ? `${rows.length} arkiverede kunder` : `${rows.length} aktive/potentielle kunder`; updateCaseTabCount(); renderAppendix(); }
 function changeKat(i,v){ sager[i].k = +v; saveState(); render(); renderPriorities(); }
 function changeStatus(i,v){ sager[i].status = v; saveState(); render(); renderPriorities(); }
 function openSag(i){ if(selectedCustomerIndex === i){ closeSag(); return; } selectedCustomerIndex = i; render(); renderSagDetail(i); }
