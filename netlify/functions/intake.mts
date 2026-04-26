@@ -48,9 +48,14 @@ export default async (request: Request) => {
   }
 
   ensureCaseShape(matched);
+  const actor = {
+    ...auth.actor,
+    name: textValue(body.actorName, auth.actor?.name || "Custom GPT"),
+    email: textValue(body.actorEmail, auth.actor?.email || ""),
+  };
 
   const now = new Date().toISOString();
-  appendActivity(matched, auth.actor, {
+  appendActivity(matched, actor, {
     type: "intake",
     source: textValue(body.source, "custom-gpt"),
     meetingType: textValue(body.meetingType, ""),

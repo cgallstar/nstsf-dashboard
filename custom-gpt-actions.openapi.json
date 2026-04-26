@@ -45,6 +45,12 @@
                   "caseNumber": {
                     "type": "string"
                   },
+                  "actorName": {
+                    "type": "string"
+                  },
+                  "actorEmail": {
+                    "type": "string"
+                  },
                   "customerName": {
                     "type": "string"
                   },
@@ -254,6 +260,8 @@
                 ],
                 "properties": {
                   "caseNumber": { "type": "string" },
+                  "actorName": { "type": "string" },
+                  "actorEmail": { "type": "string" },
                   "customerName": { "type": "string" },
                   "type": { "type": "string", "default": "referat" },
                   "subject": { "type": "string" },
@@ -289,6 +297,8 @@
                 ],
                 "properties": {
                   "caseNumber": { "type": "string" },
+                  "actorName": { "type": "string" },
+                  "actorEmail": { "type": "string" },
                   "customerName": { "type": "string" },
                   "category": {
                     "type": "string",

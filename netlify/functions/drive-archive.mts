@@ -43,13 +43,18 @@ export default async (request: Request) => {
   const matched = matchCase(state.sager, body.caseNumber, body.customerName);
   if (!matched) return json({ ok: false, error: "case_not_found" }, 404);
   ensureCaseShape(matched);
+  const actor = {
+    ...auth.actor,
+    name: textValue(body.actorName, auth.actor?.name || "Custom GPT"),
+    email: textValue(body.actorEmail, auth.actor?.email || ""),
+  };
 
   const category = textValue(body.category, "referater").toLowerCase();
   const targetKey = DOC_MAP[category] || "referater";
   const documents = Array.isArray(body.documents) ? body.documents : [];
   pushDocs(matched.docs[targetKey], documents);
 
-  appendActivity(matched, auth.actor, {
+  appendActivity(matched, actor, {
     type: "drive_archive",
     category: targetKey,
     folderId: textValue(body.folderId, ""),

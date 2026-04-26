@@ -31,6 +31,11 @@ export default async (request: Request) => {
   const matched = matchCase(state.sager, body.caseNumber, body.customerName);
   if (!matched) return json({ ok: false, error: "case_not_found" }, 404);
   ensureCaseShape(matched);
+  const actor = {
+    ...auth.actor,
+    name: textValue(body.actorName, auth.actor?.name || "Custom GPT"),
+    email: textValue(body.actorEmail, auth.actor?.email || ""),
+  };
 
   const draft = normalizeDraft({
     type: textValue(body.type, "referat"),
@@ -44,7 +49,7 @@ export default async (request: Request) => {
 
   draft.approvalRequired = true;
   draft.externalStatus = "not_sent";
-  draft.source = textValue(body.source, auth.actor?.type || "system");
+  draft.source = textValue(body.source, actor.name || auth.actor?.type || "system");
 
   matched.mailDrafts.unshift(draft);
   matched.docs.mails.unshift({
@@ -55,7 +60,7 @@ export default async (request: Request) => {
     notes: "Draft oprettet og afventer godkendelse",
   });
 
-  appendActivity(matched, auth.actor, {
+  appendActivity(matched, actor, {
     type: "gmail_draft",
     source: draft.source,
     subject: draft.subject,
