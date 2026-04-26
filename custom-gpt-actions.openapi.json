@@ -1,15 +1,66 @@
 {
-  "openapi": "3.1.0",
+  "openapi": "3.0.3",
   "info": {
-    "title": "NSTSF Dashboard Intake API",
+    "title": "NSTSF Actions API",
     "version": "1.0.0",
-    "description": "Custom GPT Actions endpoint for writing structured meeting notes, tasks, drafts, progress updates and document links into NSTSF dashboard cases."
+    "description": "Actions for NSTSF case notes, draft emails and document archiving."
   },
   "servers": [
     {
       "url": "https://willowy-parfait-a287e5.netlify.app"
     }
   ],
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer"
+      }
+    },
+    "schemas": {
+      "TodoItem": {
+        "type": "object",
+        "properties": {
+          "title": { "type": "string" },
+          "status": { "type": "string" },
+          "dueDate": { "type": "string" },
+          "owner": { "type": "string" },
+          "notes": { "type": "string" }
+        }
+      },
+      "ChangeOrderItem": {
+        "type": "object",
+        "properties": {
+          "title": { "type": "string" },
+          "amount": { "type": "string" },
+          "status": { "type": "string" },
+          "notes": { "type": "string" }
+        }
+      },
+      "DocumentLink": {
+        "type": "object",
+        "properties": {
+          "title": { "type": "string" },
+          "date": { "type": "string" },
+          "url": { "type": "string" },
+          "fileId": { "type": "string" },
+          "mimeType": { "type": "string" },
+          "notes": { "type": "string" },
+          "fileName": { "type": "string" },
+          "contentText": { "type": "string" },
+          "contentBase64": { "type": "string" }
+        }
+      },
+      "DraftAttachment": {
+        "type": "object",
+        "properties": {
+          "fileName": { "type": "string" },
+          "mimeType": { "type": "string" },
+          "contentBase64": { "type": "string" }
+        }
+      }
+    }
+  },
   "security": [
     {
       "bearerAuth": []
@@ -17,221 +68,46 @@
   ],
   "paths": {
     "/api/intake": {
-      "get": {
-        "operationId": "getIntakeStatus",
-        "summary": "Get intake endpoint capabilities",
-        "responses": {
-          "200": {
-            "description": "Capabilities",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object"
-                }
-              }
-            }
-          }
-        }
-      },
       "post": {
         "operationId": "submitCaseIntake",
-        "summary": "Write structured case intake into NSTSF dashboard",
+        "summary": "Save structured case notes and progress",
         "requestBody": {
           "required": true,
           "content": {
             "application/json": {
               "schema": {
                 "type": "object",
-                "required": [
-                  "customerName",
-                  "noteText"
-                ],
+                "required": ["customerName", "noteText"],
                 "properties": {
-                  "caseNumber": {
-                    "type": "string"
-                  },
-                  "actorName": {
-                    "type": "string"
-                  },
-                  "actorEmail": {
-                    "type": "string"
-                  },
-                  "customerName": {
-                    "type": "string"
-                  },
-                  "source": {
-                    "type": "string",
-                    "default": "custom-gpt"
-                  },
-                  "meetingType": {
-                    "type": "string"
-                  },
-                  "noteText": {
-                    "type": "string"
-                  },
-                  "transcriptText": {
-                    "type": "string"
-                  },
+                  "caseNumber": { "type": "string" },
+                  "actorName": { "type": "string" },
+                  "actorEmail": { "type": "string" },
+                  "customerName": { "type": "string" },
+                  "source": { "type": "string" },
+                  "meetingType": { "type": "string" },
+                  "noteText": { "type": "string" },
+                  "transcriptText": { "type": "string" },
                   "decisions": {
                     "type": "array",
-                    "items": {
-                      "type": "string"
-                    }
+                    "items": { "type": "string" }
                   },
                   "todos": {
                     "type": "array",
-                    "items": {
-                      "oneOf": [
-                        {
-                          "type": "string"
-                        },
-                        {
-                          "type": "object",
-                          "properties": {
-                            "title": {
-                              "type": "string"
-                            },
-                            "status": {
-                              "type": "string"
-                            },
-                            "dueDate": {
-                              "type": "string"
-                            },
-                            "owner": {
-                              "type": "string"
-                            },
-                            "notes": {
-                              "type": "string"
-                            }
-                          }
-                        }
-                      ]
-                    }
+                    "items": { "$ref": "#/components/schemas/TodoItem" }
                   },
                   "changeOrders": {
                     "type": "array",
-                    "items": {
-                      "type": "object",
-                      "properties": {
-                        "title": {
-                          "type": "string"
-                        },
-                        "amount": {
-                          "type": "string"
-                        },
-                        "status": {
-                          "type": "string"
-                        },
-                        "notes": {
-                          "type": "string"
-                        }
-                      }
-                    }
+                    "items": { "$ref": "#/components/schemas/ChangeOrderItem" }
                   },
-                  "nextAction": {
-                    "type": "string"
-                  },
-                  "summaryStatus": {
-                    "type": "string"
-                  },
-                  "signatureStatus": {
-                    "type": "string"
-                  },
-                  "acceptedScope": {
-                    "type": "string"
-                  },
-                  "exclusions": {
-                    "type": "string"
-                  },
-                  "currentStage": {
-                    "type": "string"
-                  },
-                  "nextStep": {
-                    "type": "string"
-                  },
-                  "progressPct": {
-                    "type": "number"
-                  },
-                  "stageNote": {
-                    "type": "string"
-                  },
-                  "draft": {
-                    "type": "object",
-                    "properties": {
-                      "subject": {
-                        "type": "string"
-                      },
-                      "body": {
-                        "type": "string"
-                      },
-                      "recipients": {
-                        "type": "array",
-                        "items": {
-                          "type": "string"
-                        }
-                      },
-                      "gmailDraftId": {
-                        "type": "string"
-                      },
-                      "status": {
-                        "type": "string",
-                        "default": "Klar til godkendelse"
-                      }
-                    }
-                  },
-                  "documents": {
-                    "type": "object",
-                    "properties": {
-                      "references": {
-                        "type": "array",
-                        "items": {
-                          "$ref": "#/components/schemas/DocumentLink"
-                        }
-                      },
-                      "transcripts": {
-                        "type": "array",
-                        "items": {
-                          "$ref": "#/components/schemas/DocumentLink"
-                        }
-                      },
-                      "offers": {
-                        "type": "array",
-                        "items": {
-                          "$ref": "#/components/schemas/DocumentLink"
-                        }
-                      },
-                      "ks": {
-                        "type": "array",
-                        "items": {
-                          "$ref": "#/components/schemas/DocumentLink"
-                        }
-                      },
-                      "photos": {
-                        "type": "array",
-                        "items": {
-                          "$ref": "#/components/schemas/DocumentLink"
-                        }
-                      },
-                      "contracts": {
-                        "type": "array",
-                        "items": {
-                          "$ref": "#/components/schemas/DocumentLink"
-                        }
-                      },
-                      "extraWork": {
-                        "type": "array",
-                        "items": {
-                          "$ref": "#/components/schemas/DocumentLink"
-                        }
-                      },
-                      "emails": {
-                        "type": "array",
-                        "items": {
-                          "$ref": "#/components/schemas/DocumentLink"
-                        }
-                      }
-                    }
-                  }
+                  "nextAction": { "type": "string" },
+                  "summaryStatus": { "type": "string" },
+                  "signatureStatus": { "type": "string" },
+                  "acceptedScope": { "type": "string" },
+                  "exclusions": { "type": "string" },
+                  "currentStage": { "type": "string" },
+                  "nextStep": { "type": "string" },
+                  "progressPct": { "type": "number" },
+                  "stageNote": { "type": "string" }
                 }
               }
             }
@@ -239,10 +115,7 @@
         },
         "responses": {
           "200": {
-            "description": "Stored successfully"
-          },
-          "404": {
-            "description": "Case not found"
+            "description": "Case intake saved"
           }
         }
       }
@@ -250,56 +123,63 @@
     "/api/gmail-draft": {
       "post": {
         "operationId": "createGmailDraft",
-        "summary": "Create a draft-first customer email record under a case",
+        "summary": "Create a draft-first customer email record",
         "requestBody": {
           "required": true,
           "content": {
             "application/json": {
               "schema": {
                 "type": "object",
-                "required": [
-                  "customerName",
-                  "subject",
-                  "body",
-                  "recipients"
-                ],
+                "required": ["customerName", "subject", "body", "recipients"],
                 "properties": {
                   "caseNumber": { "type": "string" },
                   "actorName": { "type": "string" },
                   "actorEmail": { "type": "string" },
                   "customerName": { "type": "string" },
-                  "type": { "type": "string", "default": "referat" },
+                  "type": { "type": "string" },
                   "subject": { "type": "string" },
                   "body": { "type": "string" },
-                  "recipients": { "type": "array", "items": { "type": "string" } },
-                  "cc": { "type": "array", "items": { "type": "string" } },
-                  "bcc": { "type": "array", "items": { "type": "string" } },
-                  "source": { "type": "string", "default": "custom-gpt" }
+                  "html": { "type": "string" },
+                  "recipients": {
+                    "type": "array",
+                    "items": { "type": "string" }
+                  },
+                  "cc": {
+                    "type": "array",
+                    "items": { "type": "string" }
+                  },
+                  "bcc": {
+                    "type": "array",
+                    "items": { "type": "string" }
+                  },
+                  "attachments": {
+                    "type": "array",
+                    "items": { "$ref": "#/components/schemas/DraftAttachment" }
+                  },
+                  "source": { "type": "string" }
                 }
               }
             }
           }
         },
         "responses": {
-          "200": { "description": "Draft stored successfully" }
+          "200": {
+            "description": "Draft saved"
+          }
         }
       }
     },
     "/api/drive-archive": {
       "post": {
         "operationId": "archiveDocumentsToCase",
-        "summary": "Archive Drive document references under a case",
+        "summary": "Archive document references under a case",
         "requestBody": {
           "required": true,
           "content": {
             "application/json": {
               "schema": {
                 "type": "object",
-                "required": [
-                  "customerName",
-                  "category",
-                  "documents"
-                ],
+                "required": ["customerName", "category", "documents"],
                 "properties": {
                   "caseNumber": { "type": "string" },
                   "actorName": { "type": "string" },
@@ -321,39 +201,8 @@
           }
         },
         "responses": {
-          "200": { "description": "Archive metadata stored successfully" }
-        }
-      }
-    }
-  },
-  "components": {
-    "securitySchemes": {
-      "bearerAuth": {
-        "type": "http",
-        "scheme": "bearer"
-      }
-    },
-    "schemas": {
-      "DocumentLink": {
-        "type": "object",
-        "properties": {
-          "title": {
-            "type": "string"
-          },
-          "titel": {
-            "type": "string"
-          },
-          "date": {
-            "type": "string"
-          },
-          "dato": {
-            "type": "string"
-          },
-          "url": {
-            "type": "string"
-          },
-          "fileId": {
-            "type": "string"
+          "200": {
+            "description": "Archive references saved"
           }
         }
       }

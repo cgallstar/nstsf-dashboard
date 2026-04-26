@@ -9,6 +9,7 @@ import {
   saveDashboardState,
   textValue,
 } from "./_lib/dashboard.mts";
+import { ensureCaseDriveFolders, googleIntegrationStatus, uploadDriveFile } from "./_lib/google.mts";
 
 const DOC_MAP: Record<string, string> = {
   tilbud: "tilbud",
@@ -52,6 +53,31 @@ export default async (request: Request) => {
   const category = textValue(body.category, "referater").toLowerCase();
   const targetKey = DOC_MAP[category] || "referater";
   const documents = Array.isArray(body.documents) ? body.documents : [];
+  const integration = googleIntegrationStatus();
+  let providerMode = "state_only";
+  let uploadedCount = 0;
+  let folderInfo: any = null;
+
+  if (integration.configured) {
+    try {
+      folderInfo = await ensureCaseDriveFolders(matched, matched.nr, matched.kunde);
+      matched.docs.drive = textValue(folderInfo?.caseFolder?.webViewLink, matched.docs.drive);
+      const targetFolderId = textValue(body.folderId, folderInfo?.folders?.[targetKey]?.id || "");
+      const uploadable = documents.filter((doc: any) => doc?.contentBase64 || doc?.contentText);
+      for (const doc of uploadable) {
+        const uploaded = await uploadDriveFile(targetFolderId, doc);
+        doc.url = textValue(uploaded?.webViewLink, doc.url || "");
+        doc.fileId = textValue(uploaded?.id, doc.fileId || "");
+        doc.mimeType = textValue(uploaded?.mimeType, doc.mimeType || "");
+        uploadedCount += 1;
+      }
+      providerMode = "drive_live";
+    } catch (error) {
+      providerMode = "drive_error";
+      body.providerError = textValue((error as Error)?.message, "drive_error");
+    }
+  }
+
   pushDocs(matched.docs[targetKey], documents);
 
   appendActivity(matched, actor, {
@@ -60,6 +86,8 @@ export default async (request: Request) => {
     folderId: textValue(body.folderId, ""),
     folderName: textValue(body.folderName, ""),
     documentCount: documents.length,
+    uploadedCount,
+    providerMode,
   });
 
   const savedAt = await saveDashboardState(state);
@@ -69,7 +97,15 @@ export default async (request: Request) => {
     savedAt,
     archivedTo: targetKey,
     count: documents.length,
-    note: "Drive API er ikke koblet på endnu. Dokumentreferencer er gemt centralt under kunden og klar til næste integrationslag.",
+    uploadedCount,
+    providerMode,
+    integration,
+    driveFolder: matched.docs.drive,
+    note: integration.configured
+      ? providerMode === "drive_live"
+        ? "Dokumenter er arkiveret live i Google Drive og gemt centralt under kunden."
+        : "Dokumentreferencer er gemt centralt, men Drive-upload fejlede."
+      : "Dokumentreferencer er gemt centralt. Google Drive OAuth er ikke konfigureret endnu.",
   });
 };
 
