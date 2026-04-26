@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Nordsjællands Tømrer- & Snedkerfirma — Dashboard</title>
 <style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap');
   :root{
     --bg:#f4f2ed;
     --ink:#17212b;
@@ -26,11 +27,13 @@
     --navy:#172a3e;
     --surface:#faf8f4;
     --shadow:0 10px 24px rgba(20,55,83,.05);
+    --font:'DM Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+    --mono:'DM Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
   }
   *{box-sizing:border-box}
   body{
     margin:0;
-    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+    font-family:var(--font);
     background:var(--bg);
     color:var(--ink);
     font-size:14px;
@@ -247,40 +250,48 @@
   .appendix-side{display:grid;gap:20px}
   .org-hero{
     display:flex;justify-content:space-between;gap:18px;align-items:flex-start;
-    border:1px solid var(--line);border-radius:16px;background:#fff;padding:20px 22px;margin-bottom:20px;box-shadow:var(--shadow);
+    border:1px solid var(--line);border-radius:18px;background:#fff;padding:24px 26px;margin-bottom:20px;box-shadow:var(--shadow);
   }
-  .org-hero-title{font-size:22px;font-weight:700;color:var(--ink);margin:4px 0 8px}
-  .org-hero-sub{font-size:13px;color:var(--muted);max-width:760px;line-height:1.5}
-  .org-layout{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(320px,.8fr);gap:20px}
+  .org-hero-title{font-size:26px;font-weight:600;color:var(--ink);margin:4px 0 8px;letter-spacing:-.02em}
+  .org-hero-sub{font-size:14px;color:var(--muted);max-width:760px;line-height:1.6}
+  .org-layout{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(320px,.9fr);gap:20px}
   .org-diagram{
-    border:1px solid var(--line);border-radius:16px;background:#fff;padding:24px 18px 20px;box-shadow:var(--shadow);
+    border:1px solid var(--line);border-radius:18px;background:#fff;padding:24px;box-shadow:var(--shadow);
   }
-  .org-diagram-row{display:flex;justify-content:center;gap:18px;flex-wrap:wrap}
-  .org-diagram-row.executive{margin-bottom:18px}
-  .org-diagram-row.primary{margin-bottom:18px}
-  .org-diagram-connector{
-    width:2px;height:30px;background:#d7dfeb;margin:0 auto;
+  .org-avatar-grid{
+    display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px;
   }
-  .org-branch{
-    display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px;position:relative;
+  .org-divider{
+    grid-column:1 / -1;display:flex;align-items:center;gap:10px;padding:6px 0 2px;
   }
-  .org-branch::before{
-    content:'';position:absolute;left:16.66%;right:16.66%;top:-16px;height:2px;background:#d7dfeb;
+  .org-divider::before,.org-divider::after{
+    content:'';flex:1;height:.5px;background:var(--line);
   }
-  .org-column{display:grid;gap:14px;align-content:start}
-  .org-column .org-connector{width:2px;height:14px;background:#d7dfeb;margin:0 auto}
+  .org-divider span{
+    font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:#b0ada8;
+  }
   .org-node{
-    width:100%;text-align:left;border:1px solid var(--line);border-radius:12px;background:#fff;padding:14px 16px;
-    cursor:pointer;transition:border-color .15s, box-shadow .15s, transform .15s;
+    width:100%;border:1px solid rgba(0,0,0,.08);border-radius:16px;background:#fff;padding:22px 16px 18px;
+    display:flex;flex-direction:column;align-items:center;gap:14px;cursor:pointer;
+    transition:border-color .15s, box-shadow .15s, transform .15s;text-align:center;
   }
-  .org-node:hover{border-color:#9db4cf;box-shadow:0 6px 16px rgba(28,53,82,.08)}
-  .org-node.active{border-color:var(--brand);box-shadow:0 0 0 2px rgba(74,119,168,.14)}
-  .org-node.director{background:#f7fafc}
-  .org-node-role{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:6px}
-  .org-node h3{font-size:16px;margin:0 0 6px;color:var(--ink)}
-  .org-node p{margin:0;color:#415365;font-size:13px;line-height:1.45}
+  .org-node:hover{box-shadow:0 8px 26px rgba(0,0,0,.08);transform:translateY(-2px)}
+  .org-node.active{border-color:var(--brand);box-shadow:0 0 0 2px rgba(29,78,124,.12)}
+  .org-node.wide{
+    grid-column:span 2;flex-direction:row;justify-content:flex-start;text-align:left;padding:24px 28px;gap:22px;
+  }
+  .org-node.wide .org-card-info{align-items:flex-start}
+  .org-node.director{background:#fcfbf8}
+  .org-avatar{
+    width:100px;height:100px;flex:none;display:block;
+  }
+  .org-node:not(.wide) .org-avatar{width:80px;height:90px}
+  .org-card-info{display:flex;flex-direction:column;align-items:center;gap:4px}
+  .org-node-role{font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#b0ada8;margin:0}
+  .org-node h3{font-size:15px;font-weight:600;margin:0;color:var(--ink);line-height:1.35}
+  .org-node p{margin:0;color:var(--muted);font-size:11px;line-height:1.45}
   .org-detail{
-    border:1px solid var(--line);border-radius:16px;background:#fff;padding:18px 20px;min-height:100%;box-shadow:var(--shadow);
+    border:1px solid var(--line);border-radius:18px;background:#fff;padding:20px 22px;min-height:100%;box-shadow:var(--shadow);
   }
   .priority-shell,
   .coming-cases,
@@ -297,60 +308,65 @@
   .org-detail p{font-size:13px;color:#415365;line-height:1.55;margin:0 0 14px}
   .org-detail ul{margin:0 0 16px 18px;padding:0;color:#415365;font-size:13px;line-height:1.55}
   .org-detail-actions{display:flex;gap:8px;flex-wrap:wrap}
-  .priority-shell{background:#f5f2ec;border:1px solid rgba(0,0,0,.06);border-radius:18px;overflow:hidden}
-  .priority-topbar{display:flex;align-items:center;justify-content:space-between;padding:14px 24px;background:#fff;border-bottom:.5px solid rgba(0,0,0,.08);gap:16px;position:sticky;top:0;z-index:1}
-  .priority-topbar-title{font-size:13px;font-weight:600;color:#8a8680;text-transform:uppercase;letter-spacing:.08em}
-  .priority-topbar-right{display:flex;align-items:center;gap:12px;flex-wrap:wrap;justify-content:flex-end}
-  .priority-updated{font-size:11px;color:#b8b5b0}
-  .priority-toggle{display:flex;background:#f5f2ec;border:.5px solid rgba(0,0,0,.08);border-radius:7px;padding:3px;gap:2px}
-  .priority-toggle button{font-size:12px;font-weight:600;padding:5px 14px;border-radius:5px;border:none;background:transparent;color:#8a8680;cursor:pointer;transition:background .15s,color .15s,box-shadow .15s}
-  .priority-toggle button.active{background:#fff;color:#1a1a18;box-shadow:0 1px 3px rgba(0,0,0,.08)}
-  .priority-layout{display:grid;grid-template-columns:minmax(0,1fr) 280px;min-height:560px}
-  .priority-main{border-right:.5px solid rgba(0,0,0,.08);background:#fff}
+  .priority-shell{background:#fff;border:1px solid var(--line);border-radius:18px;overflow:hidden}
+  .priority-topbar{display:flex;align-items:flex-start;justify-content:space-between;padding:18px 24px 14px;background:#fff;border-bottom:.5px solid var(--line);gap:16px}
+  .priority-topbar-title{font-size:18px;font-weight:600;color:var(--ink);letter-spacing:-.02em}
+  .priority-topbar-copy{display:flex;flex-direction:column;gap:4px}
+  .priority-topbar-sub{font-size:11px;color:var(--muted)}
+  .priority-topbar-right{display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:flex-end}
+  .priority-updated{font-size:10px;color:#b0ada8;font-family:var(--mono)}
+  .priority-toggle{display:flex;background:#f2f0eb;border-radius:8px;padding:3px;gap:2px;border:.5px solid rgba(0,0,0,.08)}
+  .priority-toggle button{font-size:11px;font-weight:500;padding:6px 13px;border-radius:6px;border:none;background:transparent;color:var(--muted);cursor:pointer;font-family:var(--font)}
+  .priority-toggle button.active{background:#fff;color:var(--text);box-shadow:0 1px 3px rgba(0,0,0,.08)}
+  .priority-layout{display:grid;grid-template-columns:minmax(0,1fr) 260px;min-height:620px}
+  .priority-main{border-right:.5px solid var(--line);background:#fff}
   .priority-side{background:#fafaf8}
   .priority-view{display:none}
   .priority-view.active{display:block}
-  .priority-main-head{padding:20px 24px 16px;border-bottom:.5px solid rgba(0,0,0,.08)}
-  .priority-main-title{font-size:20px;font-weight:600;color:#1a1a18}
-  .priority-main-sub{font-size:11px;color:#8a8680;margin-top:3px}
-  .priority-divider{padding:12px 24px 4px;font-size:10px;font-weight:600;color:#b8b5b0;text-transform:uppercase;letter-spacing:.08em;display:flex;align-items:center;gap:8px}
-  .priority-divider::after{content:'';flex:1;height:.5px;background:rgba(0,0,0,.08)}
-  .priority-row{display:flex;gap:16px;padding:14px 24px;border-bottom:.5px solid rgba(0,0,0,.08);align-items:flex-start;background:#fff}
-  .priority-row.today{background:#fff9ef}
+  .priority-main-head{padding:20px 24px 14px;border-bottom:.5px solid var(--line)}
+  .priority-main-title{font-size:28px;font-weight:600;color:var(--ink);letter-spacing:-.03em}
+  .priority-main-sub{font-size:11px;color:var(--muted);margin-top:4px}
+  .priority-divider{padding:14px 24px 6px;font-size:9px;font-weight:700;color:#b0ada8;text-transform:uppercase;letter-spacing:.1em;display:flex;align-items:center;gap:8px}
+  .priority-divider::after{content:'';flex:1;height:.5px;background:var(--line)}
+  .priority-row{display:flex;gap:14px;padding:16px 24px;border-bottom:.5px solid rgba(0,0,0,.05);align-items:flex-start;background:#fff}
   .priority-row.week{background:#fafaf8}
-  .priority-rank{font-size:20px;font-weight:500;color:#b8b5b0;min-width:24px;line-height:1.3;flex-shrink:0}
-  .priority-rank.now{color:#1a1a18}
+  .priority-rank{font-size:18px;font-weight:500;color:#b8b5b0;min-width:22px;line-height:1.4;font-family:var(--mono);flex-shrink:0}
+  .priority-rank.now{color:var(--ink)}
   .priority-body{flex:1;min-width:0}
-  .priority-name{font-size:14px;font-weight:600;color:#1a1a18;margin-bottom:2px}
-  .priority-meta{font-size:11px;color:#8a8680;margin-bottom:4px}
-  .priority-reason{font-size:12px;color:#1a1a18}
-  .priority-topline{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:2px}
+  .priority-name{font-size:14px;font-weight:600;color:var(--ink);margin-bottom:2px}
+  .priority-meta{font-size:11px;color:var(--muted);margin-bottom:8px}
+  .priority-reason{font-size:12px;color:var(--ink);line-height:1.55}
+  .priority-topline{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:2px}
   .priority-tag{
-    display:inline-flex;align-items:center;justify-content:center;border-radius:999px;padding:3px 9px;
-    font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;border:1px solid transparent;flex:none;
+    display:inline-flex;align-items:center;justify-content:center;border-radius:4px;padding:2px 7px;
+    font-size:9px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;border:1px solid transparent;flex:none;
   }
   .priority-tag.now{background:#f9e3de;border-color:#e8b7ad;color:#962f24}
   .priority-tag.today{background:#fbf0cf;border-color:#edd39b;color:#8a5a00}
   .priority-tag.week{background:#e6eef8;border-color:#bfd2ea;color:#335c92}
-  .priority-actions{display:flex;gap:6px;margin-top:9px;flex-wrap:wrap}
+  .priority-actions{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
   .priority-actions .btn,.priority-side-actions .side-btn{background:#fff}
-  .priority-actions .btn.primary-cta{background:#1a1a18;color:#fff;border-color:#1a1a18}
-  .priority-type{flex-shrink:0;margin-top:3px}
-  .priority-dot{width:8px;height:8px;border-radius:50%;margin-top:6px}
+  .priority-actions .btn.primary-cta{background:#fff;color:var(--ink);border-color:var(--line)}
+  .priority-type{flex-shrink:0;margin-top:4px}
+  .priority-dot{width:10px;height:10px;border-radius:50%;margin-top:7px}
   .priority-dot.sales{background:#e8a020}
-  .priority-dot.todo{background:#3a6aaa}
-  .priority-side-head{padding:20px 18px 14px;border-bottom:.5px solid rgba(0,0,0,.08)}
-  .priority-side-title{font-size:10px;font-weight:600;color:#8a8680;text-transform:uppercase;letter-spacing:.07em}
+  .priority-dot.todo{background:#2d7a4f}
+  .priority-suggestion{
+    margin-top:12px;border:.5px solid var(--line);border-radius:14px;background:#faf7f1;padding:14px 16px;
+  }
+  .priority-suggestion-label{font-size:9px;font-weight:700;color:#b0ada8;text-transform:uppercase;letter-spacing:.1em;margin-bottom:6px}
+  .priority-side-head{padding:14px 18px 10px;border-bottom:.5px solid var(--line)}
+  .priority-side-title{font-size:9px;font-weight:700;color:#b0ada8;text-transform:uppercase;letter-spacing:.09em}
   .priority-side-view{display:none}
-  .priority-side-item{padding:12px 18px;border-bottom:.5px solid rgba(0,0,0,.08);display:flex;gap:10px;align-items:flex-start}
+  .priority-side-item{padding:12px 18px;border-bottom:.5px solid rgba(0,0,0,.05);display:flex;gap:10px;align-items:flex-start}
   .priority-side-dot{width:7px;height:7px;border-radius:50%;margin-top:5px;flex-shrink:0}
   .priority-side-dot.sales{background:#e8a020}
-  .priority-side-dot.todo{background:#3a6aaa}
+  .priority-side-dot.todo{background:#2d7a4f}
   .priority-side-body{min-width:0}
-  .priority-side-name{font-size:12px;font-weight:600;color:#1a1a18;margin-bottom:2px}
+  .priority-side-name{font-size:12px;font-weight:600;color:var(--ink);margin-bottom:2px}
   .priority-side-top{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:2px}
-  .priority-side-meta{font-size:10px;color:#8a8680;margin-bottom:2px}
-  .priority-side-reason{font-size:10px;color:#1a1a18;margin-bottom:6px}
+  .priority-side-meta{font-size:10px;color:var(--muted);margin-bottom:2px}
+  .priority-side-reason{font-size:10px;color:var(--ink);margin-bottom:6px}
   .priority-side-actions{display:flex;gap:6px;flex-wrap:wrap}
   .side-btn{font-size:10px;padding:3px 9px;border-radius:5px;border:.5px solid rgba(0,0,0,.08);background:#fff;color:#1a1a18;cursor:pointer}
   .priority-empty-state{font-size:12px;color:#8a8680;padding:16px 24px}
@@ -500,6 +516,9 @@
     .coming-case{grid-template-columns:1fr;gap:8px}
     .upcoming-staff,.upcoming-pct{text-align:left}
     .staff-icons{justify-content:flex-start}
+    .org-layout,.appendix-layout,.integration-grid,.case-grid{grid-template-columns:1fr}
+    .org-avatar-grid{grid-template-columns:1fr 1fr}
+    .org-node.wide{grid-column:span 2}
   }
   .integration-grid{display:grid;grid-template-columns:1.2fr 1fr;gap:16px}
   .integration-status{
@@ -967,12 +986,15 @@
 <section id="prioriteringer" class="section">
   <div class="priority-shell">
     <div class="priority-topbar">
-      <span class="priority-topbar-title">Sager</span>
+      <div class="priority-topbar-copy">
+        <span class="priority-topbar-title">To-do's &amp; gøremål</span>
+        <div class="priority-topbar-sub">Samlet prioriteringsvisning · auto-sorteret efter signaler fra mail, sager og GPT-input.</div>
+      </div>
       <div class="priority-topbar-right">
         <span class="priority-updated" id="priorityGeneratedAt"></span>
         <div class="priority-toggle">
-          <button class="active" id="priorityBtnTodos" onclick="setPriorityView('todos')">To-do's</button>
-          <button id="priorityBtnSalg" onclick="setPriorityView('salg')">Salgsrelateret</button>
+          <button class="active" id="priorityBtnTodos" onclick="setPriorityView('todos')">Aktive</button>
+          <button id="priorityBtnSalg" onclick="setPriorityView('salg')">Salg</button>
         </div>
       </div>
     </div>
@@ -980,8 +1002,8 @@
       <div class="priority-main">
         <div class="priority-view active" id="priorityViewTodos">
           <div class="priority-main-head">
-            <div class="priority-main-title">To-do's</div>
-            <div class="priority-main-sub">Fremdrift, underskrifter, aflevering, faktura og opfølgning i aktive sager.</div>
+            <div class="priority-main-title">Aktive sager</div>
+            <div class="priority-main-sub">Fremdrift, KS, mangler, afleveringer, godkendelser og andre konkrete handlinger.</div>
           </div>
           <div class="priority-divider">Now</div>
           <div id="priorityTodoNow"></div>
@@ -990,8 +1012,8 @@
         </div>
         <div class="priority-view" id="priorityViewSalg">
           <div class="priority-main-head">
-            <div class="priority-main-title">Salgsrelateret</div>
-            <div class="priority-main-sub">Leads, tilbud og opfølgning der kan flytte omsætning.</div>
+            <div class="priority-main-title">Salgsrelateret arbejde</div>
+            <div class="priority-main-sub">Leads, tilbud, afklaringer og opfølgning der kan flytte omsætning frem.</div>
           </div>
           <div class="priority-divider">Now</div>
           <div id="prioritySalesNow"></div>
@@ -1203,8 +1225,8 @@
   <div class="org-hero">
     <div>
       <div class="capacity-kicker">Organisation</div>
-      <div class="org-hero-title">Søren Mygdal · Direktør</div>
-      <div class="org-hero-sub">NSTSF har ikke brug for en tung enterprise-model. Den rigtige agentarkitektur her er driftstung, salgsnær og dokumentationsstærk: tilbud, kundedialog, bemanding, økonomi, KS og referater skal bindes sammen på hver sag.</div>
+      <div class="org-hero-title">NSTSF · agentorganisation</div>
+      <div class="org-hero-sub">Organisationen er sat op som et lille, operationelt system omkring Søren Mygdal: salg, drift, kundeproces, økonomi, dokumentation og HR. Hver agent er klikbar og fører videre til sin egen `.md`-specifikation.</div>
     </div>
     <div class="status-note" style="margin:0;min-width:260px">
       <strong>Princip</strong><br>
@@ -1213,62 +1235,73 @@
   </div>
   <div class="org-layout">
     <div class="org-diagram">
-      <div class="org-diagram-row executive">
-        <button class="org-node director" data-agent="director" onclick="showAgentDetail('director')">
-          <div class="org-node-role">Direktion</div>
-          <h3>Søren Mygdal</h3>
-          <p>Direktør. Beslutter tilbud, bemanding, kundeprioritet og økonomiske løft.</p>
+      <div class="org-avatar-grid">
+        <div class="org-divider"><span>Direktion</span></div>
+        <button class="org-node wide director" data-agent="director" onclick="showAgentDetail('director')">
+          <svg class="org-avatar" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <rect x="28" y="52" width="44" height="36" rx="8" fill="#1A2535"/>
+            <path d="M44 52 L50 64 L56 52" fill="#F7F5F0" opacity=".15"/>
+            <ellipse cx="50" cy="36" rx="18" ry="20" fill="#E8C49A"/>
+            <ellipse cx="43" cy="33" rx="3" ry="3.5" fill="#fff"/><ellipse cx="57" cy="33" rx="3" ry="3.5" fill="#fff"/>
+            <circle cx="44" cy="34" r="2" fill="#1A2535"/><circle cx="58" cy="34" r="2" fill="#1A2535"/>
+            <circle cx="45" cy="33" r=".7" fill="#fff"/><circle cx="59" cy="33" r=".7" fill="#fff"/>
+            <path d="M48 38 Q50 41 52 38" stroke="#C8956A" stroke-width="1.2" fill="none" stroke-linecap="round"/>
+            <path d="M43 43 Q50 48 57 43" stroke="#C8956A" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+            <path d="M32 30 Q32 14 50 14 Q68 14 68 30 Q64 20 50 20 Q36 20 32 30Z" fill="#3A2810"/>
+            <rect x="64" y="24" width="3" height="14" rx="1" fill="#F5C842" transform="rotate(15 66 31)"/>
+            <polygon points="65,36 68,36 66.5,40" fill="#E8C49A" transform="rotate(15 66 31)"/>
+          </svg>
+          <div class="org-card-info">
+            <div class="org-node-role">Direktion</div>
+            <h3>Søren Mygdal</h3>
+            <p>Direktør · beslutter tilbud, kundeprioritet, bemanding og økonomiske løft.</p>
+          </div>
         </button>
-      </div>
-      <div class="org-diagram-connector"></div>
-      <div class="org-diagram-row primary">
-        <button class="org-node" data-agent="chief-of-staff" onclick="showAgentDetail('chief-of-staff')">
-          <div class="org-node-role">Ledelse</div>
-          <h3>Chief of Staff</h3>
-          <p>Samler input og fordeler næste handlinger.</p>
+
+        <div class="org-divider"><span>Ledelse</span></div>
+        <button class="org-node wide" data-agent="chief-of-staff" onclick="showAgentDetail('chief-of-staff')">
+          <svg class="org-avatar" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <rect x="28" y="52" width="44" height="36" rx="8" fill="#2D5A8A"/>
+            <ellipse cx="50" cy="36" rx="18" ry="20" fill="#D4A882"/>
+            <ellipse cx="43" cy="33" rx="3" ry="3.5" fill="#fff"/><ellipse cx="57" cy="33" rx="3" ry="3.5" fill="#fff"/>
+            <circle cx="44" cy="34" r="2" fill="#1A2535"/><circle cx="58" cy="34" r="2" fill="#1A2535"/>
+            <path d="M32 28 Q33 14 50 14 Q67 14 68 28 Q62 18 50 19 Q38 18 32 28Z" fill="#1A1210"/>
+            <path d="M32 32 Q32 16 50 16 Q68 16 68 32" stroke="#1A2535" stroke-width="2.5" fill="none"/>
+            <rect x="28" y="30" width="6" height="8" rx="3" fill="#1A2535"/><rect x="66" y="30" width="6" height="8" rx="3" fill="#1A2535"/>
+            <rect x="64" y="56" width="18" height="22" rx="3" fill="#F5F2EC" stroke="#B0ADA8" stroke-width="1"/>
+          </svg>
+          <div class="org-card-info">
+            <div class="org-node-role">Ledelse</div>
+            <h3>Chief of Staff</h3>
+            <p>Samler input og fordeler næste handlinger på tværs af hele forretningen.</p>
+          </div>
         </button>
-      </div>
-      <div class="org-diagram-connector"></div>
-      <div class="org-branch">
-        <div class="org-column">
-          <div class="org-connector"></div>
-          <button class="org-node" data-agent="sales-followup" onclick="showAgentDetail('sales-followup')">
-            <div class="org-node-role">Salg</div>
-            <h3>Tilbuds- og opfølgningsagent</h3>
-            <p>Driver tilbud, opfølgning og næste kundeskridt.</p>
-          </button>
-          <button class="org-node" data-agent="customer-notes" onclick="showAgentDetail('customer-notes')">
-            <div class="org-node-role">Kundeproces</div>
-            <h3>Kunde- og referatagent</h3>
-            <p>Omsætter møder til referater, drafts og tasks.</p>
-          </button>
-        </div>
-        <div class="org-column">
-          <div class="org-connector"></div>
-          <button class="org-node" data-agent="capacity-planning" onclick="showAgentDetail('capacity-planning')">
-            <div class="org-node-role">Drift</div>
-            <h3>Kapacitets- og bemandingsagent</h3>
-            <p>Oversætter sager til kalender og kapacitetsbelastning.</p>
-          </button>
-          <button class="org-node" data-agent="hr-people" onclick="showAgentDetail('hr-people')">
-            <div class="org-node-role">HR</div>
-            <h3>HR- og personaleagent</h3>
-            <p>Ferie, skoleuger, onboarding og mandskabsstatus.</p>
-          </button>
-        </div>
-        <div class="org-column">
-          <div class="org-connector"></div>
-          <button class="org-node" data-agent="liquidity-margin" onclick="showAgentDetail('liquidity-margin')">
-            <div class="org-node-role">Økonomi</div>
-            <h3>Likviditets- og marginagent</h3>
-            <p>Holder styr på udeståender, stade og DB.</p>
-          </button>
-          <button class="org-node" data-agent="ks-archive" onclick="showAgentDetail('ks-archive')">
-            <div class="org-node-role">Dokumentation</div>
-            <h3>KS- og arkiveringsagent</h3>
-            <p>Billeder, KS, referater og Drive-struktur.</p>
-          </button>
-        </div>
+
+        <div class="org-divider"><span>Agenter</span></div>
+        <button class="org-node" data-agent="sales-followup" onclick="showAgentDetail('sales-followup')">
+          <svg class="org-avatar" viewBox="0 0 80 90" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><rect x="20" y="46" width="40" height="32" rx="7" fill="#2D5A3D"/><ellipse cx="40" cy="30" rx="15" ry="17" fill="#E8C49A"/><path d="M25 24 Q26 12 40 12 Q54 12 55 24 Q50 16 40 17 Q30 16 25 24Z" fill="#8B4513"/><rect x="50" y="50" width="18" height="22" rx="3" fill="#E8A020"/></svg>
+          <div class="org-card-info"><div class="org-node-role">Salg</div><h3>Tilbuds- og opfølgningsagent</h3><p>Driver tilbud, opfølgning og næste kundeskridt.</p></div>
+        </button>
+        <button class="org-node" data-agent="capacity-planning" onclick="showAgentDetail('capacity-planning')">
+          <svg class="org-avatar" viewBox="0 0 80 90" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><rect x="20" y="46" width="40" height="32" rx="7" fill="#1A3A5C"/><ellipse cx="40" cy="31" rx="15" ry="17" fill="#D4A882"/><path d="M25 27 Q25 10 40 10 Q55 10 55 27Z" fill="#E8A020"/><rect x="50" y="52" width="10" height="18" rx="2" fill="#3A3A3A"/></svg>
+          <div class="org-card-info"><div class="org-node-role">Drift</div><h3>Kapacitets- og bemandingsagent</h3><p>Oversætter sager til kalender og kapacitetsbelastning.</p></div>
+        </button>
+        <button class="org-node" data-agent="liquidity-margin" onclick="showAgentDetail('liquidity-margin')">
+          <svg class="org-avatar" viewBox="0 0 80 90" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><rect x="20" y="46" width="40" height="32" rx="7" fill="#2A3A1A"/><ellipse cx="40" cy="30" rx="15" ry="17" fill="#E8C49A"/><circle cx="34" cy="28" r="5" fill="none" stroke="#3A2810" stroke-width="1.8"/><circle cx="46" cy="28" r="5" fill="none" stroke="#3A2810" stroke-width="1.8"/><rect x="50" y="50" width="16" height="22" rx="3" fill="#ECEAE5"/></svg>
+          <div class="org-card-info"><div class="org-node-role">Økonomi</div><h3>Likviditets- og marginagent</h3><p>Holder styr på udeståender, stade og DB.</p></div>
+        </button>
+        <button class="org-node" data-agent="customer-notes" onclick="showAgentDetail('customer-notes')">
+          <svg class="org-avatar" viewBox="0 0 80 90" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><rect x="20" y="46" width="40" height="32" rx="7" fill="#2A2A1A"/><ellipse cx="40" cy="30" rx="15" ry="17" fill="#C4A882"/><path d="M25 26 Q24 10 40 10 Q56 10 55 26Z" fill="#5A3010"/><path d="M8 14 Q8 8 14 8 L36 8 Q42 8 42 14 L42 24 Q42 30 36 30 L20 30 L14 36 L14 30 Q8 30 8 24Z" fill="#fff" stroke="rgba(0,0,0,0.1)" stroke-width=".5"/></svg>
+          <div class="org-card-info"><div class="org-node-role">Kundeproces</div><h3>Kunde- og referatagent</h3><p>Omsætter møder til referater, drafts og tasks.</p></div>
+        </button>
+        <button class="org-node" data-agent="hr-people" onclick="showAgentDetail('hr-people')">
+          <svg class="org-avatar" viewBox="0 0 80 90" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><rect x="20" y="46" width="40" height="32" rx="7" fill="#6A476F"/><ellipse cx="40" cy="30" rx="15" ry="17" fill="#E0B390"/><path d="M25 25 Q27 10 40 10 Q53 10 55 25" stroke="#503055" stroke-width="7" stroke-linecap="round"/><rect x="49" y="50" width="15" height="20" rx="3" fill="#F3E9D7"/></svg>
+          <div class="org-card-info"><div class="org-node-role">HR</div><h3>HR- og personaleagent</h3><p>Ferie, skoleuger, onboarding og mandskabsstatus.</p></div>
+        </button>
+        <button class="org-node" data-agent="ks-archive" onclick="showAgentDetail('ks-archive')">
+          <svg class="org-avatar" viewBox="0 0 80 90" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><rect x="20" y="46" width="40" height="32" rx="7" fill="#3C4A56"/><ellipse cx="40" cy="30" rx="15" ry="17" fill="#D9B08B"/><path d="M24 22 Q28 12 40 12 Q52 12 56 22" fill="#25303A"/><rect x="49" y="49" width="17" height="23" rx="3" fill="#F4EFE6"/><line x1="53" y1="57" x2="62" y2="57" stroke="#B0ADA8" stroke-width="1.2"/><line x1="53" y1="61" x2="62" y2="61" stroke="#B0ADA8" stroke-width="1.2"/></svg>
+          <div class="org-card-info"><div class="org-node-role">Dokumentation</div><h3>KS- og arkiveringsagent</h3><p>Billeder, KS, referater og Drive-struktur.</p></div>
+        </button>
       </div>
     </div>
     <div id="orgDetail" class="org-detail"></div>
@@ -1793,14 +1826,13 @@ function renderPriorityRows(targetId, items, bucket, type){
   const rows = items.filter((item)=>item.bucket === bucket);
   el.innerHTML = rows.length ? rows.map((item, index)=>`<div class="priority-row ${bucket}">
     <div class="priority-rank ${bucket === 'now' ? 'now' : ''}">${index + 1}</div>
+    <div class="priority-type"><div class="priority-dot ${type === 'sales' ? 'sales' : 'todo'}"></div></div>
     <div class="priority-body">
       <div class="priority-topline"><div class="priority-name">${escapeAttr(item.title)}</div><span class="priority-tag ${bucket}">${priorityBucketLabel(bucket)}</span></div>
       <div class="priority-meta">${escapeAttr(item.meta)}</div>
       <div class="priority-reason">${escapeAttr(item.reason)}</div>
-      <div class="priority-reason" style="margin-top:8px"><strong>Action:</strong> ${escapeAttr(item.actionText || item.reason)}</div>
-      <div class="priority-actions">${priorityActionButtons(item.links, 'main')}${item.emailId ? `<button class="btn" onclick="markPriorityDone('${item.emailId}','${item.key}')">Done</button>` : ''}<button class="btn" onclick="dismissPriority('${item.key}')">Fjern</button></div>
+      <div class="priority-suggestion"><div class="priority-suggestion-label">Suggestion</div><div class="priority-reason">${escapeAttr(item.actionText || item.reason)}</div><div class="priority-actions">${priorityActionButtons(item.links, 'main')}${item.emailId ? `<button class="btn" onclick="markPriorityDone('${item.emailId}','${item.key}')">Fuldført</button>` : ''}<button class="btn ghost" onclick="dismissPriority('${item.key}')">Fjern</button></div></div>
     </div>
-    <div class="priority-type"><div class="priority-dot ${type === 'sales' ? 'sales' : 'todo'}"></div></div>
   </div>`).join('') : '<div class="priority-empty-state">Ingen punkter her.</div>';
   return rows;
 }
@@ -1812,9 +1844,8 @@ function renderPrioritySide(targetId, items, type){
     <div class="priority-side-body">
       <div class="priority-side-top"><div class="priority-side-name">${escapeAttr(item.title)}</div><span class="priority-tag ${item.bucket}">${priorityBucketLabel(item.bucket)}</span></div>
       <div class="priority-side-meta">${escapeAttr(item.meta)}</div>
-      <div class="priority-side-reason">${escapeAttr(item.reason)}</div>
-      <div class="priority-side-reason"><strong>Action:</strong> ${escapeAttr(item.actionText || item.reason)}</div>
-      <div class="priority-side-actions">${priorityActionButtons(item.links, 'side')}${item.emailId ? `<button class="side-btn" onclick="markPriorityDone('${item.emailId}','${item.key}')">Done</button>` : ''}<button class="side-btn" onclick="dismissPriority('${item.key}')">Fjern</button></div>
+      <div class="priority-side-reason">${escapeAttr(item.actionText || item.reason)}</div>
+      <div class="priority-side-actions">${priorityActionButtons(item.links, 'side')}${item.emailId ? `<button class="side-btn" onclick="markPriorityDone('${item.emailId}','${item.key}')">Fuldført</button>` : ''}<button class="side-btn" onclick="dismissPriority('${item.key}')">Fjern</button></div>
     </div>
   </div>`).join('') : '<div class="priority-side-empty">Intet ventende her.</div>';
 }
