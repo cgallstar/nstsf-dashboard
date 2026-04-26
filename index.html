@@ -685,8 +685,8 @@
 
 <nav class="tabs">
   <button class="tab-btn active" data-tab="dashboard">Dashboard</button>
-  <button class="tab-btn" data-tab="prioriteringer">Prioriteringer</button>
-  <button class="tab-btn" data-tab="sager">Sager <span style="opacity:.6">(29)</span></button>
+  <button class="tab-btn" data-tab="prioriteringer">Sager <span style="opacity:.6">(0)</span></button>
+  <button class="tab-btn" data-tab="sager">Kunder <span style="opacity:.6">(29)</span></button>
   <button class="tab-btn" data-tab="indbakke">Indbakke <span class="badge" style="background:var(--green);color:#fff;font-size:10px;padding:1px 6px;border-radius:8px;margin-left:4px;font-weight:600">8</span></button>
   <button class="tab-btn" data-tab="likviditet">Likviditet</button>
   <button class="tab-btn" data-tab="marginer">Marginer</button>
@@ -879,7 +879,7 @@
 <section id="prioriteringer" class="section">
   <div class="priority-shell">
     <div class="priority-topbar">
-      <span class="priority-topbar-title">Prioriteringer</span>
+      <span class="priority-topbar-title">Sager</span>
       <div class="priority-topbar-right">
         <span class="priority-updated" id="priorityGeneratedAt"></span>
         <div class="priority-toggle">
@@ -946,10 +946,8 @@
           <tr>
             <th>Kategori</th>
             <th>Sagsnr.</th>
-            <th>Kundenavn</th>
-            <th>Adresse</th>
+            <th>Kunde</th>
             <th class="wrap">Opgave</th>
-            <th class="num">Est. beløb</th>
             <th class="num">Udestående</th>
             <th>Betalingsdato</th>
             <th>Start</th>
@@ -1325,6 +1323,12 @@ function parsePriorityActions(links=''){
 function latestCaseActivity(s){
   return Array.isArray(s.activityLog) ? [...s.activityLog].sort((a,b)=>String(b.createdAt || '').localeCompare(String(a.createdAt || '')))[0] : null;
 }
+function hasConcreteActivity(activity){
+  if(!activity) return false;
+  if(activity.type === 'gmail_draft' || activity.type === 'drive_archive') return true;
+  if(activity.type === 'intake') return !!textValue(activity.nextAction || activity.noteText || activity.meetingType, '').trim();
+  return false;
+}
 function hasPendingDraft(s){
   return Array.isArray(s.mailDrafts) && s.mailDrafts.some((draft)=> draft && (draft.status === 'Klar til godkendelse' || draft.approvalRequired));
 }
@@ -1355,14 +1359,14 @@ function buildPriorities(){
     const latestDialog = latestDialogDate(s);
     const latestOffer = latestOfferDate(s);
     const latestActivity = latestCaseActivity(s);
+    const concreteActivity = hasConcreteActivity(latestActivity);
     const pendingDraft = hasPendingDraft(s);
     const incoming = relatedEmails.filter((mail)=>!mail.handled);
     const incomingSales = incoming.filter((mail)=>mail.type === 'sales');
     const incomingTodos = incoming.filter((mail)=>mail.type === 'todo');
     const strongestMail = incoming[0] || relatedEmails[0];
     const strongestSignal = strongestMail ? emailSignal(strongestMail) : null;
-    const dueIn = daysUntil(s.dato);
-    const gptWeight = latestActivity && ['intake','gmail_draft','drive_archive'].includes(latestActivity.type) ? 2 : 0;
+    const gptWeight = concreteActivity ? 2 : 0;
     const mailWeight = incoming.length ? 4 : relatedEmails.length ? 2 : 0;
     const paymentWeight = unpaid.length ? 2 : 0;
 
@@ -1383,7 +1387,7 @@ function buildPriorities(){
       });
     }
 
-    if(incomingTodos.length || pendingDraft || gptWeight || unpaid.length || [1,2].includes(+s.k)){
+    if(incomingTodos.length || pendingDraft || concreteActivity || unpaid.length){
       const needsToday =
         pendingDraft ||
         unpaid.some((p)=>{ const d = daysUntil(p.dato); return d !== null && d <= 1; }) ||
@@ -1496,8 +1500,21 @@ function renderPriorities(){
   if(stamp) stamp.textContent = `Opdateret ${new Date().toLocaleString('da-DK')}`;
   setPriorityView(priorityView);
 }
-function updateCaseTabCount(){ const count = sager.filter((s)=>ACTIVE_CASE_CATEGORIES.has(+s.k)).length; const tab = document.querySelector('.tab-btn[data-tab="sager"]'); if(tab) tab.innerHTML = `Sager <span style="opacity:.6">(${count})</span>`; }
-function render(){ const tbody = document.getElementById('sagerBody'); const q = (document.getElementById('sagerSoeg').value || '').toLowerCase(); const katF = document.getElementById('filterKat').value; const rows = sager.filter(s=>{ if(!ACTIVE_CASE_CATEGORIES.has(+s.k)) return false; if(katF && String(s.k)!==katF) return false; if(q){ const hay = `${s.nr} ${s.kunde} ${s.adr} ${s.opg}`.toLowerCase(); if(!hay.includes(q)) return false; } return true; }).sort((a,b)=>a.k-b.k || a.sort-b.sort); tbody.innerHTML = rows.map(s=>{ const idx = sager.indexOf(s); const kundeLower = String(s.kunde || '').toLowerCase(); const isDke = kundeLower.includes('dke'); const kundeCell = isDke ? `${s.kunde} <span class="chip tag-dke" style="font-size:10px">DKE</span>` : s.kunde; return `<tr data-kat="${s.k}"><td><select class="kategori kat-${s.k}" onchange="changeKat(${idx}, this.value)">${Object.entries(KAT).map(([k,v])=>`<option value="${k}"${+k===s.k?' selected':''}>${v}</option>`).join('')}</select></td><td>${s.nr || '—'}</td><td title="${escapeAttr(s.kunde)}"><button class="kunde-link" onclick="openSag(${idx})">${kundeCell}</button></td><td title="${escapeAttr(s.adr)}" class="dim">${s.adr || '—'}</td><td class="wrap" title="${escapeAttr(s.opg)}">${s.opg || '—'}</td><td class="num">${s.b && s.b !== '0' ? s.b + ' kr.' : '—'}</td><td class="num">${s.u && s.u !== '0' ? '<span class="chip chip-amber">' + s.u + ' kr.</span>' : '—'}</td><td class="dim date-cell">${displayDate(s.dato)}</td><td class="dim date-cell">${displayDate(s.start)}</td><td class="dim date-cell">${displayDate(s.slut)}</td><td><select class="status-sel" onchange="changeStatus(${idx}, this.value)"><option${s.status==='—'?' selected':''}>—</option><option${s.status==='Faktura sendt'?' selected':''}>Faktura sendt</option><option${s.status==='Ingen udeståender'?' selected':''}>Ingen udeståender</option><option${s.status==='Semi-godkendt'?' selected':''}>Semi-godkendt</option><option${s.status==='Afsendt'?' selected':''}>Afsendt</option></select></td><td class="dim">${s.fak || '—'}</td><td><button class="icon-btn" onclick="openEditSag(${idx})">Rediger</button></td></tr>`; }).join(''); document.getElementById('count').textContent = `${rows.length} aktive/potentielle sager`; updateCaseTabCount(); }
+function buildPriorityCounts(){
+  const priorities = buildPriorities();
+  return {
+    todoCount: priorities.todos.length,
+    customerCount: sager.filter((s)=>ACTIVE_CASE_CATEGORIES.has(+s.k)).length,
+  };
+}
+function updateCaseTabCount(){
+  const counts = buildPriorityCounts();
+  const customerTab = document.querySelector('.tab-btn[data-tab="sager"]');
+  const priorityTab = document.querySelector('.tab-btn[data-tab="prioriteringer"]');
+  if(customerTab) customerTab.innerHTML = `Kunder <span style="opacity:.6">(${counts.customerCount})</span>`;
+  if(priorityTab) priorityTab.innerHTML = `Sager <span style="opacity:.6">(${counts.todoCount})</span>`;
+}
+function render(){ const tbody = document.getElementById('sagerBody'); const q = (document.getElementById('sagerSoeg').value || '').toLowerCase(); const katF = document.getElementById('filterKat').value; const rows = sager.filter(s=>{ if(!ACTIVE_CASE_CATEGORIES.has(+s.k)) return false; if(katF && String(s.k)!==katF) return false; if(q){ const hay = `${s.nr} ${s.kunde} ${s.adr} ${s.opg}`.toLowerCase(); if(!hay.includes(q)) return false; } return true; }).sort((a,b)=>a.k-b.k || a.sort-b.sort); tbody.innerHTML = rows.map(s=>{ const idx = sager.indexOf(s); const kundeLower = String(s.kunde || '').toLowerCase(); const isDke = kundeLower.includes('dke'); const kundeCell = isDke ? `${s.kunde} <span class="chip tag-dke" style="font-size:10px">DKE</span>` : s.kunde; return `<tr data-kat="${s.k}"><td><select class="kategori kat-${s.k}" onchange="changeKat(${idx}, this.value)">${Object.entries(KAT).map(([k,v])=>`<option value="${k}"${+k===s.k?' selected':''}>${v}</option>`).join('')}</select></td><td>${s.nr || '—'}</td><td title="${escapeAttr(`${s.kunde} ${s.adr || ''}`)}"><button class="kunde-link" onclick="openSag(${idx})">${kundeCell}</button><div class="dim" style="font-size:12px;margin-top:4px">${s.adr || 'Adresse mangler'}</div></td><td class="wrap" title="${escapeAttr(s.opg)}">${s.opg || '—'}<div class="dim" style="font-size:12px;margin-top:4px">${s.b && s.b !== '0' ? `Est. entreprise ${s.b} kr.` : 'Est. entreprise mangler'}</div></td><td class="num">${s.u && s.u !== '0' ? '<span class="chip chip-amber">' + s.u + ' kr.</span>' : '—'}</td><td class="dim date-cell">${displayDate(s.dato)}</td><td class="dim date-cell">${displayDate(s.start)}</td><td class="dim date-cell">${displayDate(s.slut)}</td><td><select class="status-sel" onchange="changeStatus(${idx}, this.value)"><option${s.status==='—'?' selected':''}>—</option><option${s.status==='Faktura sendt'?' selected':''}>Faktura sendt</option><option${s.status==='Ingen udeståender'?' selected':''}>Ingen udeståender</option><option${s.status==='Semi-godkendt'?' selected':''}>Semi-godkendt</option><option${s.status==='Afsendt'?' selected':''}>Afsendt</option></select></td><td class="dim">${s.fak || '—'}</td><td><button class="icon-btn" onclick="openEditSag(${idx})">Rediger</button></td></tr>`; }).join(''); document.getElementById('count').textContent = `${rows.length} aktive/potentielle kunder`; updateCaseTabCount(); }
 function changeKat(i,v){ sager[i].k = +v; saveState(); render(); renderPriorities(); }
 function changeStatus(i,v){ sager[i].status = v; saveState(); render(); renderPriorities(); }
 function openSag(i){ renderSagDetail(i); }
