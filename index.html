@@ -220,6 +220,41 @@
   .pay-status.betalt{background:var(--green-soft);color:var(--green);border-color:#b7dcc9}
   .pay-status.udestaaende{background:var(--red-soft);color:var(--red);border-color:#efc3ba}
   .pay-note{font-size:12px;color:var(--muted);margin-top:10px}
+  .subtabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:18px}
+  .subtab-btn{
+    border:1px solid var(--line);background:#fff;color:var(--ink);border-radius:999px;
+    padding:8px 14px;font-size:12px;font-weight:600;cursor:pointer;
+  }
+  .subtab-btn.active{background:var(--navy);border-color:var(--navy);color:#fff}
+  .subsection{display:none}
+  .subsection.active{display:block}
+  .appendix-layout{display:grid;grid-template-columns:1.2fr .8fr;gap:20px}
+  .appendix-stream{display:grid;gap:12px}
+  .appendix-item{
+    border:1px solid var(--line);border-radius:10px;background:#fff;padding:14px 16px;
+    display:grid;grid-template-columns:1fr auto;gap:10px;
+  }
+  .appendix-item h3{margin:0 0 6px;font-size:14px;color:var(--ink)}
+  .appendix-meta{font-size:12px;color:var(--muted)}
+  .appendix-body{font-size:13px;color:#304153;line-height:1.45;margin-top:8px}
+  .appendix-tags{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+  .appendix-empty{border:1px dashed var(--line);border-radius:10px;padding:18px;color:var(--muted);background:#fff}
+  .appendix-side{display:grid;gap:20px}
+  .org-hero{
+    display:flex;justify-content:space-between;gap:18px;align-items:flex-start;
+    border:1px solid var(--line);border-radius:12px;background:#fff;padding:18px 20px;margin-bottom:20px;
+  }
+  .org-hero-title{font-size:22px;font-weight:700;color:var(--ink);margin:4px 0 8px}
+  .org-hero-sub{font-size:13px;color:var(--muted);max-width:760px;line-height:1.5}
+  .org-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+  .org-card{
+    border:1px solid var(--line);border-radius:12px;background:#fff;padding:16px;
+    min-height:190px;
+  }
+  .org-card .role{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:8px}
+  .org-card h3{font-size:16px;margin:0 0 8px;color:var(--ink)}
+  .org-card ul{margin:10px 0 0 18px;padding:0;color:#415365;font-size:13px;line-height:1.5}
+  .org-card .agent-meta{font-size:12px;color:var(--muted)}
   .priority-shell{background:#f5f2ec;border:1px solid rgba(0,0,0,.06);border-radius:18px;overflow:hidden}
   .priority-topbar{display:flex;align-items:center;justify-content:space-between;padding:14px 24px;background:#fff;border-bottom:.5px solid rgba(0,0,0,.08);gap:16px;position:sticky;top:0;z-index:1}
   .priority-topbar-title{font-size:13px;font-weight:600;color:#8a8680;text-transform:uppercase;letter-spacing:.08em}
@@ -689,7 +724,8 @@
   <button class="tab-btn" data-tab="sager">Kunder <span style="opacity:.6">(29)</span></button>
   <button class="tab-btn" data-tab="indbakke">Indbakke <span class="badge" style="background:var(--green);color:#fff;font-size:10px;padding:1px 6px;border-radius:8px;margin-left:4px;font-weight:600">8</span></button>
   <button class="tab-btn" data-tab="likviditet">Likviditet</button>
-  <button class="tab-btn" data-tab="marginer">Marginer</button>
+  <button class="tab-btn" data-tab="appendix">Appendix</button>
+  <button class="tab-btn" data-tab="organisation">Organisation</button>
   <button class="tab-btn" data-tab="settings" style="display:none">Indstillinger</button>
 </nav>
 
@@ -986,96 +1022,204 @@
 </section>
 
 <section id="likviditet" class="section">
-  <div class="panel">
-    <h2>Likviditet — rullende årsview</h2>
-    <table>
-      <thead>
-        <tr>
-          <th>Måned</th>
-          <th class="num">Ind</th>
-          <th class="num">Ud</th>
-          <th class="num">Netto</th>
-          <th class="num">Akkumuleret</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr><td>Maj</td><td class="num">195.387</td><td class="num" style="color:var(--red)">(430.000)</td><td class="num" style="color:var(--red)">(234.613)</td><td class="num" style="color:var(--red)">(234.613)</td></tr>
-        <tr><td>Jun</td><td class="num">283.000</td><td class="num" style="color:var(--red)">(430.000)</td><td class="num" style="color:var(--red)">(147.000)</td><td class="num" style="color:var(--red)">(381.613)</td></tr>
-        <tr><td>Jul</td><td class="num">0</td><td class="num" style="color:var(--red)">(430.000)</td><td class="num" style="color:var(--red)">(430.000)</td><td class="num" style="color:var(--red)">(811.613)</td></tr>
-        <tr><td>Aug</td><td class="num">0</td><td class="num" style="color:var(--red)">(430.000)</td><td class="num" style="color:var(--red)">(430.000)</td><td class="num" style="color:var(--red)">(1.241.613)</td></tr>
-        <tr><td>Sep</td><td class="num">0</td><td class="num" style="color:var(--red)">(430.000)</td><td class="num" style="color:var(--red)">(430.000)</td><td class="num" style="color:var(--red)">(1.671.613)</td></tr>
-        <tr><td>Okt</td><td class="num">0</td><td class="num" style="color:var(--red)">(430.000)</td><td class="num" style="color:var(--red)">(430.000)</td><td class="num" style="color:var(--red)">(2.101.613)</td></tr>
-        <tr><td>Nov</td><td class="num">0</td><td class="num" style="color:var(--red)">(430.000)</td><td class="num" style="color:var(--red)">(430.000)</td><td class="num" style="color:var(--red)">(2.531.613)</td></tr>
-        <tr><td>Dec</td><td class="num">0</td><td class="num" style="color:var(--red)">(430.000)</td><td class="num" style="color:var(--red)">(430.000)</td><td class="num" style="color:var(--red)"><strong>(2.961.613)</strong></td></tr>
-      </tbody>
-    </table>
-    <div class="status-note"><strong>OBS:</strong> Likviditetsoversigten er fortsat et statisk forecast. Næste skridt er at koble betalinger, Minuba og evt. bankfeed på.</div>
+  <div class="subtabs">
+    <button class="subtab-btn active" data-subtab="overview" onclick="setLiquiditySubtab('overview')">Likviditet</button>
+    <button class="subtab-btn" data-subtab="marginer" onclick="setLiquiditySubtab('marginer')">Marginer</button>
   </div>
-  <div class="panel">
-    <h2>Betalinger — udestående rater</h2>
-    <table>
-      <thead>
-        <tr>
-          <th>Sagsnr.</th>
-          <th>Kunde</th>
-          <th>Milepæl</th>
-          <th>Forv. dato</th>
-          <th class="num">Beløb</th>
-          <th>Fakturanr.</th>
-          <th>Status</th>
-        </tr>
-      </thead>
-      <tbody id="betalingBody"></tbody>
-    </table>
-    <div class="pay-note">Skift status til "Betalt" for at fjerne en rate fra oversigten over udestående rater. Den bliver i data, men skjules her.</div>
+  <div id="likviditetOverview" class="subsection active">
+    <div class="panel">
+      <h2>Likviditet — rullende årsview</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Måned</th>
+            <th class="num">Ind</th>
+            <th class="num">Ud</th>
+            <th class="num">Netto</th>
+            <th class="num">Akkumuleret</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td>Maj</td><td class="num">195.387</td><td class="num" style="color:var(--red)">(430.000)</td><td class="num" style="color:var(--red)">(234.613)</td><td class="num" style="color:var(--red)">(234.613)</td></tr>
+          <tr><td>Jun</td><td class="num">283.000</td><td class="num" style="color:var(--red)">(430.000)</td><td class="num" style="color:var(--red)">(147.000)</td><td class="num" style="color:var(--red)">(381.613)</td></tr>
+          <tr><td>Jul</td><td class="num">0</td><td class="num" style="color:var(--red)">(430.000)</td><td class="num" style="color:var(--red)">(430.000)</td><td class="num" style="color:var(--red)">(811.613)</td></tr>
+          <tr><td>Aug</td><td class="num">0</td><td class="num" style="color:var(--red)">(430.000)</td><td class="num" style="color:var(--red)">(430.000)</td><td class="num" style="color:var(--red)">(1.241.613)</td></tr>
+          <tr><td>Sep</td><td class="num">0</td><td class="num" style="color:var(--red)">(430.000)</td><td class="num" style="color:var(--red)">(430.000)</td><td class="num" style="color:var(--red)">(1.671.613)</td></tr>
+          <tr><td>Okt</td><td class="num">0</td><td class="num" style="color:var(--red)">(430.000)</td><td class="num" style="color:var(--red)">(430.000)</td><td class="num" style="color:var(--red)">(2.101.613)</td></tr>
+          <tr><td>Nov</td><td class="num">0</td><td class="num" style="color:var(--red)">(430.000)</td><td class="num" style="color:var(--red)">(430.000)</td><td class="num" style="color:var(--red)">(2.531.613)</td></tr>
+          <tr><td>Dec</td><td class="num">0</td><td class="num" style="color:var(--red)">(430.000)</td><td class="num" style="color:var(--red)">(430.000)</td><td class="num" style="color:var(--red)"><strong>(2.961.613)</strong></td></tr>
+        </tbody>
+      </table>
+      <div class="status-note"><strong>OBS:</strong> Likviditetsoversigten er fortsat et statisk forecast. Næste skridt er at koble betalinger, Minuba og evt. bankfeed på.</div>
+    </div>
+    <div class="panel">
+      <h2>Betalinger — udestående rater</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Sagsnr.</th>
+            <th>Kunde</th>
+            <th>Milepæl</th>
+            <th>Forv. dato</th>
+            <th class="num">Beløb</th>
+            <th>Fakturanr.</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody id="betalingBody"></tbody>
+      </table>
+      <div class="pay-note">Skift status til "Betalt" for at fjerne en rate fra oversigten over udestående rater. Den bliver i data, men skjules her.</div>
+    </div>
+  </div>
+  <div id="likviditetMarginer" class="subsection">
+    <div class="panel">
+      <div class="panel-hd">
+        <h2>Marginer — estimat inden start · faktisk efter aflevering</h2>
+        <div style="font-size:12px;color:var(--muted)">Standard timepris: 650 kr./t</div>
+      </div>
+      <div class="panel" style="padding:14px;margin-bottom:16px;background:#f8fafc">
+        <div class="panel-hd">
+          <h2>Minuba integration</h2>
+          <span class="dim" style="font-size:12px">Backend proxy via Netlify Functions</span>
+        </div>
+        <div class="integration-grid">
+          <div>
+            <div id="minubaStatus" class="integration-status">Ikke testet endnu.</div>
+            <div class="integration-actions">
+              <button class="btn" onclick="checkMinuba()">Test forbindelse</button>
+              <button class="btn" onclick="fetchMinubaResource('filapi')">Hent FilAPI preview</button>
+              <button class="btn" onclick="fetchMinubaResource('cases')">Hent sager</button>
+              <button class="btn" onclick="fetchMinubaResource('time')">Hent timer</button>
+              <button class="btn" onclick="fetchMinubaResource('materials')">Hent materialer</button>
+            </div>
+          </div>
+          <div class="status-note" style="margin-top:0">
+            Minuba-nøgler skal ligge som environment variables i Netlify, ikke i HTML-filen.
+            Første version tester dataflowet; næste version mapper data til sager og DB.
+          </div>
+        </div>
+      </div>
+      <div class="kpi-grid" id="marginSummary" style="grid-template-columns:repeat(3,1fr);margin-bottom:16px"></div>
+      <table>
+        <thead>
+          <tr>
+            <th>Sagsnr.</th>
+            <th>Kunde</th>
+            <th class="wrap">Opgave</th>
+            <th class="num">Est. timer</th>
+            <th class="num">Est. omk.</th>
+            <th class="num">Tilbudspris</th>
+            <th class="num">Est. margin</th>
+            <th class="num">Est. margin %</th>
+            <th class="num">Faktisk margin</th>
+          </tr>
+        </thead>
+        <tbody id="marginBody"></tbody>
+      </table>
+    </div>
   </div>
 </section>
 
-<section id="marginer" class="section">
+<section id="appendix" class="section">
   <div class="panel">
     <div class="panel-hd">
-      <h2>Marginer — estimat inden start · faktisk efter aflevering</h2>
-      <div style="font-size:12px;color:var(--muted)">Standard timepris: 650 kr./t</div>
-    </div>
-    <div class="panel" style="padding:14px;margin-bottom:16px;background:#f8fafc">
-      <div class="panel-hd">
-        <h2>Minuba integration</h2>
-        <span class="dim" style="font-size:12px">Backend proxy via Netlify Functions</span>
+      <div>
+        <h2>Appendix</h2>
+        <div class="settings-note">Samler interne mødenoter, transcripts, referater, drafts og øvrig dialog. Action points skal derfra løftes videre ind i Sager.</div>
       </div>
-      <div class="integration-grid">
-        <div>
-          <div id="minubaStatus" class="integration-status">Ikke testet endnu.</div>
-          <div class="integration-actions">
-            <button class="btn" onclick="checkMinuba()">Test forbindelse</button>
-            <button class="btn" onclick="fetchMinubaResource('filapi')">Hent FilAPI preview</button>
-            <button class="btn" onclick="fetchMinubaResource('cases')">Hent sager</button>
-            <button class="btn" onclick="fetchMinubaResource('time')">Hent timer</button>
-            <button class="btn" onclick="fetchMinubaResource('materials')">Hent materialer</button>
-          </div>
+    </div>
+    <div class="appendix-layout">
+      <div>
+        <div class="panel-hd"><h3>Seneste samtaler og artefakter</h3></div>
+        <div id="appendixStream" class="appendix-stream"></div>
+      </div>
+      <div class="appendix-side">
+        <div class="panel">
+          <h3>Opsamling</h3>
+          <div id="appendixSummary"></div>
         </div>
-        <div class="status-note" style="margin-top:0">
-          Minuba-nøgler skal ligge som environment variables i Netlify, ikke i HTML-filen.
-          Første version tester dataflowet; næste version mapper data til sager og DB.
+        <div class="panel">
+          <h3>Action points til Sager</h3>
+          <div id="appendixActions"></div>
         </div>
       </div>
     </div>
-    <div class="kpi-grid" id="marginSummary" style="grid-template-columns:repeat(3,1fr);margin-bottom:16px"></div>
-    <table>
-      <thead>
-        <tr>
-          <th>Sagsnr.</th>
-          <th>Kunde</th>
-          <th class="wrap">Opgave</th>
-          <th class="num">Est. timer</th>
-          <th class="num">Est. omk.</th>
-          <th class="num">Tilbudspris</th>
-          <th class="num">Est. margin</th>
-          <th class="num">Est. margin %</th>
-          <th class="num">Faktisk margin</th>
-        </tr>
-      </thead>
-      <tbody id="marginBody"></tbody>
-    </table>
+  </div>
+</section>
+
+<section id="organisation" class="section">
+  <div class="org-hero">
+    <div>
+      <div class="capacity-kicker">Organisation</div>
+      <div class="org-hero-title">Søren Mygdal · Direktør</div>
+      <div class="org-hero-sub">NSTSF har ikke brug for en tung enterprise-model. Den rigtige agentarkitektur her er driftstung, salgsnær og dokumentationsstærk: tilbud, kundedialog, bemanding, økonomi, KS og referater skal bindes sammen på hver sag.</div>
+    </div>
+    <div class="status-note" style="margin:0;min-width:260px">
+      <strong>Princip</strong><br>
+      Færre agenttyper, men tættere koblet til kunder, mails, møder, drafts og Drive.
+    </div>
+  </div>
+  <div class="org-grid">
+    <div class="org-card">
+      <div class="role">Ledelse</div>
+      <h3>Chief of Staff / Koordinering</h3>
+      <div class="agent-meta">Holder sammen på dagens prioriteringer, mødenoter og næste handlinger.</div>
+      <ul>
+        <li>samler input fra ChatGPT, mail og interne møder</li>
+        <li>fordeler action points til Sager</li>
+        <li>løfter ting til Søren ved blokeringer</li>
+      </ul>
+    </div>
+    <div class="org-card">
+      <div class="role">Salg</div>
+      <h3>Tilbuds- og opfølgningsagent</h3>
+      <div class="agent-meta">Driver tilbud, opfølgning og næste kundeskridt.</div>
+      <ul>
+        <li>opdager leads og ubesvarede tilbud</li>
+        <li>klargør tilbudsdrafts og opfølgninger</li>
+        <li>kobler dialog direkte til kundesagen</li>
+      </ul>
+    </div>
+    <div class="org-card">
+      <div class="role">Drift</div>
+      <h3>Kapacitets- og bemandingsagent</h3>
+      <div class="agent-meta">Oversætter sager til konkret kapacitetsbelastning uge for uge.</div>
+      <ul>
+        <li>kobler aktive sager til kalender og medarbejdere</li>
+        <li>flagger overbooking, ferie og skoleuger</li>
+        <li>viser hvad der fylder denne og næste uge</li>
+      </ul>
+    </div>
+    <div class="org-card">
+      <div class="role">Kundeproces</div>
+      <h3>Kunde- og referatagent</h3>
+      <div class="agent-meta">Omsætter møder og samtaler til referater, tasks og dokumentation.</div>
+      <ul>
+        <li>strukturerer transcripts og byggemøder</li>
+        <li>opretter draft-first mails til godkendelse</li>
+        <li>sikrer at action points havner på den rigtige sag</li>
+      </ul>
+    </div>
+    <div class="org-card">
+      <div class="role">Økonomi</div>
+      <h3>Likviditets- og marginagent</h3>
+      <div class="agent-meta">Holder styr på udeståender, stade og DB på tværs af sager.</div>
+      <ul>
+        <li>kobler betalinger til stade og milepæle</li>
+        <li>følger op på udeståender og fakturastatus</li>
+        <li>trækker margindata fra Minuba, når integrationen er klar</li>
+      </ul>
+    </div>
+    <div class="org-card">
+      <div class="role">Dokumentation</div>
+      <h3>KS- og arkiveringsagent</h3>
+      <div class="agent-meta">Sikrer at billeder, KS, referater og kontrakter bliver lagt korrekt på Drive.</div>
+      <ul>
+        <li>opretter og vedligeholder kundemappestruktur</li>
+        <li>arkiverer billeder, KS og underskrifter</li>
+        <li>gør dokumenter synlige direkte under kunden</li>
+      </ul>
+    </div>
   </div>
 </section>
 
@@ -1210,6 +1354,7 @@ let authUser = null;
 let adminUsers = [];
 let editingUserEmail = null;
 let currentTab = 'dashboard';
+let liquiditySubtab = 'overview';
 let inboxFilter = 'alle';
 let selectedEmailId = null;
 let priorityView = 'todos';
@@ -1282,7 +1427,8 @@ function queueRemoteSave(){ clearTimeout(remoteSaveTimer); remoteSaveTimer = set
 function saveState(manual=false){ try{ persistLocalState(); if(!isApplyingRemoteState) manual ? saveRemoteState(true) : queueRemoteSave(); }catch(e){ setSyncStatus(`Kunne ikke gemme lokalt: ${e.message}`, 'error'); } }
 async function loadRemoteState(manual=false){ if(!authUser){ if(manual) setSyncStatus('Du skal være logget ind for at hente central data.', 'error'); return; } if(location.protocol === 'file:'){ if(manual) setSyncStatus('Backend kan ikke hentes fra file://. Test på Netlify-linket efter deploy.', 'error'); return; } try{ setSyncStatus('Henter central data...'); const res = await fetch(STATE_API, {credentials:'include'}); const data = await res.json().catch(()=>({})); if(res.status === 404 && data.error === 'no_state'){ await saveRemoteState(true); return; } if(res.status === 401){ authUser = null; updateAuthUi(); showAuthOverlay('Session udløbet. Log ind igen.'); return; } if(!res.ok) throw new Error(data.error || `HTTP ${res.status}`); isApplyingRemoteState = true; applyState(data.state); persistLocalState(); isApplyingRemoteState = false; render(); renderBetalinger(); renderCapacity(); renderPriorities(); setSyncStatus(`Central data hentet ${new Date(data.savedAt || Date.now()).toLocaleString('da-DK')}`, 'ok'); }catch(err){ isApplyingRemoteState = false; setSyncStatus(`Kunne ikke hente central data: ${err.message}`, 'error'); } }
 loadState();
-function setActiveTab(tab){ currentTab = tab; document.querySelectorAll('.tab-btn').forEach((btn)=>btn.classList.toggle('active', btn.dataset.tab === tab)); document.querySelectorAll('.section').forEach((section)=>section.classList.toggle('active', section.id === tab)); }
+function setActiveTab(tab){ currentTab = tab; document.querySelectorAll('.tab-btn').forEach((btn)=>btn.classList.toggle('active', btn.dataset.tab === tab)); document.querySelectorAll('.section').forEach((section)=>section.classList.toggle('active', section.id === tab)); if(tab === 'likviditet') setLiquiditySubtab(liquiditySubtab); }
+function setLiquiditySubtab(subtab){ liquiditySubtab = subtab === 'marginer' ? 'marginer' : 'overview'; document.querySelectorAll('.subtab-btn').forEach((btn)=>btn.classList.toggle('active', btn.dataset.subtab === liquiditySubtab)); const overview = document.getElementById('likviditetOverview'); const marginer = document.getElementById('likviditetMarginer'); if(overview) overview.classList.toggle('active', liquiditySubtab === 'overview'); if(marginer) marginer.classList.toggle('active', liquiditySubtab === 'marginer'); }
 function openSettings(){ if(!authUser) return; setActiveTab('settings'); }
 function updateAuthUi(){ const idEl = document.getElementById('authIdentity'); const logoutBtn = document.getElementById('logoutBtn'); const adminPanel = document.getElementById('adminPanel'); const adminLocked = document.getElementById('adminLocked'); const settingsBtn = document.getElementById('settingsBtn'); if(idEl) idEl.textContent = authUser ? `${authUser.name} · ${authUser.email}` : 'Ikke logget ind'; if(logoutBtn) logoutBtn.style.display = authUser ? 'inline-flex' : 'none'; if(settingsBtn) settingsBtn.classList.toggle('hidden', !authUser); if(adminPanel) adminPanel.classList.toggle('visible', !!authUser && authUser.role === 'admin'); if(adminLocked) adminLocked.style.display = authUser && authUser.role !== 'admin' ? 'block' : 'none'; document.body.classList.toggle('login-mode', !authUser); if(!authUser && currentTab === 'settings') setActiveTab('dashboard'); }
 function renderAdminUsers(){ const body = document.getElementById('adminUsersBody'); if(!body) return; if(!adminUsers.length){ body.innerHTML = '<tr><td colspan="4" class="admin-empty">Ingen brugere fundet.</td></tr>'; return; } body.innerHTML = adminUsers.map((user)=>`<tr><td>${user.name || '—'}</td><td>${user.email}</td><td>${user.role === 'admin' ? 'Admin' : 'Bruger'}</td><td class="row-actions"><button class="icon-btn" onclick="editUser('${String(user.email).replace(/'/g,"&#39;")}')">Rediger</button><button class="icon-btn" onclick="deleteUser('${String(user.email).replace(/'/g,"&#39;")}')">Slet</button></td></tr>`).join(''); }
@@ -1514,7 +1660,7 @@ function updateCaseTabCount(){
   if(customerTab) customerTab.innerHTML = `Kunder <span style="opacity:.6">(${counts.customerCount})</span>`;
   if(priorityTab) priorityTab.innerHTML = `Sager <span style="opacity:.6">(${counts.todoCount})</span>`;
 }
-function render(){ const tbody = document.getElementById('sagerBody'); const q = (document.getElementById('sagerSoeg').value || '').toLowerCase(); const katF = document.getElementById('filterKat').value; const rows = sager.filter(s=>{ if(!ACTIVE_CASE_CATEGORIES.has(+s.k)) return false; if(katF && String(s.k)!==katF) return false; if(q){ const hay = `${s.nr} ${s.kunde} ${s.adr} ${s.opg}`.toLowerCase(); if(!hay.includes(q)) return false; } return true; }).sort((a,b)=>a.k-b.k || a.sort-b.sort); tbody.innerHTML = rows.map(s=>{ const idx = sager.indexOf(s); const kundeLower = String(s.kunde || '').toLowerCase(); const isDke = kundeLower.includes('dke'); const kundeCell = isDke ? `${s.kunde} <span class="chip tag-dke" style="font-size:10px">DKE</span>` : s.kunde; return `<tr data-kat="${s.k}"><td><select class="kategori kat-${s.k}" onchange="changeKat(${idx}, this.value)">${Object.entries(KAT).map(([k,v])=>`<option value="${k}"${+k===s.k?' selected':''}>${v}</option>`).join('')}</select></td><td>${s.nr || '—'}</td><td title="${escapeAttr(`${s.kunde} ${s.adr || ''}`)}"><button class="kunde-link" onclick="openSag(${idx})">${kundeCell}</button><div class="dim" style="font-size:12px;margin-top:4px">${s.adr || 'Adresse mangler'}</div></td><td class="wrap" title="${escapeAttr(s.opg)}">${s.opg || '—'}<div class="dim" style="font-size:12px;margin-top:4px">${s.b && s.b !== '0' ? `Est. entreprise ${s.b} kr.` : 'Est. entreprise mangler'}</div></td><td class="num">${s.u && s.u !== '0' ? '<span class="chip chip-amber">' + s.u + ' kr.</span>' : '—'}</td><td class="dim date-cell">${displayDate(s.dato)}</td><td class="dim date-cell">${displayDate(s.start)}</td><td class="dim date-cell">${displayDate(s.slut)}</td><td><select class="status-sel" onchange="changeStatus(${idx}, this.value)"><option${s.status==='—'?' selected':''}>—</option><option${s.status==='Faktura sendt'?' selected':''}>Faktura sendt</option><option${s.status==='Ingen udeståender'?' selected':''}>Ingen udeståender</option><option${s.status==='Semi-godkendt'?' selected':''}>Semi-godkendt</option><option${s.status==='Afsendt'?' selected':''}>Afsendt</option></select></td><td class="dim">${s.fak || '—'}</td><td><button class="icon-btn" onclick="openEditSag(${idx})">Rediger</button></td></tr>`; }).join(''); document.getElementById('count').textContent = `${rows.length} aktive/potentielle kunder`; updateCaseTabCount(); }
+function render(){ const tbody = document.getElementById('sagerBody'); const q = (document.getElementById('sagerSoeg').value || '').toLowerCase(); const katF = document.getElementById('filterKat').value; const rows = sager.filter(s=>{ if(!ACTIVE_CASE_CATEGORIES.has(+s.k)) return false; if(katF && String(s.k)!==katF) return false; if(q){ const hay = `${s.nr} ${s.kunde} ${s.adr} ${s.opg}`.toLowerCase(); if(!hay.includes(q)) return false; } return true; }).sort((a,b)=>a.k-b.k || a.sort-b.sort); tbody.innerHTML = rows.map(s=>{ const idx = sager.indexOf(s); const kundeLower = String(s.kunde || '').toLowerCase(); const isDke = kundeLower.includes('dke'); const kundeCell = isDke ? `${s.kunde} <span class="chip tag-dke" style="font-size:10px">DKE</span>` : s.kunde; return `<tr data-kat="${s.k}"><td><select class="kategori kat-${s.k}" onchange="changeKat(${idx}, this.value)">${Object.entries(KAT).map(([k,v])=>`<option value="${k}"${+k===s.k?' selected':''}>${v}</option>`).join('')}</select></td><td>${s.nr || '—'}</td><td title="${escapeAttr(`${s.kunde} ${s.adr || ''}`)}"><button class="kunde-link" onclick="openSag(${idx})">${kundeCell}</button><div class="dim" style="font-size:12px;margin-top:4px">${s.adr || 'Adresse mangler'}</div></td><td class="wrap" title="${escapeAttr(s.opg)}">${s.opg || '—'}<div class="dim" style="font-size:12px;margin-top:4px">${s.b && s.b !== '0' ? `Est. entreprise ${s.b} kr.` : 'Est. entreprise mangler'}</div></td><td class="num">${s.u && s.u !== '0' ? '<span class="chip chip-amber">' + s.u + ' kr.</span>' : '—'}</td><td class="dim date-cell">${displayDate(s.dato)}</td><td class="dim date-cell">${displayDate(s.start)}</td><td class="dim date-cell">${displayDate(s.slut)}</td><td><select class="status-sel" onchange="changeStatus(${idx}, this.value)"><option${s.status==='—'?' selected':''}>—</option><option${s.status==='Faktura sendt'?' selected':''}>Faktura sendt</option><option${s.status==='Ingen udeståender'?' selected':''}>Ingen udeståender</option><option${s.status==='Semi-godkendt'?' selected':''}>Semi-godkendt</option><option${s.status==='Afsendt'?' selected':''}>Afsendt</option></select></td><td class="dim">${s.fak || '—'}</td><td><button class="icon-btn" onclick="openEditSag(${idx})">Rediger</button></td></tr>`; }).join(''); document.getElementById('count').textContent = `${rows.length} aktive/potentielle kunder`; updateCaseTabCount(); renderAppendix(); }
 function changeKat(i,v){ sager[i].k = +v; saveState(); render(); renderPriorities(); }
 function changeStatus(i,v){ sager[i].status = v; saveState(); render(); renderPriorities(); }
 function openSag(i){ renderSagDetail(i); }
@@ -1525,6 +1671,34 @@ function renderDrafts(items=[]){ return items.length ? `<div class="mini-list">$
 function renderTaskList(items=[]){ return items.length ? `<div class="mini-list">${items.map((item)=>`<div class="mini-item"><strong>${item.title || 'Opgave'}</strong><div class="meta">${item.status || 'Åben'}${item.dueDate ? ` · frist ${displayDate(item.dueDate)}` : ''}</div><div class="meta">${item.owner || 'Ingen ansvarlig'}${item.notes ? ` · ${item.notes}` : ''}</div></div>`).join('')}</div>` : '<div class="doc-empty">Ingen to-do&apos;s registreret endnu.</div>'; }
 function renderStageLog(items=[]){ return items.length ? `<div class="mini-list">${items.slice(0,5).map((item)=>`<div class="mini-item"><strong>${item.title || item.status || 'Stadeopdatering'}</strong><div class="meta">${item.date ? displayDate(item.date) : 'Dato mangler'}${item.progressPct !== undefined ? ` · ${item.progressPct}%` : ''}</div><div class="meta">${item.notes || ''}</div></div>`).join('')}</div>` : '<div class="doc-empty">Ingen stadeopgørelser registreret endnu.</div>'; }
 function renderChangeOrders(items=[]){ return items.length ? `<table class="payment-inline-table"><thead><tr><th>Ekstraarbejde</th><th>Status</th><th class="num">Pris</th></tr></thead><tbody>${items.map((item)=>`<tr><td>${item.title || 'Ekstraarbejde'}</td><td>${item.status || 'Afventer'}</td><td class="num">${item.amount ? `${item.amount} kr.` : '—'}</td></tr>`).join('')}</tbody></table>` : '<div class="doc-empty">Ingen ekstraarbejder registreret endnu.</div>'; }
+function buildAppendixEntries(){
+  const entries = [];
+  emails.forEach((mail)=>{
+    if(!/@nstsf\.dk|gemini-notes@google\.com/i.test(String(mail.from || ''))) return;
+    entries.push({ type: mail.tags?.includes('referat') ? 'Referat' : 'Intern dialog', title: mail.subject || 'Intern samtale', customer: mail.kunde || 'NSTSF internt', date: mail.date || '', body: mail.body || mail.preview || '', tags: mail.tags || [], action: `setActiveTab('indbakke'); openEmail('${mail.id}')`, actionLabel: 'Åbn mail' });
+  });
+  sager.forEach((s, index)=>{
+    (s.docs?.transkripter || []).forEach((item)=>{ if(item?.titel) entries.push({ type:'Transkript', title:item.titel, customer:s.kunde, date:item.dato || '', body:s.workflow?.nextAction ? `Næste handling: ${s.workflow.nextAction}` : 'Transkript lagt på sagen.', tags:['transkript', KAT[s.k] || 'sag'], action:`setActiveTab('sager'); openSag(${index})`, actionLabel:'Åbn kunde' }); });
+    (s.docs?.referater || s.docs?.byggereferater || []).forEach((item)=>{ if(item?.titel) entries.push({ type:'Referat', title:item.titel, customer:s.kunde, date:item.dato || '', body:s.stageLog?.[0]?.notes || 'Referat registreret på sagen.', tags:['referat', 'kunde'], action:`setActiveTab('sager'); openSag(${index})`, actionLabel:'Åbn kunde' }); });
+    (s.mailDrafts || []).forEach((item)=>{ entries.push({ type:'Draft', title:item.subject || 'Mail draft', customer:s.kunde, date:item.createdAt || '', body:item.preview || item.body || item.status || 'Draft oprettet til godkendelse.', tags:['draft', item.status || 'afventer'], action:`setActiveTab('sager'); openSag(${index})`, actionLabel:'Åbn kunde' }); });
+    (s.activityLog || []).forEach((item)=>{ entries.push({ type:'Aktivitet', title:item.title || item.type || 'Systemaktivitet', customer:s.kunde, date:item.createdAt || '', body:item.summary || item.notes || item.message || 'Aktivitet registreret på sagen.', tags:[item.type || 'aktivitet'], action:`setActiveTab('sager'); openSag(${index})`, actionLabel:'Åbn kunde' }); });
+  });
+  return entries.sort((a,b)=> String(b.date || '').localeCompare(String(a.date || '')));
+}
+function renderAppendix(){
+  const stream = document.getElementById('appendixStream');
+  const summary = document.getElementById('appendixSummary');
+  const actions = document.getElementById('appendixActions');
+  if(!stream || !summary || !actions) return;
+  const entries = buildAppendixEntries();
+  const tasks = sager.flatMap((s, index)=>(s.tasks || []).map((task)=>({task, customer:s.kunde, index}))).sort((a,b)=>String(a.task?.dueDate || '').localeCompare(String(b.task?.dueDate || '')));
+  const transcripts = entries.filter((entry)=>entry.type === 'Transkript').length;
+  const drafts = entries.filter((entry)=>entry.type === 'Draft').length;
+  const internalDialogs = entries.filter((entry)=>entry.type === 'Intern dialog').length;
+  stream.innerHTML = entries.length ? entries.slice(0,18).map((entry)=>`<div class="appendix-item"><div><div class="appendix-meta">${entry.type} · ${entry.customer} · ${displayDate(entry.date)}</div><h3>${escapeAttr(entry.title)}</h3><div class="appendix-body">${escapeAttr(entry.body)}</div><div class="appendix-tags">${(entry.tags || []).slice(0,4).map((tag)=>`<span class="chip">${escapeAttr(tag)}</span>`).join('')}</div></div><div><button class="icon-btn" onclick="${entry.action}">${entry.actionLabel}</button></div></div>`).join('') : '<div class="appendix-empty">Ingen samtaler eller artefakter fundet endnu.</div>';
+  summary.innerHTML = `<table><tbody><tr><td>Interne dialoger</td><td class="num">${internalDialogs}</td></tr><tr><td>Transcripts</td><td class="num">${transcripts}</td></tr><tr><td>Drafts til godkendelse</td><td class="num">${drafts}</td></tr><tr><td>Samlede action points</td><td class="num">${tasks.length}</td></tr></tbody></table>`;
+  actions.innerHTML = tasks.length ? tasks.slice(0,10).map(({task, customer, index})=>`<div class="mini-item"><strong>${escapeAttr(task.title || 'Opgave')}</strong><div class="meta">${escapeAttr(customer)}${task.dueDate ? ` · frist ${displayDate(task.dueDate)}` : ''}</div><div class="meta">${escapeAttr(task.notes || task.status || 'Åben')}</div><div class="priority-item-links" style="margin-top:6px"><button class="icon-btn" onclick="setActiveTab('sager'); openSag(${index})">Åbn kunde</button></div></div>`).join('') : '<div class="appendix-empty">Ingen action points registreret endnu.</div>';
+}
 function renderSagDetail(i){
   const s = sager[i];
   const caseDetail = document.getElementById('caseDetail');
