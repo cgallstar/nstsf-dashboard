@@ -180,14 +180,16 @@
 
   .sager-wrap{background:transparent;border:none;border-radius:0;box-shadow:none;margin:0}
   .customers-layout{
-    display:grid;grid-template-columns:minmax(0,1.8fr) minmax(360px,.92fr);
-    gap:0;border-top:.5px solid var(--line);
+    position:relative;border-top:.5px solid var(--line);background:#fff;
   }
-  .customers-list-pane{min-width:0;background:#fff}
+  .customers-list-pane{min-width:0;background:#fff;transition:padding-right .28s ease}
+  .customers-layout.detail-open .customers-list-pane{padding-right:520px}
   .customers-detail-pane{
     min-width:0;background:#fcfbf8;border-left:.5px solid var(--line);
-    display:flex;flex-direction:column;
+    display:flex;flex-direction:column;position:absolute;top:0;right:0;bottom:0;width:520px;
+    transform:translateX(100%);opacity:0;pointer-events:none;transition:transform .28s ease, opacity .2s ease;
   }
+  .customers-detail-pane.active{transform:translateX(0);opacity:1;pointer-events:auto}
   .page-head{
     padding:18px 28px 14px;
     border-bottom:.5px solid var(--line);
@@ -1203,7 +1205,6 @@
                 <th>Kunde</th>
                 <th class="wrap">Opgave</th>
                 <th class="num">Udestående</th>
-                <th>Betalingsdato</th>
                 <th>Start</th>
                 <th>Slut</th>
                 <th></th>
@@ -2044,10 +2045,11 @@ function updateCaseTabCount(){
   if(customerTab) customerTab.innerHTML = `Kunder <span style="opacity:.6">(${counts.customerCount})</span>`;
   if(priorityTab) priorityTab.innerHTML = `Sager <span style="opacity:.6">(${counts.todoCount})</span>`;
 }
-function render(){ const tbody = document.getElementById('sagerBody'); const q = (document.getElementById('sagerSoeg').value || '').toLowerCase(); const katF = document.getElementById('filterKat').value; const rows = sager.filter(s=>{ if(!ACTIVE_CASE_CATEGORIES.has(+s.k)) return false; if(katF && String(s.k)!==katF) return false; if(q){ const hay = `${s.nr} ${s.kunde} ${s.adr} ${s.opg}`.toLowerCase(); if(!hay.includes(q)) return false; } return true; }).sort((a,b)=>a.k-b.k || a.sort-b.sort); tbody.innerHTML = rows.map(s=>{ const idx = sager.indexOf(s); const kundeLower = String(s.kunde || '').toLowerCase(); const isDke = kundeLower.includes('dke'); const kundeCell = isDke ? `${s.kunde} <span class="chip tag-dke" style="font-size:10px">DKE</span>` : s.kunde; return `<tr data-kat="${s.k}"><td><select class="kategori kat-${s.k}" onchange="changeKat(${idx}, this.value)">${Object.entries(KAT).map(([k,v])=>`<option value="${k}"${+k===s.k?' selected':''}>${v}</option>`).join('')}</select></td><td>${s.nr || '—'}</td><td title="${escapeAttr(`${s.kunde} ${s.adr || ''}`)}"><button class="kunde-link" onclick="openSag(${idx})"><strong>${kundeCell}</strong></button><div class="kunde-address">${s.adr || 'Adresse mangler'}</div></td><td class="wrap" title="${escapeAttr(s.opg)}"><div class="opg-main">${s.opg || '—'}</div><div class="opg-sub">${s.b && s.b !== '0' ? `Est. entreprise ${s.b} kr.` : 'Est. entreprise mangler'}</div></td><td class="num">${s.u && s.u !== '0' ? '<span class="chip chip-amber">' + s.u + ' kr.</span>' : '—'}</td><td class="dim date-cell">${displayDate(s.dato)}</td><td class="dim date-cell">${displayDate(s.start)}</td><td class="dim date-cell">${displayDate(s.slut)}</td><td><button class="icon-btn" onclick="openEditSag(${idx})">Rediger</button></td></tr>`; }).join(''); document.getElementById('count').textContent = `${rows.length} aktive/potentielle kunder`; updateCaseTabCount(); renderAppendix(); }
+let selectedCustomerIndex = null;
+function render(){ const tbody = document.getElementById('sagerBody'); const q = (document.getElementById('sagerSoeg').value || '').toLowerCase(); const katF = document.getElementById('filterKat').value; const rows = sager.filter(s=>{ if(!ACTIVE_CASE_CATEGORIES.has(+s.k)) return false; if(katF && String(s.k)!==katF) return false; if(q){ const hay = `${s.nr} ${s.kunde} ${s.adr} ${s.opg}`.toLowerCase(); if(!hay.includes(q)) return false; } return true; }).sort((a,b)=>a.k-b.k || a.sort-b.sort); tbody.innerHTML = rows.map(s=>{ const idx = sager.indexOf(s); const kundeLower = String(s.kunde || '').toLowerCase(); const isDke = kundeLower.includes('dke'); const kundeCell = isDke ? `${s.kunde} <span class="chip tag-dke" style="font-size:10px">DKE</span>` : s.kunde; const activeRow = selectedCustomerIndex === idx ? ' style="background:#fcfbf8"' : ''; return `<tr data-kat="${s.k}"${activeRow}><td><select class="kategori kat-${s.k}" onchange="changeKat(${idx}, this.value)">${Object.entries(KAT).map(([k,v])=>`<option value="${k}"${+k===s.k?' selected':''}>${v}</option>`).join('')}</select></td><td>${s.nr || '—'}</td><td title="${escapeAttr(`${s.kunde} ${s.adr || ''}`)}"><button class="kunde-link" onclick="openSag(${idx})"><strong>${kundeCell}</strong></button><div class="kunde-address">${s.adr || 'Adresse mangler'}</div></td><td class="wrap" title="${escapeAttr(s.opg)}"><div class="opg-main">${s.opg || '—'}</div><div class="opg-sub">${s.b && s.b !== '0' ? `Est. entreprise ${s.b} kr.` : 'Est. entreprise mangler'}</div></td><td class="num">${s.u && s.u !== '0' ? '<span class="chip chip-amber">' + s.u + ' kr.</span>' : '—'}</td><td class="dim date-cell">${displayDate(s.start)}</td><td class="dim date-cell">${displayDate(s.slut)}</td><td><button class="icon-btn" onclick="openEditSag(${idx})">Rediger</button></td></tr>`; }).join(''); document.getElementById('count').textContent = `${rows.length} aktive/potentielle kunder`; updateCaseTabCount(); renderAppendix(); }
 function changeKat(i,v){ sager[i].k = +v; saveState(); render(); renderPriorities(); }
 function changeStatus(i,v){ sager[i].status = v; saveState(); render(); renderPriorities(); }
-function openSag(i){ renderSagDetail(i); }
+function openSag(i){ if(selectedCustomerIndex === i){ closeSag(); return; } selectedCustomerIndex = i; render(); renderSagDetail(i); }
 function renderDocs(items){ if(!items || !items.length) return '<div class="doc-empty">Ingen dokumenter registreret endnu.</div>'; return items.map(d=>`<div class="doc-item"><div><strong>${d.titel}</strong><div class="doc-meta">${d.dato || 'Dato mangler'}</div></div>${d.url ? `<a href="${d.url}" target="_blank" rel="noopener">Åbn</a>` : '<span class="dim">Mangler link</span>'}</div>`).join(''); }
 function renderCasePayments(s){ const rows = getSagPayments(s); return rows.length ? `<table class="payment-inline-table"><thead><tr><th>Milepæl</th><th>Dato</th><th class="num">Beløb</th><th>Status</th></tr></thead><tbody>${rows.map((p)=>`<tr><td>${p.milepael}</td><td>${displayDate(p.dato)}</td><td class="num">${p.beloeb} kr.</td><td>${p.status === 'betalt' ? 'Betalt' : 'Udestående'}</td></tr>`).join('')}</tbody></table>` : '<div class="doc-empty">Ingen betalinger registreret på kunden endnu.</div>'; }
 function renderRelatedMailList(s){ const related = getRelatedEmails(s).slice(0,4); return related.length ? related.map((mail)=>`<div class="mini-item"><strong>${mail.subject}</strong><div class="meta">${displayDate(mail.date)} · ${mail.from}</div><div class="priority-item-links" style="margin-top:6px"><button class="icon-btn" onclick="setActiveTab('indbakke'); openEmail('${mail.id}')">Åbn mail</button></div></div>`).join('') : '<div class="doc-empty">Ingen relateret dialog fundet endnu.</div>'; }
@@ -2094,6 +2096,7 @@ function showAgentDetail(agentId){
 function renderSagDetail(i){
   const s = sager[i];
   const caseDetail = document.getElementById('caseDetail');
+  const customerLayout = document.querySelector('.customers-layout');
   if(!s || !caseDetail) return;
   const driveUrl = getSagDrive(s);
   const driveLink = driveUrl ? `<a class="btn primary" href="${driveUrl}" target="_blank" rel="noopener">Åbn kundemappe</a>` : `<a class="btn" href="${CUSTOMER_DRIVE_ROOT}" target="_blank" rel="noopener">Find/opret kundemappe</a>`;
@@ -2103,6 +2106,7 @@ function renderSagDetail(i){
   const referatTitles = (s.docs.referater.length ? s.docs.referater : s.docs.byggereferater).map((item)=>item.titel).slice(0,2).join(' · ') || 'Ingen registreret endnu';
   const transcriptTitles = (s.docs.transkripter || []).map((item)=>item.titel).slice(0,2).join(' · ') || 'Ingen registreret endnu';
   caseDetail.classList.add('active');
+  if(customerLayout) customerLayout.classList.add('detail-open');
   caseDetail.innerHTML = `<div class="case-shell">
     <div class="case-head">
       <div class="case-eyebrow">NSTSF kundesystem</div>
@@ -2120,6 +2124,7 @@ function renderSagDetail(i){
         <table class="case-summary-table"><tbody>
           <tr><td>Adresse</td><td>${s.adr || 'Adresse mangler'}</td></tr>
           <tr><td>Status</td><td>${wf.summaryStatus || s.status || '—'}</td></tr>
+          <tr><td>Betalingsdato</td><td>${displayDate(s.dato)}</td></tr>
           <tr><td>Næste handling</td><td>${wf.nextAction || 'Ikke sat endnu'}</td></tr>
           <tr><td>Seneste dialog</td><td>${latestDialog ? displayDate(latestDialog) : '—'}</td></tr>
           <tr><td>Tilbud sendt</td><td>${offerDate ? displayDate(offerDate) : '—'}</td></tr>
@@ -2156,7 +2161,7 @@ function renderSagDetail(i){
     </div>
   </div>`;
 }
-function closeSag(){ const caseDetail = document.getElementById('caseDetail'); if(caseDetail){ caseDetail.classList.remove('active'); caseDetail.innerHTML = '<div class="case-placeholder">Vælg en kunde i listen for at se info, betalinger, noter, referater og links i højre side.</div>'; } }
+function closeSag(){ const caseDetail = document.getElementById('caseDetail'); const customerLayout = document.querySelector('.customers-layout'); selectedCustomerIndex = null; render(); if(customerLayout) customerLayout.classList.remove('detail-open'); if(caseDetail){ caseDetail.classList.remove('active'); caseDetail.innerHTML = '<div class="case-placeholder">Vælg en kunde i listen for at se info, betalinger, noter, referater og links i højre side.</div>'; } }
 function addSag(){ const idx = sager.length; sager.push(normalizeSag({ k:3,nr:"",kunde:"Ny kunde",adr:"",opg:"",b:"0",u:"0",dato:"",status:"—",timer:"",fak:"",start:"",slut:"",info:"",mail:"",tlf:"",drive:"",sort:idx,docs:{drive:"",byggereferater:docDemo.byggereferater,transkripter:docDemo.transkripter}}, idx)); saveState(); openEditSag(idx); render(); }
 let editSagIndex = null;
 function openEditSag(i){ const s = sager[i]; const caseDetail = document.getElementById('caseDetail'); if(!s || !caseDetail) return; editSagIndex = i; caseDetail.classList.add('active'); caseDetail.innerHTML = `<div class="panel-hd"><h2>Rediger sag</h2><button class="btn ghost" onclick="closeSag()">Luk</button></div><div class="case-form"><label>Kategori<select id="edit-k">${Object.entries(KAT).map(([k,v])=>`<option value="${k}"${+k===s.k?' selected':''}>${v}</option>`).join('')}</select></label><label>Sagsnr.<input id="edit-nr" value="${escapeAttr(s.nr)}"></label><label>Kundenavn<input id="edit-kunde" value="${escapeAttr(s.kunde)}"></label><label class="wide">Adresse<input id="edit-adr" value="${escapeAttr(s.adr === '—' ? '' : s.adr)}"></label><label class="wide">Opgave<textarea id="edit-opg">${escapeAttr(s.opg)}</textarea></label><label>Est. beløb<input id="edit-b" value="${escapeAttr(s.b)}"></label><label>Udestående<input id="edit-u" value="${escapeAttr(s.u)}"></label><label>Betalingsdato<input id="edit-dato" type="date" value="${escapeAttr(s.dato)}"></label><label>Startdato<input id="edit-start" type="date" value="${escapeAttr(s.start)}"></label><label>Slutdato<input id="edit-slut" type="date" value="${escapeAttr(s.slut)}"></label><label>Fin. status<input id="edit-status" value="${escapeAttr(s.status)}"></label><label>Est. timer<input id="edit-timer" value="${escapeAttr(s.timer)}"></label><label>Fakturanr.<input id="edit-fak" value="${escapeAttr(s.fak)}"></label><label>Mail<input id="edit-mail" value="${escapeAttr(s.mail)}"></label><label>Telefon<input id="edit-tlf" value="${escapeAttr(s.tlf)}"></label><label class="wide">Google Drive-folder URL<input id="edit-drive" value="${escapeAttr(getSagDrive(s))}" placeholder="Indsæt link til kundens Drive-mappe"></label><label class="wide">Noter/info<textarea id="edit-info">${escapeAttr(s.info)}</textarea></label></div><div style="display:flex;gap:8px;margin-top:14px"><button class="btn primary" onclick="saveSagEdit()">Gem</button><button class="btn" onclick="renderSagDetail(${i})">Annuller</button></div>`; }
