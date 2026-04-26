@@ -254,12 +254,55 @@
   .pay-note{font-size:12px;color:var(--muted);margin-top:10px}
   .subtabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:18px}
   .subtab-btn{
-    border:1px solid var(--line);background:#fff;color:var(--ink);border-radius:999px;
-    padding:8px 14px;font-size:12px;font-weight:600;cursor:pointer;
+    border:none;background:transparent;color:var(--muted);border-radius:10px;
+    padding:11px 18px;font-size:11px;font-weight:600;cursor:pointer;font-family:var(--font);
+    min-width:108px;line-height:1.2;
   }
-  .subtab-btn.active{background:var(--navy);border-color:var(--navy);color:#fff}
+  .subtab-btn.active{background:#fff;color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.08)}
   .subsection{display:none}
   .subsection.active{display:block}
+  .liquidity-head{
+    display:flex;justify-content:space-between;align-items:flex-start;gap:18px;
+    padding:20px 28px 16px;
+  }
+  .liquidity-toggle{
+    display:flex;background:#f2f0eb;border-radius:12px;padding:4px;gap:2px;border:.5px solid rgba(0,0,0,.08);
+  }
+  .liquidity-toggle .subtab-btn{margin:0}
+  .liquidity-overview-grid{
+    display:grid;grid-template-columns:repeat(3,minmax(0,1fr));border:1px solid var(--line);
+    border-radius:18px;background:#fff;overflow:hidden;box-shadow:var(--shadow);margin:0 28px 28px;
+  }
+  .liquidity-stat{
+    padding:26px 28px 24px;min-height:180px;border-right:.5px solid var(--line);
+    display:flex;flex-direction:column;justify-content:flex-start;
+  }
+  .liquidity-stat:last-child{border-right:none}
+  .liquidity-stat .kicker{
+    font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#b0ada8;margin-bottom:14px;
+  }
+  .liquidity-stat .value{
+    font-size:38px;line-height:1;font-weight:500;letter-spacing:-.04em;color:var(--ink);font-family:var(--mono);
+  }
+  .liquidity-stat .value.negative{color:#892d22}
+  .liquidity-stat .sub{
+    margin-top:10px;font-size:12px;color:var(--muted);
+  }
+  .liquidity-table-panel{
+    margin:0 28px 28px;border:1px solid var(--line);border-radius:18px;background:#fff;overflow:hidden;box-shadow:var(--shadow);
+  }
+  .liquidity-table-head{
+    padding:18px 24px;border-bottom:.5px solid var(--line);display:flex;justify-content:space-between;align-items:center;gap:16px;
+  }
+  .liquidity-table-head h2{margin:0;font-size:13px;text-transform:uppercase;letter-spacing:.08em;color:#6c7377}
+  .liquidity-table-panel table{border:none}
+  .liquidity-table-panel thead th{background:#f2f0eb}
+  .liquidity-table-panel td,.liquidity-table-panel th{padding:18px 22px}
+  .liquidity-table-panel .customer-cell strong{display:block;font-size:13px;color:var(--ink)}
+  .liquidity-table-panel .customer-cell span{display:block;margin-top:4px;font-size:11px;color:var(--muted)}
+  .liquidity-table-panel .amount-positive{color:#4e8f64;font-weight:600}
+  .liquidity-table-panel .amount-negative{color:#c75d4a;font-weight:600}
+  .liquidity-margin-wrap{padding:0 28px 28px}
   .appendix-layout{display:grid;grid-template-columns:1.2fr .8fr;gap:20px;padding:24px 28px}
   .appendix-stream{display:grid;gap:12px}
   .appendix-item{
@@ -307,9 +350,17 @@
   .org-node.wide .org-card-info{align-items:flex-start}
   .org-node.director{background:#fcfbf8}
   .org-avatar{
-    width:100px;height:100px;flex:none;display:block;
+    width:100px;height:100px;flex:none;display:block;filter:drop-shadow(0 10px 16px rgba(26,37,53,.12));
   }
-  .org-node:not(.wide) .org-avatar{width:80px;height:90px}
+  .org-node:not(.wide) .org-avatar{width:88px;height:98px}
+  .org-avatar .avatar-shadow{fill:url(#avatarShadow)}
+  .org-avatar .avatar-eye{fill:#1f2430}
+  .org-avatar .avatar-highlight{fill:#fff;opacity:.72}
+  .org-avatar .avatar-skin{fill:url(#skinTone)}
+  .org-avatar .avatar-shirt{fill:url(#shirtTone)}
+  .org-avatar .avatar-jacket{fill:url(#jacketTone)}
+  .org-avatar .avatar-hair{fill:url(#hairTone)}
+  .org-avatar .avatar-accent{fill:url(#accentTone)}
   .org-card-info{display:flex;flex-direction:column;align-items:center;gap:4px}
   .org-node-role{font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#b0ada8;margin:0}
   .org-node h3{font-size:15px;font-weight:600;margin:0;color:var(--ink);line-height:1.35}
@@ -820,7 +871,6 @@
   <button class="tab-btn active" data-tab="dashboard">Dashboard</button>
   <button class="tab-btn" data-tab="prioriteringer">Sager <span style="opacity:.6">(0)</span></button>
   <button class="tab-btn" data-tab="sager">Kunder <span style="opacity:.6">(29)</span></button>
-  <button class="tab-btn" data-tab="indbakke">Indbakke <span class="badge" style="background:var(--green);color:#fff;font-size:10px;padding:1px 6px;border-radius:8px;margin-left:4px;font-weight:600">8</span></button>
   <button class="tab-btn" data-tab="likviditet">Likviditet</button>
   <button class="tab-btn" data-tab="appendix">Appendix</button>
   <button class="tab-btn" data-tab="organisation">Organisation</button>
@@ -1160,48 +1210,44 @@
 </section>
 
 <section id="likviditet" class="section">
-  <div class="subtabs">
-    <button class="subtab-btn active" data-subtab="overview" onclick="setLiquiditySubtab('overview')">Likviditet</button>
-    <button class="subtab-btn" data-subtab="marginer" onclick="setLiquiditySubtab('marginer')">Marginer</button>
+  <div class="liquidity-head">
+    <div>
+      <div class="page-title">Likviditet</div>
+      <div class="page-sub">Cashflow, ind- og udbetalinger fremad.</div>
+    </div>
+    <div class="liquidity-toggle">
+      <button class="subtab-btn active" data-subtab="overview" onclick="setLiquiditySubtab('overview')">Oversigt</button>
+      <button class="subtab-btn" data-subtab="marginer" onclick="setLiquiditySubtab('marginer')">Marginer</button>
+    </div>
   </div>
   <div id="likviditetOverview" class="subsection active">
-    <div class="panel">
-      <h2>Likviditet — rullende årsview</h2>
-      <table>
-        <thead>
-          <tr>
-            <th>Måned</th>
-            <th class="num">Ind</th>
-            <th class="num">Ud</th>
-            <th class="num">Netto</th>
-            <th class="num">Akkumuleret</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr><td>Maj</td><td class="num">195.387</td><td class="num" style="color:var(--red)">(430.000)</td><td class="num" style="color:var(--red)">(234.613)</td><td class="num" style="color:var(--red)">(234.613)</td></tr>
-          <tr><td>Jun</td><td class="num">283.000</td><td class="num" style="color:var(--red)">(430.000)</td><td class="num" style="color:var(--red)">(147.000)</td><td class="num" style="color:var(--red)">(381.613)</td></tr>
-          <tr><td>Jul</td><td class="num">0</td><td class="num" style="color:var(--red)">(430.000)</td><td class="num" style="color:var(--red)">(430.000)</td><td class="num" style="color:var(--red)">(811.613)</td></tr>
-          <tr><td>Aug</td><td class="num">0</td><td class="num" style="color:var(--red)">(430.000)</td><td class="num" style="color:var(--red)">(430.000)</td><td class="num" style="color:var(--red)">(1.241.613)</td></tr>
-          <tr><td>Sep</td><td class="num">0</td><td class="num" style="color:var(--red)">(430.000)</td><td class="num" style="color:var(--red)">(430.000)</td><td class="num" style="color:var(--red)">(1.671.613)</td></tr>
-          <tr><td>Okt</td><td class="num">0</td><td class="num" style="color:var(--red)">(430.000)</td><td class="num" style="color:var(--red)">(430.000)</td><td class="num" style="color:var(--red)">(2.101.613)</td></tr>
-          <tr><td>Nov</td><td class="num">0</td><td class="num" style="color:var(--red)">(430.000)</td><td class="num" style="color:var(--red)">(430.000)</td><td class="num" style="color:var(--red)">(2.531.613)</td></tr>
-          <tr><td>Dec</td><td class="num">0</td><td class="num" style="color:var(--red)">(430.000)</td><td class="num" style="color:var(--red)">(430.000)</td><td class="num" style="color:var(--red)"><strong>(2.961.613)</strong></td></tr>
-        </tbody>
-      </table>
-      <div class="status-note"><strong>OBS:</strong> Likviditetsoversigten er fortsat et statisk forecast. Næste skridt er at koble betalinger, Minuba og evt. bankfeed på.</div>
+    <div class="liquidity-overview-grid">
+      <div class="liquidity-stat">
+        <div class="kicker">Udestående i alt</div>
+        <div class="value">459.387 kr.</div>
+        <div class="sub">Bekræftet indgående</div>
+      </div>
+      <div class="liquidity-stat">
+        <div class="kicker">Næste 30 dage</div>
+        <div class="value">195.387 kr.</div>
+        <div class="sub">Forventet indgang</div>
+      </div>
+      <div class="liquidity-stat">
+        <div class="kicker">Lønudbetaling maj</div>
+        <div class="value negative">-148.000 kr.</div>
+        <div class="sub">6 medarbejdere</div>
+      </div>
     </div>
-    <div class="panel">
-      <h2>Betalinger — udestående rater</h2>
+    <div class="liquidity-table-panel">
+      <div class="liquidity-table-head">
+        <h2>Betalingsplan</h2>
+      </div>
       <table>
         <thead>
           <tr>
-            <th>Sagsnr.</th>
-            <th>Kunde</th>
-            <th>Milepæl</th>
-            <th>Forv. dato</th>
+            <th>Kunde / post</th>
             <th class="num">Beløb</th>
-            <th>Fakturanr.</th>
-            <th>Status</th>
+            <th class="num">Dato</th>
           </tr>
         </thead>
         <tbody id="betalingBody"></tbody>
@@ -1210,6 +1256,7 @@
     </div>
   </div>
   <div id="likviditetMarginer" class="subsection">
+    <div class="liquidity-margin-wrap">
     <div class="panel">
       <div class="panel-hd">
         <h2>Marginer — estimat inden start · faktisk efter aflevering</h2>
@@ -1254,6 +1301,7 @@
         </thead>
         <tbody id="marginBody"></tbody>
       </table>
+    </div>
     </div>
   </div>
 </section>
@@ -1343,27 +1391,27 @@
 
         <div class="org-divider"><span>Agenter</span></div>
         <button class="org-node" data-agent="sales-followup" onclick="showAgentDetail('sales-followup')">
-          <svg class="org-avatar" viewBox="0 0 80 90" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><rect x="20" y="46" width="40" height="32" rx="7" fill="#2D5A3D"/><ellipse cx="40" cy="30" rx="15" ry="17" fill="#E8C49A"/><path d="M25 24 Q26 12 40 12 Q54 12 55 24 Q50 16 40 17 Q30 16 25 24Z" fill="#8B4513"/><rect x="50" y="50" width="18" height="22" rx="3" fill="#E8A020"/></svg>
+          <svg class="org-avatar" viewBox="0 0 92 102" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><defs><linearGradient id="bgSales" x1="46" y1="6" x2="46" y2="96" gradientUnits="userSpaceOnUse"><stop stop-color="#F4EFE5"/><stop offset="1" stop-color="#FAF8F3"/></linearGradient><linearGradient id="shirtSales" x1="46" y1="52" x2="46" y2="88" gradientUnits="userSpaceOnUse"><stop stop-color="#315F45"/><stop offset="1" stop-color="#214131"/></linearGradient><linearGradient id="hairSales" x1="46" y1="12" x2="46" y2="38" gradientUnits="userSpaceOnUse"><stop stop-color="#7C4A28"/><stop offset="1" stop-color="#51301D"/></linearGradient></defs><circle cx="46" cy="51" r="42" fill="url(#bgSales)"/><ellipse cx="46" cy="88" rx="22" ry="6" fill="#E9E2D6"/><path d="M27 82 C29 62 34 53 46 53 C58 53 63 62 65 82" fill="url(#shirtSales)"/><path d="M37 51 L46 60 L55 51 L60 59 V82 H32 V59 L37 51Z" fill="#F5F1EA" opacity=".22"/><ellipse cx="46" cy="35" rx="16" ry="18" fill="#E6BB92"/><path d="M30 31 C30 18 37 12 46 12 C57 12 63 20 62 31 C58 24 53 22 46 22 C39 22 34 24 30 31Z" fill="url(#hairSales)"/><circle cx="40" cy="35" r="2.4" class="avatar-eye"/><circle cx="52" cy="35" r="2.4" class="avatar-eye"/><circle cx="41" cy="34" r=".8" class="avatar-highlight"/><circle cx="53" cy="34" r=".8" class="avatar-highlight"/><path d="M41 43 C44 46 48 46 51 43" stroke="#B87955" stroke-width="1.8" stroke-linecap="round"/><path d="M60 56 L73 58 L67 72 L57 69 Z" fill="#E0A43A"/><rect x="57" y="60" width="12" height="4" rx="2" fill="#F7E2B4"/></svg>
           <div class="org-card-info"><div class="org-node-role">Salg</div><h3>Tilbuds- og opfølgningsagent</h3><p>Driver tilbud, opfølgning og næste kundeskridt.</p></div>
         </button>
         <button class="org-node" data-agent="capacity-planning" onclick="showAgentDetail('capacity-planning')">
-          <svg class="org-avatar" viewBox="0 0 80 90" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><rect x="20" y="46" width="40" height="32" rx="7" fill="#1A3A5C"/><ellipse cx="40" cy="31" rx="15" ry="17" fill="#D4A882"/><path d="M25 27 Q25 10 40 10 Q55 10 55 27Z" fill="#E8A020"/><rect x="50" y="52" width="10" height="18" rx="2" fill="#3A3A3A"/></svg>
+          <svg class="org-avatar" viewBox="0 0 92 102" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><defs><linearGradient id="bgCap" x1="46" y1="8" x2="46" y2="94" gradientUnits="userSpaceOnUse"><stop stop-color="#F3F0EA"/><stop offset="1" stop-color="#FAF8F4"/></linearGradient><linearGradient id="shirtCap" x1="46" y1="54" x2="46" y2="84" gradientUnits="userSpaceOnUse"><stop stop-color="#284766"/><stop offset="1" stop-color="#19324C"/></linearGradient></defs><circle cx="46" cy="51" r="42" fill="url(#bgCap)"/><ellipse cx="46" cy="88" rx="22" ry="6" fill="#E9E2D6"/><path d="M28 82 C30 61 35 54 46 54 C57 54 62 61 64 82" fill="url(#shirtCap)"/><ellipse cx="46" cy="36" rx="16" ry="18" fill="#DDB28D"/><path d="M30 29 C31 16 38 10 47 10 C58 10 63 18 62 30 C58 22 52 19 46 19 C40 19 35 21 30 29Z" fill="#D59B2E"/><path d="M31 31 C34 26 39 23 46 23 C53 23 58 26 61 31" stroke="#9A6815" stroke-width="2" stroke-linecap="round"/><circle cx="40" cy="36" r="2.4" class="avatar-eye"/><circle cx="52" cy="36" r="2.4" class="avatar-eye"/><path d="M41 43 C44 45 48 45 51 43" stroke="#B07A53" stroke-width="1.8" stroke-linecap="round"/><rect x="58" y="58" width="16" height="18" rx="3" fill="#2E2F31"/><line x1="62" y1="63" x2="70" y2="63" stroke="#F3F3F1" stroke-width="1.4"/><line x1="62" y1="67" x2="70" y2="67" stroke="#F3F3F1" stroke-width="1.4"/></svg>
           <div class="org-card-info"><div class="org-node-role">Drift</div><h3>Kapacitets- og bemandingsagent</h3><p>Oversætter sager til kalender og kapacitetsbelastning.</p></div>
         </button>
         <button class="org-node" data-agent="liquidity-margin" onclick="showAgentDetail('liquidity-margin')">
-          <svg class="org-avatar" viewBox="0 0 80 90" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><rect x="20" y="46" width="40" height="32" rx="7" fill="#2A3A1A"/><ellipse cx="40" cy="30" rx="15" ry="17" fill="#E8C49A"/><circle cx="34" cy="28" r="5" fill="none" stroke="#3A2810" stroke-width="1.8"/><circle cx="46" cy="28" r="5" fill="none" stroke="#3A2810" stroke-width="1.8"/><rect x="50" y="50" width="16" height="22" rx="3" fill="#ECEAE5"/></svg>
+          <svg class="org-avatar" viewBox="0 0 92 102" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><defs><linearGradient id="bgFin" x1="46" y1="8" x2="46" y2="94" gradientUnits="userSpaceOnUse"><stop stop-color="#F4F1E9"/><stop offset="1" stop-color="#FAF8F3"/></linearGradient><linearGradient id="shirtFin" x1="46" y1="54" x2="46" y2="84" gradientUnits="userSpaceOnUse"><stop stop-color="#30411F"/><stop offset="1" stop-color="#202B14"/></linearGradient></defs><circle cx="46" cy="51" r="42" fill="url(#bgFin)"/><ellipse cx="46" cy="88" rx="22" ry="6" fill="#E9E2D6"/><path d="M28 82 C30 61 35 54 46 54 C57 54 62 61 64 82" fill="url(#shirtFin)"/><ellipse cx="46" cy="36" rx="16" ry="18" fill="#E6BB92"/><path d="M31 28 C31 16 38 10 46 10 C55 10 61 16 61 28 C57 22 52 19 46 19 C40 19 35 22 31 28Z" fill="#453125"/><circle cx="40" cy="36" r="2.3" class="avatar-eye"/><circle cx="52" cy="36" r="2.3" class="avatar-eye"/><path d="M40 44 C43 46 49 46 52 44" stroke="#B27850" stroke-width="1.8" stroke-linecap="round"/><circle cx="39" cy="35" r="5.2" fill="none" stroke="#2D271F" stroke-width="1.6"/><circle cx="53" cy="35" r="5.2" fill="none" stroke="#2D271F" stroke-width="1.6"/><line x1="44.5" y1="35" x2="47.5" y2="35" stroke="#2D271F" stroke-width="1.3"/><rect x="58" y="56" width="15" height="22" rx="3" fill="#F1EDE6"/><line x1="61" y1="61" x2="69" y2="61" stroke="#BEB7AB" stroke-width="1.3"/><line x1="61" y1="65" x2="69" y2="65" stroke="#BEB7AB" stroke-width="1.3"/></svg>
           <div class="org-card-info"><div class="org-node-role">Økonomi</div><h3>Likviditets- og marginagent</h3><p>Holder styr på udeståender, stade og DB.</p></div>
         </button>
         <button class="org-node" data-agent="customer-notes" onclick="showAgentDetail('customer-notes')">
-          <svg class="org-avatar" viewBox="0 0 80 90" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><rect x="20" y="46" width="40" height="32" rx="7" fill="#2A2A1A"/><ellipse cx="40" cy="30" rx="15" ry="17" fill="#C4A882"/><path d="M25 26 Q24 10 40 10 Q56 10 55 26Z" fill="#5A3010"/><path d="M8 14 Q8 8 14 8 L36 8 Q42 8 42 14 L42 24 Q42 30 36 30 L20 30 L14 36 L14 30 Q8 30 8 24Z" fill="#fff" stroke="rgba(0,0,0,0.1)" stroke-width=".5"/></svg>
+          <svg class="org-avatar" viewBox="0 0 92 102" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><defs><linearGradient id="bgNotes" x1="46" y1="8" x2="46" y2="94" gradientUnits="userSpaceOnUse"><stop stop-color="#F5F0E7"/><stop offset="1" stop-color="#FBF8F3"/></linearGradient><linearGradient id="shirtNotes" x1="46" y1="54" x2="46" y2="84" gradientUnits="userSpaceOnUse"><stop stop-color="#2E2B22"/><stop offset="1" stop-color="#1F1D18"/></linearGradient></defs><circle cx="46" cy="51" r="42" fill="url(#bgNotes)"/><ellipse cx="46" cy="88" rx="22" ry="6" fill="#E9E2D6"/><path d="M28 82 C30 61 35 54 46 54 C57 54 62 61 64 82" fill="url(#shirtNotes)"/><ellipse cx="46" cy="36" rx="16" ry="18" fill="#D9B08B"/><path d="M30 28 C31 16 38 10 46 10 C56 10 62 18 61 29 C58 22 52 18 46 18 C40 18 34 22 30 28Z" fill="#5A311B"/><circle cx="40" cy="36" r="2.4" class="avatar-eye"/><circle cx="52" cy="36" r="2.4" class="avatar-eye"/><path d="M40 43 C43 46 49 46 52 43" stroke="#B57951" stroke-width="1.8" stroke-linecap="round"/><path d="M60 22 C60 18 63 15 67 15 H78 C82 15 85 18 85 22 V32 C85 36 82 39 78 39 H72 L67 45 V39 H67 C63 39 60 36 60 32 Z" fill="#FFFDF9" stroke="#DDD5C8"/><line x1="65" y1="24" x2="79" y2="24" stroke="#B9B0A3" stroke-width="1.4"/><line x1="65" y1="28" x2="77" y2="28" stroke="#B9B0A3" stroke-width="1.4"/><line x1="65" y1="32" x2="75" y2="32" stroke="#B9B0A3" stroke-width="1.4"/></svg>
           <div class="org-card-info"><div class="org-node-role">Kundeproces</div><h3>Kunde- og referatagent</h3><p>Omsætter møder til referater, drafts og tasks.</p></div>
         </button>
         <button class="org-node" data-agent="hr-people" onclick="showAgentDetail('hr-people')">
-          <svg class="org-avatar" viewBox="0 0 80 90" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><rect x="20" y="46" width="40" height="32" rx="7" fill="#6A476F"/><ellipse cx="40" cy="30" rx="15" ry="17" fill="#E0B390"/><path d="M25 25 Q27 10 40 10 Q53 10 55 25" stroke="#503055" stroke-width="7" stroke-linecap="round"/><rect x="49" y="50" width="15" height="20" rx="3" fill="#F3E9D7"/></svg>
+          <svg class="org-avatar" viewBox="0 0 92 102" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><defs><linearGradient id="bgHr" x1="46" y1="8" x2="46" y2="94" gradientUnits="userSpaceOnUse"><stop stop-color="#F5F0E9"/><stop offset="1" stop-color="#FBF8F4"/></linearGradient><linearGradient id="shirtHr" x1="46" y1="54" x2="46" y2="84" gradientUnits="userSpaceOnUse"><stop stop-color="#6E4E72"/><stop offset="1" stop-color="#523655"/></linearGradient></defs><circle cx="46" cy="51" r="42" fill="url(#bgHr)"/><ellipse cx="46" cy="88" rx="22" ry="6" fill="#E9E2D6"/><path d="M28 82 C30 61 35 54 46 54 C57 54 62 61 64 82" fill="url(#shirtHr)"/><ellipse cx="46" cy="36" rx="16" ry="18" fill="#E3B693"/><path d="M31 28 C32 15 39 10 46 10 C56 10 61 18 61 30 C57 20 53 17 46 17 C39 17 35 20 31 28Z" fill="#55335C"/><path d="M31 29 C34 20 40 15 46 15 C52 15 58 20 61 29" stroke="#7A5A82" stroke-width="2.8" stroke-linecap="round"/><circle cx="40" cy="36" r="2.4" class="avatar-eye"/><circle cx="52" cy="36" r="2.4" class="avatar-eye"/><path d="M41 44 C44 46 48 46 51 44" stroke="#B97A57" stroke-width="1.8" stroke-linecap="round"/><rect x="58" y="56" width="14" height="20" rx="3" fill="#F4EBDD"/><path d="M62 60 L68 60" stroke="#C6A66C" stroke-width="1.3"/><path d="M62 64 L68 64" stroke="#C6A66C" stroke-width="1.3"/></svg>
           <div class="org-card-info"><div class="org-node-role">HR</div><h3>HR- og personaleagent</h3><p>Ferie, skoleuger, onboarding og mandskabsstatus.</p></div>
         </button>
         <button class="org-node" data-agent="ks-archive" onclick="showAgentDetail('ks-archive')">
-          <svg class="org-avatar" viewBox="0 0 80 90" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><rect x="20" y="46" width="40" height="32" rx="7" fill="#3C4A56"/><ellipse cx="40" cy="30" rx="15" ry="17" fill="#D9B08B"/><path d="M24 22 Q28 12 40 12 Q52 12 56 22" fill="#25303A"/><rect x="49" y="49" width="17" height="23" rx="3" fill="#F4EFE6"/><line x1="53" y1="57" x2="62" y2="57" stroke="#B0ADA8" stroke-width="1.2"/><line x1="53" y1="61" x2="62" y2="61" stroke="#B0ADA8" stroke-width="1.2"/></svg>
+          <svg class="org-avatar" viewBox="0 0 92 102" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><defs><linearGradient id="bgKs" x1="46" y1="8" x2="46" y2="94" gradientUnits="userSpaceOnUse"><stop stop-color="#F3F0EA"/><stop offset="1" stop-color="#FAF8F4"/></linearGradient><linearGradient id="shirtKs" x1="46" y1="54" x2="46" y2="84" gradientUnits="userSpaceOnUse"><stop stop-color="#435463"/><stop offset="1" stop-color="#31404D"/></linearGradient></defs><circle cx="46" cy="51" r="42" fill="url(#bgKs)"/><ellipse cx="46" cy="88" rx="22" ry="6" fill="#E9E2D6"/><path d="M28 82 C30 61 35 54 46 54 C57 54 62 61 64 82" fill="url(#shirtKs)"/><ellipse cx="46" cy="36" rx="16" ry="18" fill="#D9B08B"/><path d="M30 27 C33 15 39 11 46 11 C54 11 60 15 62 27 C58 21 53 18 46 18 C39 18 34 21 30 27Z" fill="#25303A"/><circle cx="40" cy="36" r="2.3" class="avatar-eye"/><circle cx="52" cy="36" r="2.3" class="avatar-eye"/><path d="M41 43 C44 46 48 46 51 43" stroke="#B57951" stroke-width="1.8" stroke-linecap="round"/><rect x="58" y="54" width="16" height="22" rx="3" fill="#F5F1E8"/><line x1="62" y1="59" x2="70" y2="59" stroke="#B0ADA8" stroke-width="1.3"/><line x1="62" y1="63" x2="70" y2="63" stroke="#B0ADA8" stroke-width="1.3"/><line x1="62" y1="67" x2="68" y2="67" stroke="#B0ADA8" stroke-width="1.3"/></svg>
           <div class="org-card-info"><div class="org-node-role">Dokumentation</div><h3>KS- og arkiveringsagent</h3><p>Billeder, KS, referater og Drive-struktur.</p></div>
         </button>
       </div>
@@ -2301,7 +2349,7 @@ function renderPriorityInbox(){
   const items = filteredEmails().slice(0,6);
   side.innerHTML = items.length ? items.map((mail)=>`<div class="priority-side-item"><div class="priority-side-dot todo"></div><div class="priority-side-body"><div class="priority-side-top"><div class="priority-side-name">${escapeAttr(mail.kunde || mail.subject)}</div><span class="priority-tag week">Mail</span></div><div class="priority-side-meta">${escapeAttr(mail.subject)}</div><div class="priority-side-reason">${escapeAttr(mail.preview || '')}</div><div class="priority-side-actions"><button class="side-btn" onclick="openEmail('${mail.id}'); setPriorityView('indbakke')">Åbn</button>${!isEmailHandled(mail) ? `<button class="side-btn" onclick="markPriorityDone('${mail.id}','mail-${mail.id}')">Fuldført</button>` : ''}</div></div></div>`).join('') : '<div class="priority-side-empty">Ingen mails her.</div>';
 }
-function renderBetalinger(){ const body = document.getElementById('betalingBody'); const rows = betalinger.filter(b=>b.status !== 'betalt'); body.innerHTML = rows.map(b=>{ const idx = betalinger.indexOf(b); const isDke = String(b.kunde || '').toLowerCase().includes('dke'); const kunde = isDke ? `${b.kunde} <span class="chip tag-dke">DKE</span>` : b.kunde; return `<tr><td>${b.nr || '<span class="dim">—</span>'}</td><td>${kunde}</td><td>${b.milepael}</td><td>${b.dato || '<span class="dim">—</span>'}</td><td class="num">${b.beloeb} kr.</td><td>${b.fak || '<span class="dim">—</span>'}</td><td><select class="pay-status udestaaende" onchange="changeBetaling(${idx}, this.value)"><option value="udestaaende" selected>Udestående</option><option value="betalt">Betalt</option></select></td></tr>`; }).join('') || '<tr><td colspan="7" class="dim">Ingen udestående rater.</td></tr>'; }
+function renderBetalinger(){ const body = document.getElementById('betalingBody'); const rows = betalinger.filter(b=>b.status !== 'betalt'); body.innerHTML = rows.map(b=>{ const idx = betalinger.indexOf(b); const isDke = String(b.kunde || '').toLowerCase().includes('dke'); const kunde = isDke ? `${b.kunde} <span class="chip tag-dke">DKE</span>` : b.kunde; const amount = String(b.beloeb || '').trim().startsWith('-') ? `<span class="amount-negative">${b.beloeb} kr.</span>` : `<span class="amount-positive">+${String(b.beloeb || '').replace(/^\+/, '')} kr.</span>`; return `<tr><td class="customer-cell"><strong>${kunde}</strong><span>${b.milepael || 'Post uden titel'}</span></td><td class="num">${amount}</td><td class="num">${b.dato || '<span class="dim">—</span>'}</td></tr>`; }).join('') || '<tr><td colspan="3" class="dim">Ingen udestående rater.</td></tr>'; }
 function changeBetaling(i,v){ betalinger[i].status = v; saveState(); renderBetalinger(); renderPriorities(); }
 document.querySelectorAll('.tab-btn').forEach((btn)=>btn.addEventListener('click', ()=>setActiveTab(btn.dataset.tab)));
 document.querySelectorAll('.inbox-tab').forEach((btn)=>btn.addEventListener('click', ()=>{ inboxFilter = btn.dataset.filter; document.querySelectorAll('.inbox-tab').forEach((b)=>b.classList.toggle('active', b.dataset.filter === btn.dataset.filter)); selectedEmailId = null; renderInbox(); }));
