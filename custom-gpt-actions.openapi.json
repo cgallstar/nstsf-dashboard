@@ -235,6 +235,80 @@
           }
         }
       }
+    },
+    "/api/gmail-draft": {
+      "post": {
+        "operationId": "createGmailDraft",
+        "summary": "Create a draft-first customer email record under a case",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "customerName",
+                  "subject",
+                  "body",
+                  "recipients"
+                ],
+                "properties": {
+                  "caseNumber": { "type": "string" },
+                  "customerName": { "type": "string" },
+                  "type": { "type": "string", "default": "referat" },
+                  "subject": { "type": "string" },
+                  "body": { "type": "string" },
+                  "recipients": { "type": "array", "items": { "type": "string" } },
+                  "cc": { "type": "array", "items": { "type": "string" } },
+                  "bcc": { "type": "array", "items": { "type": "string" } },
+                  "source": { "type": "string", "default": "custom-gpt" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Draft stored successfully" }
+        }
+      }
+    },
+    "/api/drive-archive": {
+      "post": {
+        "operationId": "archiveDocumentsToCase",
+        "summary": "Archive Drive document references under a case",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "customerName",
+                  "category",
+                  "documents"
+                ],
+                "properties": {
+                  "caseNumber": { "type": "string" },
+                  "customerName": { "type": "string" },
+                  "category": {
+                    "type": "string",
+                    "enum": ["tilbud", "referater", "ks", "billeder", "ekstraarbejde", "betaling", "kontrakter", "transkripter", "mails"]
+                  },
+                  "folderId": { "type": "string" },
+                  "folderName": { "type": "string" },
+                  "documents": {
+                    "type": "array",
+                    "items": { "$ref": "#/components/schemas/DocumentLink" }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Archive metadata stored successfully" }
+        }
+      }
     }
   },
   "components": {
