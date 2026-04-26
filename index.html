@@ -259,6 +259,19 @@
   .case-bullet-item .meta{display:block;margin-top:3px;font-size:12px;color:var(--muted);line-height:1.45}
   .case-inline-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
   .case-inline-actions .btn{background:#fff}
+  .case-account-chip{
+    display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border-radius:999px;
+    background:#eef4fb;border:1px solid #d6e2f0;color:#315b88;font-size:11px;font-weight:600;margin-bottom:10px;
+  }
+  .case-account-note{font-size:12px;color:#748290;line-height:1.5;margin-bottom:12px}
+  .portfolio-list{display:grid;gap:10px}
+  .portfolio-item{
+    display:flex;justify-content:space-between;gap:12px;align-items:flex-start;
+    padding:10px 12px;border:1px solid #ece7df;border-radius:10px;background:#fff;
+  }
+  .portfolio-item strong{display:block;font-size:13px;color:var(--ink)}
+  .portfolio-item .meta{display:block;margin-top:3px;font-size:11px;color:var(--muted);line-height:1.45}
+  .portfolio-item button{flex:none}
   .case-grid{display:grid;grid-template-columns:1fr;gap:0}
   .doc-list{display:grid;gap:8px}
   .doc-item{
@@ -282,6 +295,7 @@
   .opg-main{font-size:15px;font-weight:600;line-height:1.32;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;color:#202b35}
   .opg-sub{font-size:12px;margin-top:3px;color:#7d8b99;display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical;overflow:hidden}
   .kunde-address{font-size:12px;margin-top:5px;color:#7a8896}
+  .kunde-portfolio{font-size:11px;margin-top:4px;color:#9a8e73}
   .kategori{
     min-width:178px;border:2px solid #bfe1cd;background:#edf7f1;color:#3f7f5c;border-radius:12px;
     padding:10px 14px;font-size:13px;font-weight:500;font-family:var(--table-font);
@@ -1567,6 +1581,17 @@ const KAT = {
 };
 const DRIVE_ROOT = "https://drive.google.com/drive/folders/1Xf06EVUrNfQiS_pLMwOOTzhjq0Q3NC8K?usp=drive_link";
 const CUSTOMER_DRIVE_ROOT = "https://drive.google.com/drive/u/0/folders/16mPUBQntdRS0N65EmnigsyNesRz3bC-f";
+const DKE_SHEET_URL = "https://docs.google.com/spreadsheets/d/1Rjq_SWkPPJhwDEYZFGZHngR7klsf9qxArvIbZ9NlE4M/edit?gid=950545339#gid=950545339";
+const CUSTOMER_ACCOUNTS = {
+  dke: {
+    id: 'dke',
+    title: 'DKE / Charlotte Køfer Kristensen',
+    shortTitle: 'DKE / Charlotte',
+    note: 'Porteføljekunde med flere ejendomme og en fælles driftsliste for småopgaver og justeringer.',
+    sheetTitle: 'Aktive opgaver (Sheets)',
+    sheetUrl: DKE_SHEET_URL,
+  },
+};
 const employees = [
   {id:"smg", name:"SMG", hours:37, type:"employee", overrides:{}},
   {id:"svend-1", name:"Svend 1", hours:37, type:"employee", overrides:{}},
@@ -1623,6 +1648,53 @@ let selectedAgentId = 'chief-of-staff';
 let handledEmailIds = [];
 let dismissedPriorityKeys = [];
 const ACTIVE_CASE_CATEGORIES = new Set([1,2,3,4,5]);
+function getCustomerAccount(entry){
+  const kunde = String(entry?.kunde || '').toLowerCase();
+  const mail = String(entry?.mail || '').toLowerCase();
+  if(kunde.includes('dke') || mail.includes('@dke.dk')) return CUSTOMER_ACCOUNTS.dke;
+  return null;
+}
+function getCustomerDisplay(entry){
+  const account = getCustomerAccount(entry);
+  return account ? account.shortTitle : (entry?.kunde || 'Ukendt kunde');
+}
+function getCustomerPortfolioCases(accountId, currentIndex){
+  return sager
+    .map((entry, index)=>({entry, index}))
+    .filter(({entry})=>getCustomerAccount(entry)?.id === accountId && ACTIVE_CASE_CATEGORIES.has(+entry.k))
+    .sort((a,b)=>a.entry.k - b.entry.k || (a.entry.sort || 0) - (b.entry.sort || 0))
+    .map(({entry, index})=>({
+      index,
+      isCurrent: index === currentIndex,
+      title: entry.opg || entry.kunde || 'Sag uden titel',
+      address: entry.adr || 'Adresse mangler',
+      category: KAT[+entry.k] || 'Sag',
+      caseNumber: entry.nr || '—',
+      amount: entry.b && entry.b !== '0' ? `${entry.b} kr.` : 'Estimat mangler',
+    }));
+}
+function renderCustomerPortfolio(account, currentIndex){
+  if(!account) return '';
+  const items = getCustomerPortfolioCases(account.id, currentIndex);
+  return `<div class="case-card">
+    <h3>Kundesystem</h3>
+    <div class="case-account-chip">${escapeAttr(account.shortTitle)}</div>
+    <div class="case-account-note">${escapeAttr(account.note)}</div>
+    <div class="case-inline-actions" style="margin-top:0;margin-bottom:12px">
+      <a class="btn primary" href="${account.sheetUrl}" target="_blank" rel="noopener">${escapeAttr(account.sheetTitle)}</a>
+    </div>
+    <div class="portfolio-list">
+      ${items.map((item)=>`<div class="portfolio-item">
+        <div>
+          <strong>${escapeAttr(item.title)}</strong>
+          <span class="meta">${escapeAttr(item.address)} · ${escapeAttr(item.category)} · Sag ${escapeAttr(item.caseNumber)}</span>
+          <span class="meta">${escapeAttr(item.amount)}</span>
+        </div>
+        ${item.isCurrent ? '<button class="icon-btn" disabled>Aktuel</button>' : `<button class="icon-btn" onclick="openSag(${item.index})">Åbn</button>`}
+      </div>`).join('')}
+    </div>
+  </div>`;
+}
 const AGENTS = {
   'director': {
     role: 'Direktion',
@@ -2102,7 +2174,7 @@ function updateCaseTabCount(){
   if(priorityTab) priorityTab.innerHTML = `Sager <span style="opacity:.6">(${counts.todoCount})</span>`;
 }
 let selectedCustomerIndex = null;
-function render(){ const tbody = document.getElementById('sagerBody'); const q = (document.getElementById('sagerSoeg').value || '').toLowerCase(); const katF = document.getElementById('filterKat').value; const rows = sager.filter(s=>{ if(!ACTIVE_CASE_CATEGORIES.has(+s.k)) return false; if(katF && String(s.k)!==katF) return false; if(q){ const hay = `${s.nr} ${s.kunde} ${s.adr} ${s.opg}`.toLowerCase(); if(!hay.includes(q)) return false; } return true; }).sort((a,b)=>a.k-b.k || a.sort-b.sort); tbody.innerHTML = rows.map(s=>{ const idx = sager.indexOf(s); const kundeLower = String(s.kunde || '').toLowerCase(); const isDke = kundeLower.includes('dke'); const kundeCell = isDke ? `${s.kunde} <span class="chip tag-dke" style="font-size:10px">DKE</span>` : s.kunde; const activeRow = selectedCustomerIndex === idx ? ' style="background:#fcfbf8"' : ''; return `<tr data-kat="${s.k}"${activeRow}><td><select class="kategori kat-${s.k}" onchange="changeKat(${idx}, this.value)">${Object.entries(KAT).map(([k,v])=>`<option value="${k}"${+k===s.k?' selected':''}>${v}</option>`).join('')}</select></td><td>${s.nr || '—'}</td><td title="${escapeAttr(`${s.kunde} ${s.adr || ''}`)}"><button class="kunde-link" onclick="openSag(${idx})"><strong>${kundeCell}</strong></button><div class="kunde-address">${s.adr || 'Adresse mangler'}</div></td><td class="wrap" title="${escapeAttr(s.opg)}"><div class="opg-main">${s.opg || '—'}</div><div class="opg-sub">${s.b && s.b !== '0' ? `Est. entreprise ${s.b} kr.` : 'Est. entreprise mangler'}</div></td><td class="num">${s.u && s.u !== '0' ? '<span class="chip chip-amber">' + s.u + ' kr.</span>' : '—'}</td><td class="dim date-cell">${displayDate(s.start)}</td><td class="dim date-cell">${displayDate(s.slut)}</td><td><button class="icon-btn" onclick="openEditSag(${idx})">Rediger</button></td></tr>`; }).join(''); document.getElementById('count').textContent = `${rows.length} aktive/potentielle kunder`; updateCaseTabCount(); renderAppendix(); }
+function render(){ const tbody = document.getElementById('sagerBody'); const q = (document.getElementById('sagerSoeg').value || '').toLowerCase(); const katF = document.getElementById('filterKat').value; const rows = sager.filter(s=>{ if(!ACTIVE_CASE_CATEGORIES.has(+s.k)) return false; if(katF && String(s.k)!==katF) return false; if(q){ const hay = `${s.nr} ${s.kunde} ${s.adr} ${s.opg}`.toLowerCase(); if(!hay.includes(q)) return false; } return true; }).sort((a,b)=>a.k-b.k || a.sort-b.sort); tbody.innerHTML = rows.map(s=>{ const idx = sager.indexOf(s); const account = getCustomerAccount(s); const kundeCell = getCustomerDisplay(s); const portfolioMeta = account ? `<div class="kunde-portfolio">${escapeAttr(account.shortTitle)} · ${escapeAttr(s.adr || 'Ejendom ikke angivet')}</div>` : ''; const activeRow = selectedCustomerIndex === idx ? ' style="background:#fcfbf8"' : ''; return `<tr data-kat="${s.k}"${activeRow}><td><select class="kategori kat-${s.k}" onchange="changeKat(${idx}, this.value)">${Object.entries(KAT).map(([k,v])=>`<option value="${k}"${+k===s.k?' selected':''}>${v}</option>`).join('')}</select></td><td>${s.nr || '—'}</td><td title="${escapeAttr(`${s.kunde} ${s.adr || ''}`)}"><button class="kunde-link" onclick="openSag(${idx})"><strong>${escapeAttr(kundeCell)}</strong></button><div class="kunde-address">${escapeAttr(s.kunde || 'Kunde mangler')}</div>${portfolioMeta}</td><td class="wrap" title="${escapeAttr(s.opg)}"><div class="opg-main">${s.opg || '—'}</div><div class="opg-sub">${s.b && s.b !== '0' ? `Est. entreprise ${s.b} kr.` : 'Est. entreprise mangler'}</div></td><td class="num">${s.u && s.u !== '0' ? '<span class="chip chip-amber">' + s.u + ' kr.</span>' : '—'}</td><td class="dim date-cell">${displayDate(s.start)}</td><td class="dim date-cell">${displayDate(s.slut)}</td><td><button class="icon-btn" onclick="openEditSag(${idx})">Rediger</button></td></tr>`; }).join(''); document.getElementById('count').textContent = `${rows.length} aktive/potentielle kunder`; updateCaseTabCount(); renderAppendix(); }
 function changeKat(i,v){ sager[i].k = +v; saveState(); render(); renderPriorities(); }
 function changeStatus(i,v){ sager[i].status = v; saveState(); render(); renderPriorities(); }
 function openSag(i){ if(selectedCustomerIndex === i){ closeSag(); return; } selectedCustomerIndex = i; render(); renderSagDetail(i); }
@@ -2160,6 +2232,7 @@ function renderSagDetail(i){
   const caseDetail = document.getElementById('caseDetail');
   const customerLayout = document.querySelector('.customers-layout');
   if(!s || !caseDetail) return;
+  const account = getCustomerAccount(s);
   const driveUrl = getSagDrive(s);
   const driveLink = driveUrl ? `<a class="btn primary" href="${driveUrl}" target="_blank" rel="noopener">Åbn kundemappe</a>` : `<a class="btn" href="${CUSTOMER_DRIVE_ROOT}" target="_blank" rel="noopener">Find/opret kundemappe</a>`;
   const latestDialog = latestDialogDate(s);
@@ -2174,16 +2247,18 @@ function renderSagDetail(i){
       <div class="case-eyebrow">NSTSF kundesystem</div>
       <div class="case-head-top">
         <div>
-          <h2>${s.kunde}</h2>
-          <div class="sub">${s.opg || 'Sag uden titel'}${s.nr ? ` · Sag ${s.nr}` : ''}</div>
+          <h2>${account ? account.title : s.kunde}</h2>
+          <div class="sub">${s.opg || 'Sag uden titel'}${s.nr ? ` · Sag ${s.nr}` : ''}${account ? ` · ${s.kunde}` : ''}</div>
         </div>
         <button class="btn" onclick="closeSag()">Tilbage</button>
       </div>
     </div>
     <div class="case-sections">
+      ${renderCustomerPortfolio(account, i)}
       <div class="case-card">
         <h3>Overblik</h3>
         <table class="case-summary-table"><tbody>
+          ${account ? `<tr><td>Kundekonto</td><td>${account.title}</td></tr>` : ''}
           <tr><td>Adresse</td><td>${s.adr || 'Adresse mangler'}</td></tr>
           <tr><td>Status</td><td>${wf.summaryStatus || s.status || '—'}</td></tr>
           <tr><td>Betalingsdato</td><td>${displayDate(s.dato)}</td></tr>
