@@ -6,6 +6,7 @@ const STATE_KEY = "state-v1";
 const SESSION_COOKIE = "nstsf_session";
 const AUTH_SECRET = Netlify.env.get("DASHBOARD_AUTH_SECRET") || "nstsf-auth-fallback-2026";
 const ACTIONS_TOKEN = Netlify.env.get("GPT_ACTIONS_TOKEN") || "";
+const ACTIONS_CLIENTS_JSON = Netlify.env.get("GPT_ACTIONS_CLIENTS_JSON") || "";
 
 export const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body, null, 2), {
@@ -67,7 +68,27 @@ function readApiKey(request: Request) {
   const authHeader = request.headers.get("authorization") || "";
   const bearer = authHeader.startsWith("Bearer ") ? authHeader.slice(7).trim() : "";
   const key = bearer || request.headers.get("x-api-key") || "";
-  if (!ACTIONS_TOKEN || !key) return null;
+  if (!key) return null;
+
+  if (ACTIONS_CLIENTS_JSON) {
+    try {
+      const clients = JSON.parse(ACTIONS_CLIENTS_JSON);
+      if (Array.isArray(clients)) {
+        const match = clients.find((entry) => String(entry?.token || "") === key);
+        if (match) {
+          return {
+            type: "actions",
+            name: textValue(match?.name, "Custom GPT"),
+            email: textValue(match?.email, ""),
+            role: "system",
+            clientId: textValue(match?.id, ""),
+          };
+        }
+      }
+    } catch {}
+  }
+
+  if (!ACTIONS_TOKEN) return null;
   return key === ACTIONS_TOKEN
     ? {
         type: "actions",
