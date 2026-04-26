@@ -1569,12 +1569,22 @@ function latestCaseActivity(s){
 }
 function hasConcreteActivity(activity){
   if(!activity) return false;
-  if(activity.type === 'gmail_draft' || activity.type === 'drive_archive') return true;
+  if(activity.type === 'gmail_draft' || activity.type === 'drive_archive') return false;
   if(activity.type === 'intake') return !!textValue(activity.nextAction || activity.noteText || activity.meetingType, '').trim();
   return false;
 }
+function isRecentDateTime(value, maxDays = 2){
+  const date = parseDateValue(value);
+  if(!date) return false;
+  return ((Date.now() - date.getTime()) / 86400000) <= maxDays;
+}
 function hasPendingDraft(s){
-  return Array.isArray(s.mailDrafts) && s.mailDrafts.some((draft)=> draft && (draft.status === 'Klar til godkendelse' || draft.approvalRequired));
+  return Array.isArray(s.mailDrafts) && s.mailDrafts.some((draft)=>
+    draft &&
+    (draft.status === 'Klar til godkendelse' || draft.approvalRequired) &&
+    isRecentDateTime(draft.createdAt, 3) &&
+    draft.externalStatus !== 'sent'
+  );
 }
 function classifyActivity(activity){
   if(!activity) return '';
@@ -1605,6 +1615,8 @@ function buildPriorities(){
   sager.forEach((s, i)=>{
     const relatedEmails = getRelatedEmails(s);
     const unpaid = getSagPayments(s).filter((p)=>p.status !== 'betalt');
+    const urgentPayments = unpaid.filter((p)=>{ const d = daysUntil(p.dato); return d !== null && d <= 0; });
+    const nearDuePayments = unpaid.filter((p)=>{ const d = daysUntil(p.dato); return d !== null && d >= 1 && d <= 3; });
     const latestDialog = latestDialogDate(s);
     const latestOffer = latestOfferDate(s);
     const latestActivity = latestCaseActivity(s);
@@ -1617,7 +1629,14 @@ function buildPriorities(){
     const strongestSignal = strongestMail ? emailSignal(strongestMail) : null;
     const gptWeight = concreteActivity ? 2 : 0;
     const mailWeight = incoming.length ? 4 : relatedEmails.length ? 2 : 0;
-    const paymentWeight = unpaid.length ? 2 : 0;
+    const paymentWeight = urgentPayments.length ? 2 : nearDuePayments.length ? 1 : 0;
+    const hasTodoTrigger =
+      incomingTodos.length > 0 ||
+      pendingDraft ||
+      concreteActivity ||
+      urgentPayments.length > 0 ||
+      nearDuePayments.length > 0 ||
+      !!(strongestSignal && (strongestSignal.hasIssue || strongestSignal.asksForDate || strongestSignal.asksForPictures));
 
     if(incomingSales.length || pendingDraft || (latestOffer && [3,4,5].includes(+s.k))){
       const bucket = resolvePriorityBucket({
@@ -1639,15 +1658,15 @@ function buildPriorities(){
       });
     }
 
-    if(incomingTodos.length || pendingDraft || concreteActivity || unpaid.length){
+    if(hasTodoTrigger){
       const bucket = resolvePriorityBucket({
         now:
           pendingDraft ||
-          unpaid.some((p)=>{ const d = daysUntil(p.dato); return d !== null && d <= 0; }) ||
+          urgentPayments.length > 0 ||
           !!(strongestSignal && (strongestSignal.hasIssue || strongestSignal.asksForPictures)),
         today:
           incomingTodos.length > 0 ||
-          unpaid.some((p)=>{ const d = daysUntil(p.dato); return d !== null && d <= 2; }) ||
+          nearDuePayments.length > 0 ||
           !!(strongestSignal && strongestSignal.asksForDate) ||
           concreteActivity,
       });
@@ -1661,8 +1680,10 @@ function buildPriorities(){
               ? 'Mailen indeholder fejl, mangler eller udbedringer'
               : latestActivity
                 ? classifyActivity(latestActivity)
-                : unpaid.length
-                  ? 'Betaling eller afslutning mangler'
+                : urgentPayments.length
+                  ? 'Betaling er forfalden og kræver opfølgning'
+                  : nearDuePayments.length
+                    ? 'Betaling forfalder snart og bør følges op'
                   : 'Sagen skal følges til dørs';
       todos.push({
         bucket,
