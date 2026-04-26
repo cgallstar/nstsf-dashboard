@@ -1,0 +1,128 @@
+openapi: 3.1.0
+info:
+  title: NSTSF Meeting Package API
+  version: 1.0.0
+servers:
+  - url: https://willowy-parfait-a287e5.netlify.app
+
+components:
+  schemas: {}
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+
+security:
+  - bearerAuth: []
+
+paths:
+  /api/meeting-package:
+    post:
+      operationId: saveMeetingPackage
+      summary: Save meeting notes and archive files on the correct case
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - customerName
+                - noteText
+              properties:
+                caseNumber:
+                  type: string
+                actorName:
+                  type: string
+                actorEmail:
+                  type: string
+                customerName:
+                  type: string
+                source:
+                  type: string
+                meetingType:
+                  type: string
+                meetingDate:
+                  type: string
+                reportDate:
+                  type: string
+                noteText:
+                  type: string
+                transcriptText:
+                  type: string
+                nextAction:
+                  type: string
+                currentStage:
+                  type: string
+                nextStep:
+                  type: string
+                progressPct:
+                  type: number
+                stageNote:
+                  type: string
+                decisions:
+                  type: array
+                  items:
+                    type: string
+                todos:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      title:
+                        type: string
+                      status:
+                        type: string
+                      dueDate:
+                        type: string
+                      owner:
+                        type: string
+                      notes:
+                        type: string
+                documents:
+                  type: object
+                  properties:
+                    photos:
+                      type: array
+                      items:
+                        type: object
+                        properties:
+                          title:
+                            type: string
+                          fileName:
+                            type: string
+                          mimeType:
+                            type: string
+                          contentBase64:
+                            type: string
+                          notes:
+                            type: string
+                    ks:
+                      type: array
+                      items:
+                        type: object
+                        properties:
+                          title:
+                            type: string
+                          fileName:
+                            type: string
+                          mimeType:
+                            type: string
+                          contentBase64:
+                            type: string
+                          notes:
+                            type: string
+                    references:
+                      type: array
+                      items:
+                        type: object
+                        properties:
+                          title:
+                            type: string
+                          contentText:
+                            type: string
+                          mimeType:
+                            type: string
+      responses:
+        "200":
+          description: Meeting package saved
