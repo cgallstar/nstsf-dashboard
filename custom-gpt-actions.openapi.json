@@ -10,6 +10,11 @@
       "url": "https://willowy-parfait-a287e5.netlify.app"
     }
   ],
+  "security": [
+    {
+      "bearerAuth": []
+    }
+  ],
   "paths": {
     "/api/intake": {
       "get": {
@@ -322,6 +327,12 @@
     }
   },
   "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer"
+      }
+    },
     "schemas": {
       "DocumentLink": {
         "type": "object",
