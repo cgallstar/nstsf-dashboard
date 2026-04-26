@@ -301,13 +301,22 @@
   .priority-divider{padding:12px 24px 4px;font-size:10px;font-weight:600;color:#b8b5b0;text-transform:uppercase;letter-spacing:.08em;display:flex;align-items:center;gap:8px}
   .priority-divider::after{content:'';flex:1;height:.5px;background:rgba(0,0,0,.08)}
   .priority-row{display:flex;gap:16px;padding:14px 24px;border-bottom:.5px solid rgba(0,0,0,.08);align-items:flex-start;background:#fff}
-  .priority-row.later{background:#fafaf8}
+  .priority-row.today{background:#fff9ef}
+  .priority-row.week{background:#fafaf8}
   .priority-rank{font-size:20px;font-weight:500;color:#b8b5b0;min-width:24px;line-height:1.3;flex-shrink:0}
   .priority-rank.now{color:#1a1a18}
   .priority-body{flex:1;min-width:0}
   .priority-name{font-size:14px;font-weight:600;color:#1a1a18;margin-bottom:2px}
   .priority-meta{font-size:11px;color:#8a8680;margin-bottom:4px}
   .priority-reason{font-size:12px;color:#1a1a18}
+  .priority-topline{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:2px}
+  .priority-tag{
+    display:inline-flex;align-items:center;justify-content:center;border-radius:999px;padding:3px 9px;
+    font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;border:1px solid transparent;flex:none;
+  }
+  .priority-tag.now{background:#f9e3de;border-color:#e8b7ad;color:#962f24}
+  .priority-tag.today{background:#fbf0cf;border-color:#edd39b;color:#8a5a00}
+  .priority-tag.week{background:#e6eef8;border-color:#bfd2ea;color:#335c92}
   .priority-actions{display:flex;gap:6px;margin-top:9px;flex-wrap:wrap}
   .priority-actions .btn,.priority-side-actions .side-btn{background:#fff}
   .priority-actions .btn.primary-cta{background:#1a1a18;color:#fff;border-color:#1a1a18}
@@ -324,6 +333,7 @@
   .priority-side-dot.todo{background:#3a6aaa}
   .priority-side-body{min-width:0}
   .priority-side-name{font-size:12px;font-weight:600;color:#1a1a18;margin-bottom:2px}
+  .priority-side-top{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:2px}
   .priority-side-meta{font-size:10px;color:#8a8680;margin-bottom:2px}
   .priority-side-reason{font-size:10px;color:#1a1a18;margin-bottom:6px}
   .priority-side-actions{display:flex;gap:6px;flex-wrap:wrap}
@@ -958,25 +968,25 @@
             <div class="priority-main-title">To-do's</div>
             <div class="priority-main-sub">Fremdrift, underskrifter, aflevering, faktura og opfølgning i aktive sager.</div>
           </div>
-          <div class="priority-divider">Nu</div>
+          <div class="priority-divider">Now</div>
           <div id="priorityTodoNow"></div>
-          <div class="priority-divider">Senere</div>
-          <div id="priorityTodoLater"></div>
+          <div class="priority-divider">Today</div>
+          <div id="priorityTodoToday"></div>
         </div>
         <div class="priority-view" id="priorityViewSalg">
           <div class="priority-main-head">
             <div class="priority-main-title">Salgsrelateret</div>
             <div class="priority-main-sub">Leads, tilbud og opfølgning der kan flytte omsætning.</div>
           </div>
-          <div class="priority-divider">Nu</div>
+          <div class="priority-divider">Now</div>
           <div id="prioritySalesNow"></div>
-          <div class="priority-divider">Senere</div>
-          <div id="prioritySalesLater"></div>
+          <div class="priority-divider">Today</div>
+          <div id="prioritySalesToday"></div>
         </div>
       </div>
       <aside class="priority-side">
         <div class="priority-side-head">
-          <div class="priority-side-title">Ventende</div>
+          <div class="priority-side-title">This week</div>
         </div>
         <div class="priority-side-view" id="prioritySideTodos"></div>
         <div class="priority-side-view" id="prioritySideSalg"></div>
@@ -1584,6 +1594,11 @@ function emailSignal(mail){
     isInternal: /@nstsf\.dk|gemini-notes@google\.com/.test(String(mail.from || '').toLowerCase()),
   };
 }
+function resolvePriorityBucket(flags = {}){
+  if(flags.now) return 'now';
+  if(flags.today) return 'today';
+  return 'week';
+}
 function buildPriorities(){
   const sales = [];
   const todos = [];
@@ -1605,14 +1620,17 @@ function buildPriorities(){
     const paymentWeight = unpaid.length ? 2 : 0;
 
     if(incomingSales.length || pendingDraft || (latestOffer && [3,4,5].includes(+s.k))){
-      const needsToday = !!incomingSales.length || pendingDraft || (latestActivity && latestActivity.type === 'gmail_draft');
+      const bucket = resolvePriorityBucket({
+        now: pendingDraft || !!(strongestSignal && (strongestSignal.asksForApproval || strongestSignal.asksForReply)),
+        today: !!incomingSales.length || !!(latestActivity && latestActivity.type === 'gmail_draft') || !!strongestSignal?.asksForDate,
+      });
       const reason = pendingDraft
         ? 'Mailudkast eller tilbud afventer godkendelse'
         : incomingSales.length
           ? 'Ny salgsdialog eller kundeafklaring kræver svar'
           : 'Tilbud er sendt og bør følges op';
       sales.push({
-        bucket: needsToday ? 'today' : 'later',
+        bucket,
         score: 4 + mailWeight + gptWeight + (strongestSignal?.asksForApproval ? 2 : 0) + (strongestSignal?.asksForReply ? 1 : 0),
         title: s.kunde,
         meta: `${KAT[s.k]} · ${latestOffer ? `seneste tilbud ${displayDate(latestOffer)}` : 'ingen tilbudsdato'}${latestDialog ? ` · seneste dialog ${displayDate(latestDialog)}` : ''}${pendingDraft ? ' · draft afventer' : ''}`,
@@ -1622,11 +1640,17 @@ function buildPriorities(){
     }
 
     if(incomingTodos.length || pendingDraft || concreteActivity || unpaid.length){
-      const needsToday =
-        pendingDraft ||
-        unpaid.some((p)=>{ const d = daysUntil(p.dato); return d !== null && d <= 1; }) ||
-        incomingTodos.length > 0 ||
-        !!(strongestSignal && (strongestSignal.hasIssue || strongestSignal.asksForDate || strongestSignal.asksForPictures));
+      const bucket = resolvePriorityBucket({
+        now:
+          pendingDraft ||
+          unpaid.some((p)=>{ const d = daysUntil(p.dato); return d !== null && d <= 0; }) ||
+          !!(strongestSignal && (strongestSignal.hasIssue || strongestSignal.asksForPictures)),
+        today:
+          incomingTodos.length > 0 ||
+          unpaid.some((p)=>{ const d = daysUntil(p.dato); return d !== null && d <= 2; }) ||
+          !!(strongestSignal && strongestSignal.asksForDate) ||
+          concreteActivity,
+      });
       const reason = pendingDraft
         ? 'Der ligger et udkast eller en handling klar til godkendelse'
         : strongestSignal?.asksForPictures
@@ -1641,7 +1665,7 @@ function buildPriorities(){
                   ? 'Betaling eller afslutning mangler'
                   : 'Sagen skal følges til dørs';
       todos.push({
-        bucket: needsToday ? 'today' : 'later',
+        bucket,
         score: 3 + mailWeight + paymentWeight + gptWeight + (pendingDraft ? 3 : 0) + (strongestSignal?.hasIssue ? 2 : 0),
         title: s.kunde,
         meta: `${KAT[s.k]} · ${incoming.length ? `${incoming.length} uløste mails` : 'ingen åbne mails'}${latestDialog ? ` · seneste dialog ${displayDate(latestDialog)}` : ''}${latestActivity ? ` · ${classifyActivity(latestActivity)}` : ''}`,
@@ -1655,7 +1679,10 @@ function buildPriorities(){
     if(alreadyRepresented) return;
     const signal = emailSignal(mail);
     const item = {
-      bucket: signal.asksForDate || signal.hasIssue || signal.asksForPictures ? 'today' : 'later',
+      bucket: resolvePriorityBucket({
+        now: signal.asksForApproval || signal.hasIssue || signal.asksForPictures,
+        today: signal.asksForDate || signal.asksForReply,
+      }),
       score: (mail.type === 'sales' ? 4 : 3) + (signal.asksForApproval ? 2 : 0) + (signal.asksForDate ? 2 : 0) + (signal.hasIssue ? 2 : 0),
       title: mail.kunde || mail.subject,
       meta: `${mail.subject} · ${displayDate(mail.date)}`,
@@ -1677,14 +1704,17 @@ function priorityActionButtons(links='', mode='main'){
     return `<button class="${klass}" onclick="${action.onclick}">${action.label}</button>`;
   }).join('');
 }
+function priorityBucketLabel(bucket){
+  return bucket === 'now' ? 'Now' : bucket === 'today' ? 'Today' : 'This week';
+}
 function renderPriorityRows(targetId, items, bucket, type){
   const el = document.getElementById(targetId);
   if(!el) return [];
   const rows = items.filter((item)=>item.bucket === bucket);
-  el.innerHTML = rows.length ? rows.map((item, index)=>`<div class="priority-row ${bucket === 'later' ? 'later' : ''}">
-    <div class="priority-rank ${bucket === 'today' ? 'now' : ''}">${index + 1}</div>
+  el.innerHTML = rows.length ? rows.map((item, index)=>`<div class="priority-row ${bucket}">
+    <div class="priority-rank ${bucket === 'now' ? 'now' : ''}">${index + 1}</div>
     <div class="priority-body">
-      <div class="priority-name">${escapeAttr(item.title)}</div>
+      <div class="priority-topline"><div class="priority-name">${escapeAttr(item.title)}</div><span class="priority-tag ${bucket}">${priorityBucketLabel(bucket)}</span></div>
       <div class="priority-meta">${escapeAttr(item.meta)}</div>
       <div class="priority-reason">${escapeAttr(item.reason)}</div>
       <div class="priority-actions">${priorityActionButtons(item.links, 'main')}</div>
@@ -1699,7 +1729,7 @@ function renderPrioritySide(targetId, items, type){
   el.innerHTML = items.length ? items.map((item)=>`<div class="priority-side-item">
     <div class="priority-side-dot ${type === 'sales' ? 'sales' : 'todo'}"></div>
     <div class="priority-side-body">
-      <div class="priority-side-name">${escapeAttr(item.title)}</div>
+      <div class="priority-side-top"><div class="priority-side-name">${escapeAttr(item.title)}</div><span class="priority-tag ${item.bucket}">${priorityBucketLabel(item.bucket)}</span></div>
       <div class="priority-side-meta">${escapeAttr(item.meta)}</div>
       <div class="priority-side-reason">${escapeAttr(item.reason)}</div>
       <div class="priority-side-actions">${priorityActionButtons(item.links, 'side')}</div>
@@ -1724,12 +1754,12 @@ function setPriorityView(view){
 }
 function renderPriorities(){
   const priorities = buildPriorities();
-  const salesLater = renderPriorityRows('prioritySalesLater', priorities.sales, 'later', 'sales');
-  const todoLater = renderPriorityRows('priorityTodoLater', priorities.todos, 'later', 'todo');
-  renderPriorityRows('prioritySalesNow', priorities.sales, 'today', 'sales');
-  renderPriorityRows('priorityTodoNow', priorities.todos, 'today', 'todo');
-  renderPrioritySide('prioritySideSalg', salesLater, 'sales');
-  renderPrioritySide('prioritySideTodos', todoLater, 'todo');
+  const salesWeek = renderPriorityRows('prioritySalesToday', priorities.sales, 'today', 'sales');
+  const todoWeek = renderPriorityRows('priorityTodoToday', priorities.todos, 'today', 'todo');
+  renderPriorityRows('prioritySalesNow', priorities.sales, 'now', 'sales');
+  renderPriorityRows('priorityTodoNow', priorities.todos, 'now', 'todo');
+  renderPrioritySide('prioritySideSalg', priorities.sales.filter((item)=>item.bucket === 'week'), 'sales');
+  renderPrioritySide('prioritySideTodos', priorities.todos.filter((item)=>item.bucket === 'week'), 'todo');
   const stamp = document.getElementById('priorityGeneratedAt');
   if(stamp) stamp.textContent = `Opdateret ${new Date().toLocaleString('da-DK')}`;
   setPriorityView(priorityView);
