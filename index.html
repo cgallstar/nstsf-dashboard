@@ -205,8 +205,8 @@
     display:flex;align-items:baseline;justify-content:space-between;
     background:var(--card);
   }
-  .page-title{font-size:18px;font-weight:500}
-  .page-sub{font-size:11px;color:var(--muted);margin-top:2px}
+  .page-title{font-size:16px;font-weight:600;letter-spacing:-.01em}
+  .page-sub{font-size:12px;color:var(--muted);margin-top:4px}
   .page-head-right{display:flex;gap:8px;align-items:center}
   .page-updated{font-size:10px;color:#b0ada8;font-family:var(--mono)}
   .sager-tools{
@@ -215,20 +215,20 @@
     background:var(--card);font-family:var(--table-font);
   }
   .sager-tools input[type="search"]{
-    padding:12px 16px;border:.5px solid #e1e7ee;border-radius:12px;background:#fcfbf8;
-    font-size:14px;width:386px;font-family:var(--table-font);font-weight:500;color:#44515d;
+    padding:10px 14px;border:.5px solid #e1e7ee;border-radius:12px;background:#fcfbf8;
+    font-size:13px;width:360px;font-family:var(--table-font);font-weight:500;color:#44515d;
   }
   .sager-tools select{
-    padding:12px 16px;border:.5px solid #e1e7ee;border-radius:12px;
-    font-size:14px;background:#fff;min-width:224px;font-family:var(--table-font);font-weight:500;color:#32404d;
+    padding:10px 14px;border:.5px solid #e1e7ee;border-radius:12px;
+    font-size:13px;background:#fff;min-width:208px;font-family:var(--table-font);font-weight:500;color:#32404d;
   }
   .sager-tools .count{margin-left:auto;font-size:12px;color:#9f978d;font-weight:500}
-  #sagerTable{width:100%;border-collapse:collapse;background:#fff;table-layout:fixed;font-family:var(--font)}
+  #sagerTable{width:100%;border-collapse:collapse;background:#fff;table-layout:fixed;font-family:var(--table-font)}
   #sagerTable thead tr{background:#fff;border-bottom:1px solid #d7e1eb}
-  #sagerTable th{white-space:nowrap;font-size:11px;padding:15px 18px 13px;text-transform:uppercase;letter-spacing:.08em;color:#8995a3;font-weight:700}
-  #sagerTable td{font-size:12px;padding:14px 18px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:220px;border-bottom:.5px solid #edf1f4;vertical-align:middle;color:#24313d}
+  #sagerTable th{white-space:nowrap;font-size:10px;padding:14px 16px 12px;text-transform:uppercase;letter-spacing:.08em;color:#8995a3;font-weight:700}
+  #sagerTable td{font-size:11px;padding:12px 16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:220px;border-bottom:.5px solid #edf1f4;vertical-align:middle;color:#24313d}
   #sagerTable td.wrap{white-space:normal;max-width:none}
-  #sagerTable .date-cell{font-variant-numeric:proportional-nums;letter-spacing:-.01em;color:#5f6d7a;font-size:13px}
+  #sagerTable .date-cell{font-variant-numeric:proportional-nums;letter-spacing:-.01em;color:#5f6d7a;font-size:11px}
   #sagerTable tr{background:#fff}
   #sagerTable tr:hover{background:#fbfcfd}
   #sagerTable tr[style*="background:#fcfbf8"]{background:#f7fafc !important}
@@ -300,13 +300,13 @@
   .case-form .wide{grid-column:span 3}
   .case-summary-table td:first-child{color:#8a857d;width:120px}
   .case-summary-table td{padding:7px 0;border-bottom:none;font-size:12px}
-  .opg-main{font-size:15px;font-weight:600;line-height:1.32;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;color:#202b35}
-  .opg-sub{font-size:12px;margin-top:3px;color:#7d8b99;display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical;overflow:hidden}
-  .kunde-address{font-size:12px;margin-top:5px;color:#7a8896}
+  .opg-main{font-size:13px;font-weight:600;line-height:1.32;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;color:#202b35}
+  .opg-sub{font-size:11px;margin-top:3px;color:#7d8b99;display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical;overflow:hidden}
+  .kunde-address{font-size:11px;margin-top:4px;color:#7a8896}
   .kunde-portfolio{font-size:11px;margin-top:4px;color:#9a8e73}
   .kategori{
     min-width:178px;border:2px solid #bfe1cd;background:#edf7f1;color:#3f7f5c;border-radius:12px;
-    padding:10px 14px;font-size:13px;font-weight:500;font-family:var(--table-font);
+    padding:9px 12px;font-size:12px;font-weight:500;font-family:var(--table-font);
   }
   .kat-2{border-color:#c9dbf2;background:#eff5fb;color:#476a96}
   .kat-3{border-color:#edd8ad;background:#fbf4de;color:#946f1f}
@@ -1022,15 +1022,15 @@
       <tbody>
         <tr>
           <td>Aktive kunder + arbejde udført — bekræftet (100%)</td>
-          <td class="num">195.387 kr.</td>
-          <td class="num">478.387 kr.</td>
-          <td class="num">478.387 kr.</td>
+          <td class="num" id="confirmed30">195.387 kr.</td>
+          <td class="num" id="confirmed60">478.387 kr.</td>
+          <td class="num" id="confirmed90">478.387 kr.</td>
         </tr>
         <tr>
           <td>Tilbud + pipeline — lineært periodiseret</td>
-          <td class="num">677.848 kr.</td>
-          <td class="num">1.942.617 kr.</td>
-          <td class="num">3.007.387 kr.</td>
+          <td class="num" id="pipeline30">677.848 kr.</td>
+          <td class="num" id="pipeline60">1.942.617 kr.</td>
+          <td class="num" id="pipeline90">3.007.387 kr.</td>
         </tr>
         <tr style="background:#f6f9fc">
           <td><strong>Vægtet omsætning</strong> <span class="dim">(aktive + udført 100% + tilbud/pipeline × rate)</span></td>
@@ -1315,12 +1315,12 @@
     <div class="liquidity-overview-grid">
       <div class="liquidity-stat">
         <div class="kicker">Udestående i alt</div>
-        <div class="value">459.387 kr.</div>
+        <div class="value" id="liquidityTotal">459.387 kr.</div>
         <div class="sub">Bekræftet indgående</div>
       </div>
       <div class="liquidity-stat">
         <div class="kicker">Næste 30 dage</div>
-        <div class="value">195.387 kr.</div>
+        <div class="value" id="liquidity30">195.387 kr.</div>
         <div class="sub">Forventet indgang</div>
       </div>
       <div class="liquidity-stat">
@@ -1866,17 +1866,132 @@ function parseDateValue(value){
 }
 function displayDate(value){ const d = parseDateValue(value); if(!d) return value || '—'; return d.toLocaleDateString('da-DK', {day:'2-digit', month:'short', year:'numeric'}); }
 function parseNumber(value){ const n = Number(String(value || '').replace(/\./g,'').replace(',','.').replace(/[^\d.-]/g,'')); return Number.isFinite(n) ? n : 0; }
+function formatCurrency(value, options = {}){
+  const amount = Math.round(Number(value) || 0);
+  const absolute = Math.abs(amount).toLocaleString('da-DK');
+  if(options.signed) return `${amount < 0 ? '-' : '+'}${absolute} kr.`;
+  return `${amount.toLocaleString('da-DK')} kr.`;
+}
 function estimatedHours(s){ const explicit = parseNumber(s.timer); if(explicit) return explicit; return Math.round(parseNumber(s.b) / 650); }
 function getSagDrive(s){ return (s.docs && s.docs.drive) || s.drive || ''; }
 function escapeAttr(str=''){ return String(str).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 function matchCustomer(text='', customer=''){ const a = String(text || '').toLowerCase(); const b = String(customer || '').toLowerCase(); return !!b && a.includes(b); }
-function getSagPayments(s){ return betalinger.filter((b)=> (s.nr && b.nr === s.nr) || matchCustomer(b.kunde, s.kunde)); }
+function casePaymentLabel(s){
+  const account = getCustomerAccount(s);
+  return account ? account.shortTitle : (s.kunde || 'Ukendt kunde');
+}
+function hasExplicitPaymentMatch(s){
+  return betalinger.some((b)=>{
+    if(String(b.status || '').toLowerCase() === 'betalt') return false;
+    if(s.nr && b.nr && String(b.nr) === String(s.nr)) return true;
+    return matchCustomer(b.kunde, s.kunde) && String(b.dato || '') === String(s.dato || '') && parseNumber(b.beloeb) === parseNumber(s.u);
+  });
+}
+function buildDerivedPaymentsFromCases(){
+  return sager
+    .filter((s)=>ACTIVE_CASE_CATEGORIES.has(+s.k) && parseNumber(s.u) > 0 && s.dato && !hasExplicitPaymentMatch(s))
+    .map((s)=>({
+      nr: s.nr || '',
+      kunde: casePaymentLabel(s),
+      milepael: s.adr || s.opg || 'Udestående betaling',
+      dato: s.dato,
+      beloeb: String(parseNumber(s.u)),
+      fak: s.fak || '',
+      status: 'udestaaende',
+      source: 'case',
+      category: +s.k,
+    }));
+}
+function paymentSummaryRows(){
+  const explicit = betalinger.filter((b)=>String(b.status || '').toLowerCase() !== 'betalt').map((b)=>({...b, source:'betaling'}));
+  return [...explicit, ...buildDerivedPaymentsFromCases()].sort((a,b)=> String(a.dato || '').localeCompare(String(b.dato || '')));
+}
+function getSagPayments(s){
+  return paymentSummaryRows().filter((b)=> (s.nr && b.nr === s.nr) || matchCustomer(b.kunde, s.kunde) || (getCustomerAccount(s) && b.kunde === getCustomerAccount(s).shortTitle && String(b.milepael || '').includes(s.adr || '')));
+}
 function isEmailHandled(mail){ return !!mail.handled || handledEmailIds.includes(mail.id); }
 function getRelatedEmails(s){ return emails.filter((mail)=> (s.nr && `${mail.subject} ${mail.body}`.includes(s.nr)) || matchCustomer(mail.kunde, s.kunde) || matchCustomer(mail.subject, s.kunde) || matchCustomer(mail.body, s.kunde)).sort((a,b)=> String(b.date).localeCompare(String(a.date))); }
 function latestDialogDate(s){ const related = getRelatedEmails(s); return related.length ? related[0].date : ''; }
 function latestOfferDate(s){ const related = getRelatedEmails(s).filter((mail)=>mail.tags.includes('tilbud')); return related.length ? related[0].date : ''; }
 function daysUntil(dateValue){ const date = parseDateValue(dateValue); if(!date) return null; const today = new Date(); today.setHours(0,0,0,0); date.setHours(0,0,0,0); return Math.round((date - today) / 86400000); }
-function paymentSummaryRows(){ return betalinger.filter((b)=>b.status !== 'betalt').sort((a,b)=> String(a.dato).localeCompare(String(b.dato))); }
+function sumPaymentsWithinDays(rows, days){
+  const today = new Date();
+  today.setHours(0,0,0,0);
+  const end = new Date(today);
+  end.setDate(end.getDate() + days);
+  return rows.reduce((sum, row)=>{
+    const due = parseDateValue(row.dato);
+    if(!due) return sum;
+    due.setHours(0,0,0,0);
+    if(due < today || due > end) return sum;
+    return sum + parseNumber(row.beloeb);
+  }, 0);
+}
+function horizonEnd(days){
+  const end = new Date();
+  end.setHours(0,0,0,0);
+  end.setDate(end.getDate() + days);
+  return end;
+}
+function projectedPipelineForDays(days){
+  const windowStart = new Date();
+  windowStart.setHours(0,0,0,0);
+  const windowEnd = horizonEnd(days);
+  return sager.reduce((sum, s)=>{
+    if(![3,4,5].includes(+s.k)) return sum;
+    const amount = parseNumber(s.b);
+    if(!amount) return sum;
+    const start = parseDateValue(s.start);
+    const end = parseDateValue(s.slut || s.dato);
+    if(start && end && end >= start){
+      const totalDays = overlapDays(start, end, start, end);
+      const overlap = overlapDays(start, end, windowStart, windowEnd);
+      return sum + (overlap > 0 ? amount * (overlap / totalDays) : 0);
+    }
+    const due = parseDateValue(s.dato);
+    if(due && due >= windowStart && due <= windowEnd) return sum + amount;
+    return sum;
+  }, 0);
+}
+function renderFinancials(){
+  const rows = paymentSummaryRows();
+  const confirmedRows = rows.filter((row)=>{
+    const sag = sager.find((entry)=>(row.nr && entry.nr && String(entry.nr) === String(row.nr)) || (row.source === 'case' && String(entry.dato || '') === String(row.dato || '') && parseNumber(entry.u) === parseNumber(row.beloeb) && casePaymentLabel(entry) === row.kunde));
+    return sag ? [1,2].includes(+sag.k) : true;
+  });
+  const confirmed30 = sumPaymentsWithinDays(confirmedRows, 30);
+  const confirmed60 = sumPaymentsWithinDays(confirmedRows, 60);
+  const confirmed90 = sumPaymentsWithinDays(confirmedRows, 90);
+  const pipeline30 = projectedPipelineForDays(30);
+  const pipeline60 = projectedPipelineForDays(60);
+  const pipeline90 = projectedPipelineForDays(90);
+  const conversion = Math.max(0, Math.min(100, Number(document.getElementById('konv')?.value || 60))) / 100;
+  const weighted30 = confirmed30 + (pipeline30 * conversion);
+  const weighted60 = confirmed60 + (pipeline60 * conversion);
+  const weighted90 = confirmed90 + (pipeline90 * conversion);
+  const budgets = {30:800000,60:1600000,90:2400000};
+  const totalOutstanding = confirmedRows.reduce((sum, row)=>sum + parseNumber(row.beloeb), 0);
+  const setText = (id, text)=>{ const el = document.getElementById(id); if(el) el.textContent = text; };
+  setText('confirmed30', formatCurrency(confirmed30));
+  setText('confirmed60', formatCurrency(confirmed60));
+  setText('confirmed90', formatCurrency(confirmed90));
+  setText('pipeline30', formatCurrency(pipeline30));
+  setText('pipeline60', formatCurrency(pipeline60));
+  setText('pipeline90', formatCurrency(pipeline90));
+  setText('vaegt30', formatCurrency(weighted30));
+  setText('vaegt60', formatCurrency(weighted60));
+  setText('vaegt90', formatCurrency(weighted90));
+  setText('liquidityTotal', formatCurrency(totalOutstanding));
+  setText('liquidity30', formatCurrency(confirmed30));
+  const gap30 = document.getElementById('gap30');
+  const gap60 = document.getElementById('gap60');
+  const gap90 = document.getElementById('gap90');
+  [[gap30, weighted30 - budgets[30]], [gap60, weighted60 - budgets[60]], [gap90, weighted90 - budgets[90]]].forEach(([el, value])=>{
+    if(!el) return;
+    el.textContent = formatCurrency(value, {signed:true});
+    el.className = `chip ${value >= 0 ? 'chip-green' : 'chip-red'}`;
+  });
+}
 function priorityLink(type, index, label){ return `<button class="icon-btn" onclick="${type === 'sag' ? `setActiveTab('sager'); openSag(${index})` : `setActiveTab('indbakke'); openEmail('${index}')`}">${label}</button>`; }
 function parsePriorityActions(links=''){
   return [...String(links).matchAll(/onclick="([^"]+)"[^>]*>([^<]+)</g)].map((match)=>({onclick:match[1], label:match[2]}));
@@ -2201,7 +2316,7 @@ function setCustomerView(view){
   closeSag();
   render();
 }
-function render(){ const tbody = document.getElementById('sagerBody'); const q = (document.getElementById('sagerSoeg').value || '').toLowerCase(); const katF = document.getElementById('filterKat').value; const allowed = customerView === 'archived' ? ARCHIVED_CASE_CATEGORIES : ACTIVE_CASE_CATEGORIES; const rows = sager.filter(s=>{ if(!allowed.has(+s.k)) return false; if(katF && String(s.k)!==katF) return false; if(q){ const hay = `${s.nr} ${s.kunde} ${s.adr} ${s.opg}`.toLowerCase(); if(!hay.includes(q)) return false; } return true; }).sort((a,b)=>a.k-b.k || a.sort-b.sort); tbody.innerHTML = rows.map(s=>{ const idx = sager.indexOf(s); const account = getCustomerAccount(s); const kundeCell = getCustomerDisplay(s); const portfolioMeta = account ? `<div class="kunde-portfolio">${escapeAttr(account.shortTitle)} · ${escapeAttr(s.adr || 'Ejendom ikke angivet')}</div>` : ''; const activeRow = selectedCustomerIndex === idx ? ' style="background:#fcfbf8"' : ''; return `<tr data-kat="${s.k}"${activeRow}><td><select class="kategori kat-${s.k}" onchange="changeKat(${idx}, this.value)">${Object.entries(KAT).map(([k,v])=>`<option value="${k}"${+k===s.k?' selected':''}>${v}</option>`).join('')}</select></td><td>${s.nr || '—'}</td><td title="${escapeAttr(`${s.kunde} ${s.adr || ''}`)}"><button class="kunde-link" onclick="openSag(${idx})"><strong>${escapeAttr(kundeCell)}</strong></button><div class="kunde-address">${escapeAttr(s.kunde || 'Kunde mangler')}</div>${portfolioMeta}</td><td class="wrap" title="${escapeAttr(s.opg)}"><div class="opg-main">${s.opg || '—'}</div><div class="opg-sub">${s.b && s.b !== '0' ? `Est. entreprise ${s.b} kr.` : 'Est. entreprise mangler'}</div></td><td class="num">${s.u && s.u !== '0' ? '<span class="chip chip-amber">' + s.u + ' kr.</span>' : '—'}</td><td class="dim date-cell">${displayDate(s.start)}</td><td class="dim date-cell">${displayDate(s.slut)}</td><td><button class="icon-btn" onclick="openEditSag(${idx})">Rediger</button></td></tr>`; }).join(''); document.getElementById('count').textContent = customerView === 'archived' ? `${rows.length} arkiverede kunder` : `${rows.length} aktive/potentielle kunder`; updateCaseTabCount(); renderAppendix(); }
+function render(){ const tbody = document.getElementById('sagerBody'); const q = (document.getElementById('sagerSoeg').value || '').toLowerCase(); const katF = document.getElementById('filterKat').value; const allowed = customerView === 'archived' ? ARCHIVED_CASE_CATEGORIES : ACTIVE_CASE_CATEGORIES; const rows = sager.filter(s=>{ if(!allowed.has(+s.k)) return false; if(katF && String(s.k)!==katF) return false; if(q){ const hay = `${s.nr} ${s.kunde} ${s.adr} ${s.opg}`.toLowerCase(); if(!hay.includes(q)) return false; } return true; }).sort((a,b)=>a.k-b.k || a.sort-b.sort); tbody.innerHTML = rows.map(s=>{ const idx = sager.indexOf(s); const account = getCustomerAccount(s); const kundeCell = getCustomerDisplay(s); const subline = account ? (s.adr || 'Ejendom ikke angivet') : (s.kunde || 'Kunde mangler'); const activeRow = selectedCustomerIndex === idx ? ' style="background:#fcfbf8"' : ''; return `<tr data-kat="${s.k}"${activeRow}><td><select class="kategori kat-${s.k}" onchange="changeKat(${idx}, this.value)">${Object.entries(KAT).map(([k,v])=>`<option value="${k}"${+k===s.k?' selected':''}>${v}</option>`).join('')}</select></td><td>${s.nr || '—'}</td><td title="${escapeAttr(`${s.kunde} ${s.adr || ''}`)}"><button class="kunde-link" onclick="openSag(${idx})"><strong>${escapeAttr(kundeCell)}</strong></button><div class="kunde-address">${escapeAttr(subline)}</div></td><td class="wrap" title="${escapeAttr(s.opg)}"><div class="opg-main">${s.opg || '—'}</div><div class="opg-sub">${s.b && s.b !== '0' ? `Est. entreprise ${s.b} kr.` : 'Est. entreprise mangler'}</div></td><td class="num">${s.u && s.u !== '0' ? '<span class="chip chip-amber">' + formatCurrency(parseNumber(s.u)).replace(' kr.','') + ' kr.</span>' : '—'}</td><td class="dim date-cell">${displayDate(s.start)}</td><td class="dim date-cell">${displayDate(s.slut)}</td><td><button class="icon-btn" onclick="openEditSag(${idx})">Rediger</button></td></tr>`; }).join(''); document.getElementById('count').textContent = customerView === 'archived' ? `${rows.length} arkiverede kunder` : `${rows.length} aktive/potentielle kunder`; updateCaseTabCount(); renderAppendix(); renderFinancials(); renderBetalinger(); }
 function changeKat(i,v){ sager[i].k = +v; saveState(); render(); renderPriorities(); }
 function changeStatus(i,v){ sager[i].status = v; saveState(); render(); renderPriorities(); }
 function openSag(i){ if(selectedCustomerIndex === i){ closeSag(); return; } selectedCustomerIndex = i; render(); renderSagDetail(i); }
@@ -2275,7 +2390,7 @@ function renderSagDetail(i){
       <div class="case-head-top">
         <div>
           <h2>${account ? account.title : s.kunde}</h2>
-          <div class="sub">${s.opg || 'Sag uden titel'}${s.nr ? ` · Sag ${s.nr}` : ''}${account ? ` · ${s.kunde}` : ''}</div>
+          <div class="sub">${s.opg || 'Sag uden titel'}${s.nr ? ` · Sag ${s.nr}` : ''}${s.adr ? ` · ${s.adr}` : ''}</div>
         </div>
         <button class="btn" onclick="closeSag()">Tilbage</button>
       </div>
@@ -2563,15 +2678,17 @@ function renderPriorityInbox(){
   const items = filteredEmails().slice(0,6);
   side.innerHTML = items.length ? items.map((mail)=>`<div class="priority-side-item"><div class="priority-side-dot todo"></div><div class="priority-side-body"><div class="priority-side-top"><div class="priority-side-name">${escapeAttr(mail.kunde || mail.subject)}</div><span class="priority-tag week">Mail</span></div><div class="priority-side-meta">${escapeAttr(mail.subject)}</div><div class="priority-side-reason">${escapeAttr(mail.preview || '')}</div><div class="priority-side-actions"><button class="side-btn" onclick="openEmail('${mail.id}'); setPriorityView('indbakke')">Åbn</button>${!isEmailHandled(mail) ? `<button class="side-btn" onclick="markPriorityDone('${mail.id}','mail-${mail.id}')">Fuldført</button>` : ''}</div></div></div>`).join('') : '<div class="priority-side-empty">Ingen mails her.</div>';
 }
-function renderBetalinger(){ const body = document.getElementById('betalingBody'); const rows = betalinger.filter(b=>b.status !== 'betalt'); body.innerHTML = rows.map(b=>{ const idx = betalinger.indexOf(b); const isDke = String(b.kunde || '').toLowerCase().includes('dke'); const kunde = isDke ? `${b.kunde} <span class="chip tag-dke">DKE</span>` : b.kunde; const amount = String(b.beloeb || '').trim().startsWith('-') ? `<span class="amount-negative">${b.beloeb} kr.</span>` : `<span class="amount-positive">+${String(b.beloeb || '').replace(/^\+/, '')} kr.</span>`; return `<tr><td class="customer-cell"><strong>${kunde}</strong><span>${b.milepael || 'Post uden titel'}</span></td><td class="num">${amount}</td><td class="num">${b.dato || '<span class="dim">—</span>'}</td></tr>`; }).join('') || '<tr><td colspan="3" class="dim">Ingen udestående rater.</td></tr>'; }
+function renderBetalinger(){ const body = document.getElementById('betalingBody'); const rows = paymentSummaryRows(); body.innerHTML = rows.map((b)=>{ const kunde = escapeAttr(b.kunde || 'Ukendt kunde'); const amountValue = parseNumber(b.beloeb); const amount = amountValue < 0 ? `<span class="amount-negative">${formatCurrency(amountValue)}</span>` : `<span class="amount-positive">+${Math.abs(amountValue).toLocaleString('da-DK')} kr.</span>`; return `<tr><td class="customer-cell"><strong>${kunde}</strong><span>${escapeAttr(b.milepael || 'Post uden titel')}</span></td><td class="num">${amount}</td><td class="num">${displayDate(b.dato)}</td></tr>`; }).join('') || '<tr><td colspan="3" class="dim">Ingen udestående rater.</td></tr>'; }
 function changeBetaling(i,v){ betalinger[i].status = v; saveState(); renderBetalinger(); renderPriorities(); }
 document.querySelectorAll('.tab-btn').forEach((btn)=>btn.addEventListener('click', ()=>setActiveTab(btn.dataset.tab)));
 document.querySelectorAll('.inbox-tab').forEach((btn)=>btn.addEventListener('click', ()=>{ inboxFilter = btn.dataset.filter; document.querySelectorAll('.inbox-tab').forEach((b)=>b.classList.toggle('active', b.dataset.filter === btn.dataset.filter)); selectedEmailId = null; renderInbox(); }));
 document.getElementById('sagerSoeg').addEventListener('input',render);
 document.getElementById('filterKat').addEventListener('change',render);
 document.getElementById('capacityHours').addEventListener('input', ()=>{ renderCapacity(); saveState(); });
+document.getElementById('konv').addEventListener('input', renderFinancials);
 render();
 renderBetalinger();
+renderFinancials();
 renderCapacity();
 renderInbox();
 renderPriorities();
