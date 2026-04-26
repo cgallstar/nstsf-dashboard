@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Nordsjællands Tømrer- & Snedkerfirma — Dashboard</title>
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=DM+Sans:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap');
   :root{
     --bg:#f4f2ed;
     --ink:#17212b;
@@ -29,6 +29,7 @@
     --shadow:0 10px 24px rgba(20,55,83,.05);
     --font:'DM Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
     --mono:'DM Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+    --table-font:'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
   }
   *{box-sizing:border-box}
   body{
@@ -203,25 +204,25 @@
   .sager-tools{
     padding:22px 28px 18px;border-bottom:.5px solid var(--line);
     display:flex;gap:10px;align-items:center;flex-wrap:wrap;
-    background:var(--card);
+    background:var(--card);font-family:var(--table-font);
   }
   .sager-tools input[type="search"]{
     padding:11px 16px;border:.5px solid var(--line);border-radius:12px;background:#faf8f3;
-    font-size:12px;width:388px;
+    font-size:13px;width:388px;font-family:var(--table-font);font-weight:500;color:#44515d;
   }
   .sager-tools select{
     padding:11px 16px;border:.5px solid var(--line);border-radius:12px;
-    font-size:12px;background:#fff;min-width:224px;
+    font-size:13px;background:#fff;min-width:224px;font-family:var(--table-font);font-weight:500;color:#32404d;
   }
   .sager-tools .count{margin-left:auto;font-size:12px;color:#a39a90;font-weight:500}
-  #sagerTable{width:100%;border-collapse:collapse;background:#fff;table-layout:fixed}
+  #sagerTable{width:100%;border-collapse:collapse;background:#fff;table-layout:fixed;font-family:var(--table-font)}
   #sagerTable thead tr{background:#f2f0eb;border-bottom:.5px solid var(--line)}
-  #sagerTable th{white-space:nowrap;font-size:9px;padding:14px 14px;text-transform:uppercase;letter-spacing:.07em;color:#b0ada8}
-  #sagerTable td{font-size:12px;padding:18px 14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:220px;border-bottom:.5px solid rgba(0,0,0,.04);vertical-align:middle}
+  #sagerTable th{white-space:nowrap;font-size:10px;padding:14px 14px;text-transform:uppercase;letter-spacing:.08em;color:#7b8a98;font-weight:700}
+  #sagerTable td{font-size:13px;padding:18px 14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:220px;border-bottom:.5px solid rgba(0,0,0,.04);vertical-align:middle;color:#24313d}
   #sagerTable td.wrap{white-space:normal;max-width:none}
-  #sagerTable .date-cell{font-variant-numeric:tabular-nums}
+  #sagerTable .date-cell{font-variant-numeric:proportional-nums;letter-spacing:-.01em;color:#5f6d7a}
   .kunde-link{
-    border:none;background:transparent;color:#1f262c;font-weight:700;
+    border:none;background:transparent;color:#294f80;font-weight:600;
     cursor:pointer;padding:0;text-align:left;font:inherit;
   }
   .kunde-link:hover{text-decoration:none}
@@ -275,9 +276,9 @@
   .case-form .wide{grid-column:span 3}
   .case-summary-table td:first-child{color:#8a857d;width:120px}
   .case-summary-table td{padding:7px 0;border-bottom:none;font-size:12px}
-  .opg-main{font-size:15px;font-weight:600;line-height:1.3;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
-  .opg-sub{font-size:11px;margin-top:4px;color:#b0ada8;display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical;overflow:hidden}
-  .kunde-address{font-size:11px;margin-top:4px;color:#b0ada8}
+  .opg-main{font-size:16px;font-weight:600;line-height:1.32;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;color:#202b35}
+  .opg-sub{font-size:12px;margin-top:4px;color:#7d8b99;display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical;overflow:hidden}
+  .kunde-address{font-size:12px;margin-top:4px;color:#6f7f8f}
   .row-actions{display:flex;gap:6px;align-items:center}
   .icon-btn{
     border:1px solid var(--line);background:#fff;border-radius:6px;
