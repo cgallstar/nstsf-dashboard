@@ -178,7 +178,16 @@
   tr[data-kat="6"] td:first-child{border-left:3px solid #888}
   tr[data-kat="7"] td:first-child{border-left:3px solid var(--red)}
 
-  .sager-wrap{overflow-x:auto;background:transparent;border:none;border-radius:0;box-shadow:none;margin:0}
+  .sager-wrap{background:transparent;border:none;border-radius:0;box-shadow:none;margin:0}
+  .customers-layout{
+    display:grid;grid-template-columns:minmax(0,1.8fr) minmax(360px,.92fr);
+    gap:0;border-top:.5px solid var(--line);
+  }
+  .customers-list-pane{min-width:0;background:#fff}
+  .customers-detail-pane{
+    min-width:0;background:#fcfbf8;border-left:.5px solid var(--line);
+    display:flex;flex-direction:column;
+  }
   .page-head{
     padding:18px 28px 14px;
     border-bottom:.5px solid var(--line);
@@ -203,14 +212,14 @@
     font-size:12px;background:#fff;min-width:224px;
   }
   .sager-tools .count{margin-left:auto;font-size:12px;color:#a39a90;font-weight:500}
-  #sagerTable{width:100%;border-collapse:collapse;background:#fff}
+  #sagerTable{width:100%;border-collapse:collapse;background:#fff;table-layout:fixed}
   #sagerTable thead tr{background:#f2f0eb;border-bottom:.5px solid var(--line)}
   #sagerTable th{white-space:nowrap;font-size:9px;padding:14px 14px;text-transform:uppercase;letter-spacing:.07em;color:#b0ada8}
   #sagerTable td{font-size:12px;padding:18px 14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:220px;border-bottom:.5px solid rgba(0,0,0,.04);vertical-align:middle}
-  #sagerTable td.wrap{white-space:normal;max-width:260px}
+  #sagerTable td.wrap{white-space:normal;max-width:none}
   #sagerTable .date-cell{font-variant-numeric:tabular-nums}
   .kunde-link{
-    border:none;background:transparent;color:#1f262c;font-weight:600;
+    border:none;background:transparent;color:#1f262c;font-weight:700;
     cursor:pointer;padding:0;text-align:left;font:inherit;
   }
   .kunde-link:hover{text-decoration:none}
@@ -218,13 +227,33 @@
     background:#fff;border:.5px solid #e7dfd3;border-radius:10px;padding:8px 14px;color:#7d766e;
   }
   .case-detail{
-    border-top:1px solid var(--line);background:var(--surface);padding:18px 20px;
-    display:none;
+    background:transparent;padding:0;display:flex;flex-direction:column;min-height:100%;
   }
-  .case-detail.active{display:block}
-  .case-grid{display:grid;grid-template-columns:1.1fr 1fr;gap:16px}
-  .case-card{background:#fff;border:1px solid var(--line);border-radius:12px;padding:14px}
-  .case-card h3{margin-bottom:12px}
+  .case-detail.active{display:flex}
+  .case-shell{display:flex;flex-direction:column;min-height:100%}
+  .case-placeholder{
+    padding:28px;color:#8e877d;font-size:13px;line-height:1.6;
+  }
+  .case-head{
+    padding:24px 26px 18px;border-bottom:.5px solid var(--line);background:#fff;
+  }
+  .case-eyebrow{font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#b0ada8;margin-bottom:10px}
+  .case-head h2{margin:0;font-size:24px;font-weight:500;letter-spacing:-.03em}
+  .case-head .sub{margin-top:6px;font-size:12px;color:var(--muted)}
+  .case-head-top{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}
+  .case-sections{display:grid;grid-template-columns:1fr;min-height:100%}
+  .case-card{
+    background:#fff;border-top:.5px solid var(--line);padding:20px 26px;
+  }
+  .case-card h3{margin:0 0 12px;font-size:11px;font-weight:700;color:#b0ada8;text-transform:uppercase;letter-spacing:.08em}
+  .case-bullet-list{display:grid;gap:14px}
+  .case-bullet-item{display:grid;grid-template-columns:12px 1fr;gap:10px;align-items:flex-start}
+  .case-bullet-item .dot{width:8px;height:8px;border-radius:50%;background:#2c2c24;margin-top:6px}
+  .case-bullet-item strong{display:block;font-size:13px;color:var(--ink)}
+  .case-bullet-item .meta{display:block;margin-top:3px;font-size:12px;color:var(--muted);line-height:1.45}
+  .case-inline-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+  .case-inline-actions .btn{background:#fff}
+  .case-grid{display:grid;grid-template-columns:1fr;gap:0}
   .doc-list{display:grid;gap:8px}
   .doc-item{
     display:flex;justify-content:space-between;gap:12px;align-items:center;
@@ -242,6 +271,11 @@
   }
   .case-form textarea{min-height:72px;resize:vertical}
   .case-form .wide{grid-column:span 3}
+  .case-summary-table td:first-child{color:#8a857d;width:120px}
+  .case-summary-table td{padding:7px 0;border-bottom:none;font-size:12px}
+  .opg-main{font-size:15px;font-weight:600;line-height:1.3;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+  .opg-sub{font-size:11px;margin-top:4px;color:#b0ada8;display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical;overflow:hidden}
+  .kunde-address{font-size:11px;margin-top:4px;color:#b0ada8}
   .row-actions{display:flex;gap:6px;align-items:center}
   .icon-btn{
     border:1px solid var(--line);background:#fff;border-radius:6px;
@@ -1142,43 +1176,47 @@
 
 <section id="sager" class="section">
   <div class="sager-wrap">
-    <div class="sager-tools">
-      <input id="sagerSoeg" type="search" placeholder="Søg kunde, sagsnr., adresse...">
-      <select id="filterKat">
-        <option value="">Alle kategorier</option>
-        <option value="1">01. Arbejde færdigt</option>
-        <option value="2">02. Aktive kunder</option>
-        <option value="3">03. Kunde (ikke startet)</option>
-        <option value="4">04. Tilbud sendt</option>
-        <option value="5">05. Pipeline</option>
-        <option value="6">06. Afsluttet</option>
-        <option value="7">07. Ikke relevant</option>
-      </select>
-      <button class="btn primary" onclick="addSag()">Tilføj ny</button>
-      <span style="font-size:12px;color:var(--muted)">Skift kategori eller status direkte i tabellen</span>
-      <span id="count" class="count"></span>
+    <div class="customers-layout">
+      <div class="customers-list-pane">
+        <div class="sager-tools">
+          <input id="sagerSoeg" type="search" placeholder="Søg kunde, sagsnr., adresse...">
+          <select id="filterKat">
+            <option value="">Alle kategorier</option>
+            <option value="1">01. Arbejde færdigt</option>
+            <option value="2">02. Aktive kunder</option>
+            <option value="3">03. Kunde (ikke startet)</option>
+            <option value="4">04. Tilbud sendt</option>
+            <option value="5">05. Pipeline</option>
+            <option value="6">06. Afsluttet</option>
+            <option value="7">07. Ikke relevant</option>
+          </select>
+          <button class="btn primary" onclick="addSag()">Tilføj ny</button>
+          <span style="font-size:12px;color:var(--muted)">Skift kategori eller status direkte i tabellen</span>
+          <span id="count" class="count"></span>
+        </div>
+        <div style="overflow-x:auto">
+          <table id="sagerTable">
+            <thead>
+              <tr>
+                <th>Kategori</th>
+                <th>Sagsnr.</th>
+                <th>Kunde</th>
+                <th class="wrap">Opgave</th>
+                <th class="num">Udestående</th>
+                <th>Betalingsdato</th>
+                <th>Start</th>
+                <th>Slut</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="sagerBody"></tbody>
+          </table>
+        </div>
+      </div>
+      <aside id="caseDetail" class="case-detail customers-detail-pane">
+        <div class="case-placeholder">Vælg en kunde i listen for at se info, betalinger, noter, referater og links i højre side.</div>
+      </aside>
     </div>
-    <div style="overflow-x:auto">
-      <table id="sagerTable">
-        <thead>
-          <tr>
-            <th>Kategori</th>
-            <th>Sagsnr.</th>
-            <th>Kunde</th>
-            <th class="wrap">Opgave</th>
-            <th class="num">Udestående</th>
-            <th>Betalingsdato</th>
-            <th>Start</th>
-            <th>Slut</th>
-            <th>Fin. status</th>
-            <th>Fakturanr.</th>
-            <th></th>
-          </tr>
-        </thead>
-        <tbody id="sagerBody"></tbody>
-      </table>
-    </div>
-    <div id="caseDetail" class="case-detail"></div>
   </div>
 </section>
 
@@ -2006,7 +2044,7 @@ function updateCaseTabCount(){
   if(customerTab) customerTab.innerHTML = `Kunder <span style="opacity:.6">(${counts.customerCount})</span>`;
   if(priorityTab) priorityTab.innerHTML = `Sager <span style="opacity:.6">(${counts.todoCount})</span>`;
 }
-function render(){ const tbody = document.getElementById('sagerBody'); const q = (document.getElementById('sagerSoeg').value || '').toLowerCase(); const katF = document.getElementById('filterKat').value; const rows = sager.filter(s=>{ if(!ACTIVE_CASE_CATEGORIES.has(+s.k)) return false; if(katF && String(s.k)!==katF) return false; if(q){ const hay = `${s.nr} ${s.kunde} ${s.adr} ${s.opg}`.toLowerCase(); if(!hay.includes(q)) return false; } return true; }).sort((a,b)=>a.k-b.k || a.sort-b.sort); tbody.innerHTML = rows.map(s=>{ const idx = sager.indexOf(s); const kundeLower = String(s.kunde || '').toLowerCase(); const isDke = kundeLower.includes('dke'); const kundeCell = isDke ? `${s.kunde} <span class="chip tag-dke" style="font-size:10px">DKE</span>` : s.kunde; return `<tr data-kat="${s.k}"><td><select class="kategori kat-${s.k}" onchange="changeKat(${idx}, this.value)">${Object.entries(KAT).map(([k,v])=>`<option value="${k}"${+k===s.k?' selected':''}>${v}</option>`).join('')}</select></td><td>${s.nr || '—'}</td><td title="${escapeAttr(`${s.kunde} ${s.adr || ''}`)}"><button class="kunde-link" onclick="openSag(${idx})">${kundeCell}</button><div class="dim" style="font-size:10px;margin-top:1px;color:#b0ada8">${s.adr || 'Adresse mangler'}</div></td><td class="wrap" title="${escapeAttr(s.opg)}"><div style="font-weight:500">${s.opg || '—'}</div><div class="dim" style="font-size:10px;margin-top:1px;color:#b0ada8">${s.b && s.b !== '0' ? `Est. entreprise ${s.b} kr.` : 'Est. entreprise mangler'}</div></td><td class="num">${s.u && s.u !== '0' ? '<span class="chip chip-amber">' + s.u + ' kr.</span>' : '—'}</td><td class="dim date-cell">${displayDate(s.dato)}</td><td class="dim date-cell">${displayDate(s.start)}</td><td class="dim date-cell">${displayDate(s.slut)}</td><td><select class="status-sel" onchange="changeStatus(${idx}, this.value)"><option${s.status==='—'?' selected':''}>—</option><option${s.status==='Faktura sendt'?' selected':''}>Faktura sendt</option><option${s.status==='Ingen udeståender'?' selected':''}>Ingen udeståender</option><option${s.status==='Semi-godkendt'?' selected':''}>Semi-godkendt</option><option${s.status==='Afsendt'?' selected':''}>Afsendt</option></select></td><td class="dim date-cell">${s.fak || '—'}</td><td><button class="icon-btn" onclick="openEditSag(${idx})">Rediger</button></td></tr>`; }).join(''); document.getElementById('count').textContent = `${rows.length} aktive/potentielle kunder`; const updated = document.getElementById('customersUpdatedAt'); if(updated) updated.textContent = `Opdateret ${new Date().toLocaleString('da-DK')}`; updateCaseTabCount(); renderAppendix(); }
+function render(){ const tbody = document.getElementById('sagerBody'); const q = (document.getElementById('sagerSoeg').value || '').toLowerCase(); const katF = document.getElementById('filterKat').value; const rows = sager.filter(s=>{ if(!ACTIVE_CASE_CATEGORIES.has(+s.k)) return false; if(katF && String(s.k)!==katF) return false; if(q){ const hay = `${s.nr} ${s.kunde} ${s.adr} ${s.opg}`.toLowerCase(); if(!hay.includes(q)) return false; } return true; }).sort((a,b)=>a.k-b.k || a.sort-b.sort); tbody.innerHTML = rows.map(s=>{ const idx = sager.indexOf(s); const kundeLower = String(s.kunde || '').toLowerCase(); const isDke = kundeLower.includes('dke'); const kundeCell = isDke ? `${s.kunde} <span class="chip tag-dke" style="font-size:10px">DKE</span>` : s.kunde; return `<tr data-kat="${s.k}"><td><select class="kategori kat-${s.k}" onchange="changeKat(${idx}, this.value)">${Object.entries(KAT).map(([k,v])=>`<option value="${k}"${+k===s.k?' selected':''}>${v}</option>`).join('')}</select></td><td>${s.nr || '—'}</td><td title="${escapeAttr(`${s.kunde} ${s.adr || ''}`)}"><button class="kunde-link" onclick="openSag(${idx})"><strong>${kundeCell}</strong></button><div class="kunde-address">${s.adr || 'Adresse mangler'}</div></td><td class="wrap" title="${escapeAttr(s.opg)}"><div class="opg-main">${s.opg || '—'}</div><div class="opg-sub">${s.b && s.b !== '0' ? `Est. entreprise ${s.b} kr.` : 'Est. entreprise mangler'}</div></td><td class="num">${s.u && s.u !== '0' ? '<span class="chip chip-amber">' + s.u + ' kr.</span>' : '—'}</td><td class="dim date-cell">${displayDate(s.dato)}</td><td class="dim date-cell">${displayDate(s.start)}</td><td class="dim date-cell">${displayDate(s.slut)}</td><td><button class="icon-btn" onclick="openEditSag(${idx})">Rediger</button></td></tr>`; }).join(''); document.getElementById('count').textContent = `${rows.length} aktive/potentielle kunder`; updateCaseTabCount(); renderAppendix(); }
 function changeKat(i,v){ sager[i].k = +v; saveState(); render(); renderPriorities(); }
 function changeStatus(i,v){ sager[i].status = v; saveState(); render(); renderPriorities(); }
 function openSag(i){ renderSagDetail(i); }
@@ -2062,50 +2100,63 @@ function renderSagDetail(i){
   const latestDialog = latestDialogDate(s);
   const offerDate = latestOfferDate(s);
   const wf = s.workflow || {};
+  const referatTitles = (s.docs.referater.length ? s.docs.referater : s.docs.byggereferater).map((item)=>item.titel).slice(0,2).join(' · ') || 'Ingen registreret endnu';
+  const transcriptTitles = (s.docs.transkripter || []).map((item)=>item.titel).slice(0,2).join(' · ') || 'Ingen registreret endnu';
   caseDetail.classList.add('active');
-  caseDetail.innerHTML = `<div class="panel-hd"><div><h2>${s.kunde}</h2><div class="dim">${s.nr ? 'Sag ' + s.nr + ' · ' : ''}${s.adr || 'Adresse mangler'} · ${KAT[s.k]}</div></div><div style="display:flex;gap:8px"><button class="btn" onclick="openEditSag(${i})">Rediger</button><button class="btn ghost" onclick="closeSag()">Luk</button></div></div>
-  <div class="case-grid">
-    <div class="case-card"><h3>Overblik</h3><table><tbody>
-      <tr><td>Status</td><td>${wf.summaryStatus || s.status || '—'}</td></tr>
-      <tr><td>Næste handling</td><td>${wf.nextAction || 'Ikke sat endnu'}</td></tr>
-      <tr><td>Seneste dialog</td><td>${latestDialog ? displayDate(latestDialog) : '—'}</td></tr>
-      <tr><td>Tilbud sendt</td><td>${offerDate ? displayDate(offerDate) : '—'}</td></tr>
-      <tr><td>Underskriftsstatus</td><td>${wf.signatureStatus || 'Ikke registreret'}</td></tr>
-      <tr><td>Progression</td><td>${wf.progressPct ? `${wf.progressPct}%` : 'Ikke registreret'}</td></tr>
-      <tr><td>Aktuelt stade</td><td>${wf.currentStage || 'Ikke registreret'}</td></tr>
-      <tr><td>Næste skridt</td><td>${wf.nextStep || 'Ikke registreret'}</td></tr>
-    </tbody></table><div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap">${driveLink}<a class="btn" href="${DRIVE_ROOT}" target="_blank" rel="noopener">Åbn fælles Drive-root</a></div></div>
-    <div class="case-card"><h3>Tilbud og aftalegrundlag</h3><table><tbody>
-      <tr><td>Sagsnr.</td><td>${s.nr || '—'}</td></tr>
-      <tr><td>Opgave</td><td>${s.opg || '—'}</td></tr>
-      <tr><td>Est. beløb</td><td class="num">${s.b && s.b !== '0' ? s.b + ' kr.' : '—'}</td></tr>
-      <tr><td>Accepteret scope</td><td>${wf.acceptedScope || 'Ikke udfyldt endnu'}</td></tr>
-      <tr><td>Undtagelser</td><td>${wf.exclusions || 'Ingen registreret endnu'}</td></tr>
-      <tr><td>Mail</td><td>${s.mail || '—'}</td></tr>
-      <tr><td>Telefon</td><td>${s.tlf || '—'}</td></tr>
-    </tbody></table></div>
-  </div>
-  <div class="rel-grid" style="margin-top:12px">
-    <div class="case-card"><h3>Udført arbejde / stade</h3>${renderStageLog(s.stageLog)}</div>
-    <div class="case-card"><h3>Ekstraarbejde</h3>${renderChangeOrders(s.changeOrders)}</div>
-  </div>
-  <div class="rel-grid" style="margin-top:12px">
-    <div class="case-card"><h3>Betalinger</h3>${renderCasePayments(s)}</div>
-    <div class="case-card"><h3>To-do&apos;s</h3>${renderTaskList(s.tasks)}</div>
-  </div>
-  <div class="rel-grid" style="margin-top:12px">
-    <div class="case-card"><h3>Dialog og tilbud</h3><div class="mini-list">${renderRelatedMailList(s)}</div><div style="margin-top:12px"><strong>Mail drafts</strong>${renderDrafts(s.mailDrafts)}</div></div>
-    <div class="case-card"><h3>Dokumenter</h3><div class="doc-list">
-      <strong>Referater</strong>${renderDocs(s.docs.referater.length ? s.docs.referater : s.docs.byggereferater)}
-      <strong style="margin-top:6px">Transkripter</strong>${renderDocs(s.docs.transkripter)}
-      <strong style="margin-top:6px">Tilbud</strong>${renderDocs(s.docs.tilbud)}
-      <strong style="margin-top:6px">KS / dokumentation</strong>${renderDocs(s.docs.ks)}
-      <strong style="margin-top:6px">Billeder</strong>${renderDocs(s.docs.billeder)}
-      <strong style="margin-top:6px">Kontrakt / underskrifter</strong>${renderDocs(s.docs.kontrakter)}
-    </div></div>
+  caseDetail.innerHTML = `<div class="case-shell">
+    <div class="case-head">
+      <div class="case-eyebrow">NSTSF kundesystem</div>
+      <div class="case-head-top">
+        <div>
+          <h2>${s.kunde}</h2>
+          <div class="sub">${s.opg || 'Sag uden titel'}${s.nr ? ` · Sag ${s.nr}` : ''}</div>
+        </div>
+        <button class="btn" onclick="closeSag()">Tilbage</button>
+      </div>
+    </div>
+    <div class="case-sections">
+      <div class="case-card">
+        <h3>Overblik</h3>
+        <table class="case-summary-table"><tbody>
+          <tr><td>Adresse</td><td>${s.adr || 'Adresse mangler'}</td></tr>
+          <tr><td>Status</td><td>${wf.summaryStatus || s.status || '—'}</td></tr>
+          <tr><td>Næste handling</td><td>${wf.nextAction || 'Ikke sat endnu'}</td></tr>
+          <tr><td>Seneste dialog</td><td>${latestDialog ? displayDate(latestDialog) : '—'}</td></tr>
+          <tr><td>Tilbud sendt</td><td>${offerDate ? displayDate(offerDate) : '—'}</td></tr>
+          <tr><td>Underskrift</td><td>${wf.signatureStatus || 'Ikke registreret'}</td></tr>
+          <tr><td>Progression</td><td>${wf.progressPct ? `${wf.progressPct}%` : 'Ikke registreret'}</td></tr>
+        </tbody></table>
+        <div class="case-inline-actions">${driveLink}<a class="btn" href="${DRIVE_ROOT}" target="_blank" rel="noopener">Drive root</a><button class="btn" onclick="openEditSag(${i})">Rediger</button></div>
+      </div>
+      <div class="case-card">
+        <h3>Betalinger</h3>
+        ${renderCasePayments(s)}
+      </div>
+      <div class="case-card">
+        <h3>Noter og mødereferater</h3>
+        <div class="case-bullet-list">
+          <div class="case-bullet-item"><span class="dot"></span><div><strong>Aktuelt stade</strong><span class="meta">${wf.currentStage || 'Ikke registreret'}${wf.nextStep ? ` · ${wf.nextStep}` : ''}</span></div></div>
+          <div class="case-bullet-item"><span class="dot"></span><div><strong>Referater</strong><span class="meta">${referatTitles}</span></div></div>
+          <div class="case-bullet-item"><span class="dot"></span><div><strong>Transkripter</strong><span class="meta">${transcriptTitles}</span></div></div>
+        </div>
+      </div>
+      <div class="case-card">
+        <h3>Kilder</h3>
+        <div class="doc-list">
+          <strong>Dialog og tilbud</strong>${renderRelatedMailList(s)}
+          <strong style="margin-top:6px">Mail drafts</strong>${renderDrafts(s.mailDrafts)}
+          <strong style="margin-top:6px">KS / dokumentation</strong>${renderDocs(s.docs.ks)}
+          <strong style="margin-top:6px">Billeder</strong>${renderDocs(s.docs.billeder)}
+        </div>
+      </div>
+      <div class="case-card">
+        <h3>Action points</h3>
+        ${renderTaskList(s.tasks)}
+      </div>
+    </div>
   </div>`;
 }
-function closeSag(){ const caseDetail = document.getElementById('caseDetail'); if(caseDetail){ caseDetail.classList.remove('active'); caseDetail.innerHTML = ''; } }
+function closeSag(){ const caseDetail = document.getElementById('caseDetail'); if(caseDetail){ caseDetail.classList.remove('active'); caseDetail.innerHTML = '<div class="case-placeholder">Vælg en kunde i listen for at se info, betalinger, noter, referater og links i højre side.</div>'; } }
 function addSag(){ const idx = sager.length; sager.push(normalizeSag({ k:3,nr:"",kunde:"Ny kunde",adr:"",opg:"",b:"0",u:"0",dato:"",status:"—",timer:"",fak:"",start:"",slut:"",info:"",mail:"",tlf:"",drive:"",sort:idx,docs:{drive:"",byggereferater:docDemo.byggereferater,transkripter:docDemo.transkripter}}, idx)); saveState(); openEditSag(idx); render(); }
 let editSagIndex = null;
 function openEditSag(i){ const s = sager[i]; const caseDetail = document.getElementById('caseDetail'); if(!s || !caseDetail) return; editSagIndex = i; caseDetail.classList.add('active'); caseDetail.innerHTML = `<div class="panel-hd"><h2>Rediger sag</h2><button class="btn ghost" onclick="closeSag()">Luk</button></div><div class="case-form"><label>Kategori<select id="edit-k">${Object.entries(KAT).map(([k,v])=>`<option value="${k}"${+k===s.k?' selected':''}>${v}</option>`).join('')}</select></label><label>Sagsnr.<input id="edit-nr" value="${escapeAttr(s.nr)}"></label><label>Kundenavn<input id="edit-kunde" value="${escapeAttr(s.kunde)}"></label><label class="wide">Adresse<input id="edit-adr" value="${escapeAttr(s.adr === '—' ? '' : s.adr)}"></label><label class="wide">Opgave<textarea id="edit-opg">${escapeAttr(s.opg)}</textarea></label><label>Est. beløb<input id="edit-b" value="${escapeAttr(s.b)}"></label><label>Udestående<input id="edit-u" value="${escapeAttr(s.u)}"></label><label>Betalingsdato<input id="edit-dato" type="date" value="${escapeAttr(s.dato)}"></label><label>Startdato<input id="edit-start" type="date" value="${escapeAttr(s.start)}"></label><label>Slutdato<input id="edit-slut" type="date" value="${escapeAttr(s.slut)}"></label><label>Fin. status<input id="edit-status" value="${escapeAttr(s.status)}"></label><label>Est. timer<input id="edit-timer" value="${escapeAttr(s.timer)}"></label><label>Fakturanr.<input id="edit-fak" value="${escapeAttr(s.fak)}"></label><label>Mail<input id="edit-mail" value="${escapeAttr(s.mail)}"></label><label>Telefon<input id="edit-tlf" value="${escapeAttr(s.tlf)}"></label><label class="wide">Google Drive-folder URL<input id="edit-drive" value="${escapeAttr(getSagDrive(s))}" placeholder="Indsæt link til kundens Drive-mappe"></label><label class="wide">Noter/info<textarea id="edit-info">${escapeAttr(s.info)}</textarea></label></div><div style="display:flex;gap:8px;margin-top:14px"><button class="btn primary" onclick="saveSagEdit()">Gem</button><button class="btn" onclick="renderSagDetail(${i})">Annuller</button></div>`; }
