@@ -2153,7 +2153,7 @@ function showAgentDetail(agentId){
   if(!detail) return;
   const agent = AGENTS[selectedAgentId];
   document.querySelectorAll('.org-node').forEach((node)=>node.classList.toggle('active', node.dataset.agent === selectedAgentId));
-  detail.innerHTML = `<div class="meta">${agent.role}</div><h3>${agent.title}</h3><p>${agent.summary}</p><ul>${(agent.points || []).map((point)=>`<li>${escapeAttr(point)}</li>`).join('')}</ul><div class="org-detail-actions">${agent.doc ? `<a class="btn primary" href="${agent.doc}" target="_blank" rel="noopener">Åbn .md fil</a>` : ''}<button class="btn" onclick="setActiveTab('appendix')">Åbn Appendix</button></div>`;
+  detail.innerHTML = `<div class="meta">${agent.role}</div><h3>${agent.title}</h3><p>${agent.summary}</p><ul>${(agent.points || []).map((point)=>`<li>${escapeAttr(point)}</li>`).join('')}</ul><div class="org-detail-actions">${agent.doc ? `<a class="btn primary" href="${agent.doc}" target="_blank" rel="noopener">Åbn .md fil</a>` : ''}<a class="btn" href="/agents/nstsf-operating-rules.md" target="_blank" rel="noopener">Åbn operating rules</a><button class="btn" onclick="setActiveTab('appendix')">Åbn Appendix</button></div>`;
 }
 function renderSagDetail(i){
   const s = sager[i];

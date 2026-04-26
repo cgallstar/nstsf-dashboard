@@ -20,3 +20,20 @@ Holde styr på det personaleoverblik, der påvirker NSTSF's drift og kapacitet.
 - synliggøre bemandingsrisici
 - støtte ledelsen i mandskabsplanlægning
 - holde personaleændringer koblet til driften
+
+## Læser
+- interne opgaver
+- medarbejderdata
+- skoleuger, ferie og rotationer
+- onboarding og kontraktrelaterede noter
+
+## Skriver
+- interne HR-opgaver
+- kapacitetsrelevante personalemarkeringer
+- påmindelser om kontrakter, onboarding og frister
+
+## Eksempler
+- underskriv kontrakt med ny ansat
+- opret onboarding
+- registrer ferie
+- planlæg lærling på skole

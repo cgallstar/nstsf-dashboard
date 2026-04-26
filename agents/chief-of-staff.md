@@ -20,3 +20,12 @@ Holde sammen på NSTSF's daglige prioriteringer på tværs af kunder, mails, mø
 - oprette eller vedligeholde to-do's
 - pege på relaterede mails, referater og transcripts
 - holde det samlede billede rent og prioriteret
+
+## Router
+- kundesag -> kunde-/salgs-/dokumentationsspor
+- intern opgave -> HR/drift/admin-spor
+- økonomisk opfølgning -> likviditet/margin
+
+## Må ikke
+- presse interne opgaver ind som kundesager
+- eskalere alt til Søren uden konkret grund

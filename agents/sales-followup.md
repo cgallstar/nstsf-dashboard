@@ -20,3 +20,18 @@ Drive alle tilbudsforløb og kundedialoger, der kan flytte omsætning fremad.
 - foreslå næste handling på kunde
 - løfte salgsrelaterede opgaver ind i Sager
 - synliggøre risiko for tabt momentum
+
+## Læser
+- tilbudsstatus
+- seneste kundedialog
+- mails med pris, dato eller godkendelse
+- pipeline og tilbudsrelaterede noter
+
+## Skriver
+- salgsopgaver i Sager
+- forslag til næste salgsstep
+- opfølgningsnoter på kundesagen
+
+## Må ikke
+- oprette interne HR-opgaver
+- markere en intern driftsopgave som kundesalg
