@@ -6,23 +6,26 @@
 <title>Nordsjællands Tømrer- & Snedkerfirma — Dashboard</title>
 <style>
   :root{
-    --bg:#eef2f7;
-    --ink:#0f1e2e;
-    --muted:#6b7a8a;
+    --bg:#f4f2ed;
+    --ink:#17212b;
+    --muted:#6f7a84;
     --card:#ffffff;
-    --line:#d7dfea;
+    --line:#e4e0d9;
     --brand:#1d4e7c;
     --brand-dark:#143753;
-    --brand-soft:#dde8f2;
+    --brand-soft:#e8eef5;
     --green:#2a7d5a;
-    --green-soft:#dff0e8;
+    --green-soft:#e6f2eb;
     --red:#b0341d;
-    --red-soft:#fbe4de;
+    --red-soft:#f8e4de;
     --amber:#b47a16;
-    --amber-soft:#faeac7;
+    --amber-soft:#f7edd2;
     --blue:#3a6fa8;
-    --blue-soft:#dde6f3;
-    --gray-soft:#e6ebf1;
+    --blue-soft:#e7eef7;
+    --gray-soft:#edf0f3;
+    --navy:#172a3e;
+    --surface:#faf8f4;
+    --shadow:0 10px 24px rgba(20,55,83,.05);
   }
   *{box-sizing:border-box}
   body{
@@ -61,17 +64,17 @@
   }
   .tabs{
     display:flex;gap:0;padding:0 32px;background:#1a2d43;
-    border-bottom:1px solid #25405c;
+    border-bottom:1px solid rgba(255,255,255,.08);
   }
   .tabs button{
-    background:transparent;color:#b9c7d6;border:none;padding:14px 20px;
-    font-size:13px;font-weight:500;cursor:pointer;
+    background:transparent;color:#b9c7d6;border:none;padding:16px 18px 15px;
+    font-size:13px;font-weight:600;cursor:pointer;
     border-bottom:2px solid transparent;
   }
   .tabs button:hover{color:#fff}
   .tabs button.active{color:#fff;border-bottom-color:var(--green)}
 
-  main{padding:28px 32px;max-width:1600px;margin:0 auto}
+  main{padding:24px 32px 36px;max-width:1560px;margin:0 auto}
   .section{display:none}
   .section.active{display:block}
 
@@ -82,8 +85,8 @@
     display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:24px;
   }
   .kpi{
-    background:var(--card);border:1px solid var(--line);border-radius:10px;
-    padding:18px 20px;
+    background:var(--card);border:1px solid var(--line);border-radius:16px;
+    padding:20px 22px;box-shadow:var(--shadow);
   }
   .kpi .lbl{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:600}
   .kpi .val{font-size:24px;font-weight:700;margin-top:6px;letter-spacing:-.01em}
@@ -94,8 +97,8 @@
   .kpi.blue{border-top:3px solid var(--blue)}
 
   .panel{
-    background:var(--card);border:1px solid var(--line);border-radius:10px;
-    padding:18px 20px;margin-bottom:20px;
+    background:var(--card);border:1px solid var(--line);border-radius:16px;
+    padding:20px 22px;margin-bottom:20px;box-shadow:var(--shadow);
   }
   .panel-hd{
     display:flex;justify-content:space-between;align-items:center;
@@ -109,14 +112,15 @@
     text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);
     font-weight:600;color:var(--muted);text-transform:uppercase;font-size:11px;letter-spacing:.04em;
   }
-  td{padding:9px 10px;border-bottom:1px solid #eef2f7;vertical-align:middle}
+  td{padding:10px 10px;border-bottom:1px solid #f0ece5;vertical-align:middle}
   tr:last-child td{border-bottom:none}
   .num{text-align:right;font-variant-numeric:tabular-nums}
   .dim{color:var(--muted)}
 
   .param-box{
-    background:var(--brand-soft);border:1px solid #c1d3e5;border-radius:10px;
+    background:var(--brand-soft);border:1px solid #d3dee8;border-radius:16px;
     padding:16px 20px;margin-bottom:20px;display:flex;justify-content:space-between;align-items:center;
+    box-shadow:var(--shadow);
   }
   .param-box label{font-weight:600;font-size:13px;margin-right:12px}
   .param-box input[type="number"]{
@@ -159,10 +163,11 @@
   tr[data-kat="6"] td:first-child{border-left:3px solid #888}
   tr[data-kat="7"] td:first-child{border-left:3px solid var(--red)}
 
-  .sager-wrap{overflow-x:auto;background:var(--card);border:1px solid var(--line);border-radius:10px}
+  .sager-wrap{overflow-x:auto;background:var(--card);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow)}
   .sager-tools{
     padding:12px 16px;border-bottom:1px solid var(--line);
     display:flex;gap:10px;align-items:center;flex-wrap:wrap;
+    background:var(--surface);
   }
   .sager-tools input[type="search"]{
     padding:6px 10px;border:1px solid var(--line);border-radius:6px;
@@ -183,17 +188,17 @@
   }
   .kunde-link:hover{text-decoration:underline}
   .case-detail{
-    border-top:1px solid var(--line);background:#f8fafc;padding:18px 20px;
+    border-top:1px solid var(--line);background:var(--surface);padding:18px 20px;
     display:none;
   }
   .case-detail.active{display:block}
   .case-grid{display:grid;grid-template-columns:1.1fr 1fr;gap:16px}
-  .case-card{background:#fff;border:1px solid var(--line);border-radius:8px;padding:14px}
+  .case-card{background:#fff;border:1px solid var(--line);border-radius:12px;padding:14px}
   .case-card h3{margin-bottom:12px}
   .doc-list{display:grid;gap:8px}
   .doc-item{
     display:flex;justify-content:space-between;gap:12px;align-items:center;
-    padding:9px 10px;border:1px solid #e3e9f1;border-radius:7px;background:#fff;
+    padding:10px 11px;border:1px solid #ece7df;border-radius:10px;background:#fff;
   }
   .doc-item .doc-meta{font-size:11px;color:var(--muted);margin-top:2px}
   .doc-item a{font-size:12px;color:var(--brand);font-weight:600;text-decoration:none}
@@ -231,7 +236,7 @@
   .appendix-layout{display:grid;grid-template-columns:1.2fr .8fr;gap:20px}
   .appendix-stream{display:grid;gap:12px}
   .appendix-item{
-    border:1px solid var(--line);border-radius:10px;background:#fff;padding:14px 16px;
+    border:1px solid var(--line);border-radius:14px;background:#fff;padding:14px 16px;
     display:grid;grid-template-columns:1fr auto;gap:10px;
   }
   .appendix-item h3{margin:0 0 6px;font-size:14px;color:var(--ink)}
@@ -242,13 +247,13 @@
   .appendix-side{display:grid;gap:20px}
   .org-hero{
     display:flex;justify-content:space-between;gap:18px;align-items:flex-start;
-    border:1px solid var(--line);border-radius:12px;background:#fff;padding:18px 20px;margin-bottom:20px;
+    border:1px solid var(--line);border-radius:16px;background:#fff;padding:20px 22px;margin-bottom:20px;box-shadow:var(--shadow);
   }
   .org-hero-title{font-size:22px;font-weight:700;color:var(--ink);margin:4px 0 8px}
   .org-hero-sub{font-size:13px;color:var(--muted);max-width:760px;line-height:1.5}
   .org-layout{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(320px,.8fr);gap:20px}
   .org-diagram{
-    border:1px solid var(--line);border-radius:14px;background:#fff;padding:24px 18px 20px;
+    border:1px solid var(--line);border-radius:16px;background:#fff;padding:24px 18px 20px;box-shadow:var(--shadow);
   }
   .org-diagram-row{display:flex;justify-content:center;gap:18px;flex-wrap:wrap}
   .org-diagram-row.executive{margin-bottom:18px}
@@ -275,7 +280,17 @@
   .org-node h3{font-size:16px;margin:0 0 6px;color:var(--ink)}
   .org-node p{margin:0;color:#415365;font-size:13px;line-height:1.45}
   .org-detail{
-    border:1px solid var(--line);border-radius:14px;background:#fff;padding:18px 20px;min-height:100%;
+    border:1px solid var(--line);border-radius:16px;background:#fff;padding:18px 20px;min-height:100%;box-shadow:var(--shadow);
+  }
+  .priority-shell,
+  .coming-cases,
+  .upcoming-list,
+  .employee-panel,
+  .inbox-layout,
+  .sync-panel,
+  .admin-panel,
+  .integration-status{
+    box-shadow:var(--shadow);
   }
   .org-detail .meta{font-size:12px;color:var(--muted);margin-bottom:8px}
   .org-detail h3{font-size:22px;margin:0 0 8px;color:var(--ink)}
@@ -342,14 +357,14 @@
   .priority-side-empty{font-size:11px;color:#8a8680;padding:14px 18px}
   .rel-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
   .mini-list{display:grid;gap:8px}
-  .mini-item{padding:9px 10px;border:1px solid #e8edf4;border-radius:8px;background:#fff}
+  .mini-item{padding:10px 11px;border:1px solid #ece7df;border-radius:10px;background:#fff}
   .mini-item strong{display:block;font-size:12px}
   .mini-item .meta{font-size:11px;color:var(--muted);margin-top:2px}
   .payment-inline-table td,.payment-inline-table th{font-size:12px;padding:8px 9px}
   .capacity-tools{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:16px}
   .capacity-tools input{width:80px;padding:6px 8px;border:1px solid var(--line);border-radius:6px;text-align:right}
   .capacity-layout{display:grid;grid-template-columns:1fr;gap:18px}
-  .employee-panel{border:1px solid var(--line);border-radius:14px;background:#fff;padding:16px}
+  .employee-panel{border:1px solid var(--line);border-radius:18px;background:#fff;padding:18px}
   .employee-panel h3{margin-bottom:10px}
   .employee-list{display:grid;gap:8px;margin-bottom:12px}
   .employee-row{display:grid;grid-template-columns:1fr 70px 28px;gap:6px;align-items:center}
@@ -488,27 +503,27 @@
   }
   .integration-grid{display:grid;grid-template-columns:1.2fr 1fr;gap:16px}
   .integration-status{
-    border:1px solid var(--line);border-radius:8px;background:#f8fafc;
+    border:1px solid var(--line);border-radius:12px;background:var(--surface);
     padding:12px;font-size:13px;white-space:pre-wrap;
   }
   .integration-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
 
   .inbox-layout{
     display:grid;grid-template-columns:380px 1fr;gap:16px;
-    background:var(--card);border:1px solid var(--line);border-radius:10px;
+    background:var(--card);border:1px solid var(--line);border-radius:18px;
     overflow:hidden;min-height:600px;
   }
   .inbox-list{border-right:1px solid var(--line);overflow-y:auto;max-height:720px}
   .inbox-hd{
     padding:14px 18px;border-bottom:1px solid var(--line);
     display:flex;justify-content:space-between;align-items:center;
-    background:#f6f9fc;
+    background:var(--surface);
   }
   .inbox-hd .title{font-weight:600;font-size:14px}
   .inbox-hd .addr{font-size:11px;color:var(--muted)}
   .inbox-tabs{
     display:flex;border-bottom:1px solid var(--line);font-size:12px;
-    background:#f6f9fc;
+    background:var(--surface);
   }
   .inbox-tabs button{
     flex:1;padding:10px;border:none;background:transparent;cursor:pointer;
@@ -584,7 +599,7 @@
     margin:0 0 18px;
     background:#fff;
     border:1px solid var(--line);
-    border-radius:8px;
+    border-radius:14px;
     padding:10px 12px;
     display:flex;
     justify-content:space-between;
@@ -642,7 +657,7 @@
     margin:0 0 20px;
     background:#fff;
     border:1px solid var(--line);
-    border-radius:10px;
+    border-radius:16px;
     padding:16px 18px;
     display:none;
   }
@@ -729,7 +744,7 @@
   .chip-blue{background:var(--blue-soft);color:var(--blue)}
   .chip-brand{background:var(--brand-soft);color:var(--brand)}
 
-  footer{padding:20px 32px;text-align:center;color:var(--muted);font-size:12px}
+  footer{padding:24px 32px 32px;text-align:center;color:var(--muted);font-size:12px}
 </style>
 </head>
 <body class="login-mode">
