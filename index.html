@@ -216,11 +216,14 @@
   }
   .sager-tools .count{margin-left:auto;font-size:12px;color:#a39a90;font-weight:500}
   #sagerTable{width:100%;border-collapse:collapse;background:#fff;table-layout:fixed;font-family:var(--table-font)}
-  #sagerTable thead tr{background:#f2f0eb;border-bottom:.5px solid var(--line)}
-  #sagerTable th{white-space:nowrap;font-size:10px;padding:14px 14px;text-transform:uppercase;letter-spacing:.08em;color:#7b8a98;font-weight:700}
-  #sagerTable td{font-size:13px;padding:18px 14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:220px;border-bottom:.5px solid rgba(0,0,0,.04);vertical-align:middle;color:#24313d}
+  #sagerTable thead tr{background:#fff;border-bottom:1px solid #d8e1eb}
+  #sagerTable th{white-space:nowrap;font-size:11px;padding:18px 18px 16px;text-transform:uppercase;letter-spacing:.08em;color:#76879a;font-weight:700}
+  #sagerTable td{font-size:13px;padding:20px 18px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:220px;border-bottom:.5px solid #edf1f4;vertical-align:middle;color:#24313d}
   #sagerTable td.wrap{white-space:normal;max-width:none}
   #sagerTable .date-cell{font-variant-numeric:proportional-nums;letter-spacing:-.01em;color:#5f6d7a}
+  #sagerTable tr{background:#fff}
+  #sagerTable tr:hover{background:#fbfcfd}
+  #sagerTable tr[style*="background:#fcfbf8"]{background:#f8fafc !important}
   .kunde-link{
     border:none;background:transparent;color:#294f80;font-weight:600;
     cursor:pointer;padding:0;text-align:left;font:inherit;
@@ -279,6 +282,15 @@
   .opg-main{font-size:16px;font-weight:600;line-height:1.32;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;color:#202b35}
   .opg-sub{font-size:12px;margin-top:4px;color:#7d8b99;display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical;overflow:hidden}
   .kunde-address{font-size:12px;margin-top:4px;color:#6f7f8f}
+  .kategori{
+    min-width:170px;border:2px solid #bfe1cd;background:#edf7f1;color:#3f7f5c;border-radius:12px;
+    padding:9px 14px;font-size:13px;font-weight:500;font-family:var(--table-font);
+  }
+  .kat-2{border-color:#c9dbf2;background:#eff5fb;color:#476a96}
+  .kat-3{border-color:#edd8ad;background:#fbf4de;color:#946f1f}
+  .kat-4{border-color:#c9d8ee;background:#edf3fb;color:#48688d}
+  .kat-5{border-color:#d5dce5;background:#f2f5f8;color:#596776}
+  .kat-6,.kat-7{border-color:#dedad3;background:#f4f2ed;color:#7d766e}
   .row-actions{display:flex;gap:6px;align-items:center}
   .icon-btn{
     border:1px solid var(--line);background:#fff;border-radius:6px;
@@ -1199,6 +1211,16 @@
         </div>
         <div style="overflow-x:auto">
           <table id="sagerTable">
+            <colgroup>
+              <col style="width:210px">
+              <col style="width:96px">
+              <col style="width:320px">
+              <col style="width:430px">
+              <col style="width:138px">
+              <col style="width:130px">
+              <col style="width:130px">
+              <col style="width:108px">
+            </colgroup>
             <thead>
               <tr>
                 <th>Kategori</th>
