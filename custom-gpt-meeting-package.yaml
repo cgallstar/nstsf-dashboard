@@ -16,6 +16,42 @@ security:
   - bearerAuth: []
 
 paths:
+  /api/internal-task:
+    post:
+      operationId: createInternalTask
+      summary: Create an internal task not tied to a customer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - title
+              properties:
+                actorName:
+                  type: string
+                actorEmail:
+                  type: string
+                title:
+                  type: string
+                notes:
+                  type: string
+                dueDate:
+                  type: string
+                owner:
+                  type: string
+                bucket:
+                  type: string
+                domain:
+                  type: string
+                source:
+                  type: string
+                status:
+                  type: string
+      responses:
+        "200":
+          description: Internal task saved
   /api/meeting-package:
     post:
       operationId: saveMeetingPackage

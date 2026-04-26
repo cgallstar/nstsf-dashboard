@@ -154,6 +154,21 @@ export function normalizeTask(task: any) {
   };
 }
 
+export function normalizeInternalTask(task: any) {
+  return {
+    id: textValue(task?.id, randomUUID()),
+    title: textValue(task?.title || task?.name, "Intern opgave"),
+    status: textValue(task?.status, "Åben"),
+    dueDate: textValue(task?.dueDate, ""),
+    owner: textValue(task?.owner, ""),
+    notes: textValue(task?.notes, ""),
+    source: textValue(task?.source, "custom-gpt"),
+    bucket: textValue(task?.bucket, ""),
+    domain: textValue(task?.domain, "intern"),
+    createdAt: textValue(task?.createdAt, new Date().toISOString()),
+  };
+}
+
 export function normalizeChangeOrder(item: any) {
   return {
     id: textValue(item?.id, randomUUID()),

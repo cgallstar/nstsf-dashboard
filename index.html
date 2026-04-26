@@ -1591,6 +1591,7 @@ const DOC_DEFAULTS = {
 };
 const sager = [];
 const betalinger = [];
+const internalTasks = [];
 const emails = [
   {id:'19dc318e09d2bb29', kunde:'Blågårdsgade 14', from:'Søren Mygdal <smg@nstsf.dk>', subject:'Afleveringsreferat – Blågårdsgade 14, kælderbutik', date:'2026-04-25T07:24:41+02:00', preview:'Afleveringsreferat med mangler, udbedring i gang og forventet færdig 27. april.', body:'Hermed referat fra afleveringsmøde vedrørende Blågårdsgade 14, kælderbutik. Termostat mangler, forkert håndbruser og flader skal udbedres. Arbejdet forventes færdigt mandag den 27. april.', tags:['referat','aflevering','mangler'], handled:false, type:'todo'},
   {id:'19dc30f8ee3223eb', kunde:'Ryesgade 62, lejlighed 30', from:'Søren Mygdal <smg@nstsf.dk>', subject:'Byggemødereferat – 24. april | Ryesgade 62, lejlighed 30', date:'2026-04-25T07:14:30+02:00', preview:'Arbejde følger plan, men blikkenslager og ventilation er en risiko mandag.', body:'Arbejdet går planmæssigt fremad, men blikkenslageren er ikke færdig med ventilationsanlægget og kan endnu ikke garantere mandag. Billeder er delt i link.', tags:['referat','fremdrift','blokering'], handled:false, type:'todo'},
@@ -1738,8 +1739,9 @@ function normalizeSag(saved={}, i=0){
 }
 function normalizeBetaling(saved={}){ return { ...saved, nr:textValue(saved.nr, ''), kunde:textValue(saved.kunde, 'Ukendt kunde'), milepael:textValue(saved.milepael, 'Udestående betaling'), dato:textValue(saved.dato, ''), beloeb:textValue(saved.beloeb, '0'), fak:textValue(saved.fak, ''), status:textValue(saved.status, 'udestaaende') }; }
 function normalizeEmployee(saved={}, i=0){ return { id:textValue(saved.id, `employee-${i + 1}`), name:textValue(saved.name, `Medarbejder ${i + 1}`), hours:Number(saved.hours) || 37, type:textValue(saved.type, 'employee'), overrides: saved && typeof saved.overrides === 'object' && !Array.isArray(saved.overrides) ? saved.overrides : {} }; }
-function collectState(){ const capacityHours = document.getElementById('capacityHours') ? +document.getElementById('capacityHours').value || 37 : 37; return { schema:'nstsf-dashboard-state-v1', savedFrom:location.hostname || 'local-file', savedAt:new Date().toISOString(), sager:sager, betalinger:betalinger, employees:employees, settings:{capacityHours, handledEmailIds, dismissedPriorityKeys} }; }
-function applyState(state){ if(!state || typeof state !== 'object') return; if(Array.isArray(state.sager)){ sager.splice(0, sager.length, ...state.sager.map(normalizeSag)); } if(Array.isArray(state.betalinger)){ betalinger.splice(0, betalinger.length, ...state.betalinger.map(normalizeBetaling)); } if(Array.isArray(state.employees)){ employees.splice(0, employees.length, ...state.employees.map(normalizeEmployee)); } if(state.settings && document.getElementById('capacityHours')){ document.getElementById('capacityHours').value = state.settings.capacityHours || 37; handledEmailIds = Array.isArray(state.settings.handledEmailIds) ? state.settings.handledEmailIds : []; dismissedPriorityKeys = Array.isArray(state.settings.dismissedPriorityKeys) ? state.settings.dismissedPriorityKeys : []; } }
+function normalizeInternalTask(saved={}){ return { id:textValue(saved.id, `internal-${Date.now()}`), title:textValue(saved.title || saved.name, 'Intern opgave'), status:textValue(saved.status, 'Åben'), dueDate:textValue(saved.dueDate, ''), owner:textValue(saved.owner, ''), notes:textValue(saved.notes, ''), source:textValue(saved.source, 'custom-gpt'), bucket:textValue(saved.bucket, ''), domain:textValue(saved.domain, 'intern'), createdAt:textValue(saved.createdAt, new Date().toISOString()) }; }
+function collectState(){ const capacityHours = document.getElementById('capacityHours') ? +document.getElementById('capacityHours').value || 37 : 37; return { schema:'nstsf-dashboard-state-v1', savedFrom:location.hostname || 'local-file', savedAt:new Date().toISOString(), sager:sager, betalinger:betalinger, employees:employees, internalTasks:internalTasks, settings:{capacityHours, handledEmailIds, dismissedPriorityKeys} }; }
+function applyState(state){ if(!state || typeof state !== 'object') return; if(Array.isArray(state.sager)){ sager.splice(0, sager.length, ...state.sager.map(normalizeSag)); } if(Array.isArray(state.betalinger)){ betalinger.splice(0, betalinger.length, ...state.betalinger.map(normalizeBetaling)); } if(Array.isArray(state.employees)){ employees.splice(0, employees.length, ...state.employees.map(normalizeEmployee)); } if(Array.isArray(state.internalTasks)){ internalTasks.splice(0, internalTasks.length, ...state.internalTasks.map(normalizeInternalTask)); } if(state.settings && document.getElementById('capacityHours')){ document.getElementById('capacityHours').value = state.settings.capacityHours || 37; handledEmailIds = Array.isArray(state.settings.handledEmailIds) ? state.settings.handledEmailIds : []; dismissedPriorityKeys = Array.isArray(state.settings.dismissedPriorityKeys) ? state.settings.dismissedPriorityKeys : []; } }
 function persistLocalState(){ localStorage.setItem(STORAGE_KEY, JSON.stringify(collectState())); }
 function loadState(){ try{ const state = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}'); applyState(state); }catch(e){} }
 async function saveRemoteState(manual=false){ if(!authUser){ if(manual) setSyncStatus('Du skal være logget ind for at gemme centralt.', 'error'); return; } if(location.protocol === 'file:'){ if(manual) setSyncStatus('Backend virker først på Netlify eller via netlify dev. Lokal fil er kun browser-kopi.', 'error'); return; } try{ setSyncStatus('Gemmer til central backend...'); const res = await fetch(STATE_API, { method:'PUT', credentials:'include', headers:{'content-type':'application/json'}, body:JSON.stringify(collectState()) }); const data = await res.json().catch(()=>({})); if(!res.ok) throw new Error(data.error || `HTTP ${res.status}`); setSyncStatus(`Gemt centralt ${new Date(data.savedAt || Date.now()).toLocaleString('da-DK')}`, 'ok'); }catch(err){ setSyncStatus(`Kun lokal kopi gemt. Backend-fejl: ${err.message}`, 'error'); } }
@@ -1964,6 +1966,26 @@ function buildPriorities(){
     };
     (mail.type === 'sales' ? sales : todos).push(item);
   });
+  internalTasks.filter((task)=>String(task.status || '').toLowerCase() !== 'fuldført').forEach((task)=>{
+    const bucket = task.bucket === 'now' || task.bucket === 'today' || task.bucket === 'week'
+      ? task.bucket
+      : resolvePriorityBucket({
+          now: /nu|hurtigst|akut|straks/i.test(`${task.title} ${task.notes}`),
+          today: !!task.dueDate && daysUntil(task.dueDate) !== null && daysUntil(task.dueDate) <= 1,
+        });
+    todos.push({
+      key: `internal-${task.id}`,
+      internalTaskId: task.id,
+      emailId: '',
+      bucket,
+      score: bucket === 'now' ? 9 : bucket === 'today' ? 7 : 5,
+      title: task.title,
+      meta: `Intern opgave${task.owner ? ` · ${task.owner}` : ''}${task.dueDate ? ` · frist ${displayDate(task.dueDate)}` : ''}`,
+      reason: task.notes || 'Intern opgave fra Custom GPT',
+      actionText: task.notes || 'Løs den interne opgave og marker den derefter som fuldført.',
+      links: '',
+    });
+  });
   const sortItems = (items)=>items.filter((item)=>!dismissedPriorityKeys.includes(item.key)).sort((a,b)=>b.score-a.score || a.title.localeCompare(b.title));
   return { sales: sortItems(sales), todos: sortItems(todos) };
 }
@@ -1986,6 +2008,14 @@ function markPriorityDone(emailId='', key=''){
   renderInbox();
   render();
 }
+function markInternalTaskDone(taskId='', key=''){
+  const task = internalTasks.find((entry)=>entry.id === taskId);
+  if(task) task.status = 'Fuldført';
+  if(key && !dismissedPriorityKeys.includes(key)) dismissedPriorityKeys.push(key);
+  saveState();
+  renderPriorities();
+  renderAppendix();
+}
 function dismissPriority(key=''){
   if(key && !dismissedPriorityKeys.includes(key)) dismissedPriorityKeys.push(key);
   saveState();
@@ -2002,7 +2032,7 @@ function renderPriorityRows(targetId, items, bucket, type){
       <div class="priority-topline"><div class="priority-name">${escapeAttr(item.title)}</div><span class="priority-tag ${bucket}">${priorityBucketLabel(bucket)}</span></div>
       <div class="priority-meta">${escapeAttr(item.meta)}</div>
       <div class="priority-reason">${escapeAttr(item.reason)}</div>
-      <div class="priority-suggestion"><div class="priority-suggestion-label">Suggestion</div><div class="priority-reason">${escapeAttr(item.actionText || item.reason)}</div><div class="priority-actions">${priorityActionButtons(item.links, 'main')}${item.emailId ? `<button class="btn" onclick="markPriorityDone('${item.emailId}','${item.key}')">Fuldført</button>` : ''}<button class="btn ghost" onclick="dismissPriority('${item.key}')">Fjern</button></div></div>
+      <div class="priority-suggestion"><div class="priority-suggestion-label">Suggestion</div><div class="priority-reason">${escapeAttr(item.actionText || item.reason)}</div><div class="priority-actions">${priorityActionButtons(item.links, 'main')}${item.internalTaskId ? `<button class="btn" onclick="markInternalTaskDone('${item.internalTaskId}','${item.key}')">Fuldført</button>` : item.emailId ? `<button class="btn" onclick="markPriorityDone('${item.emailId}','${item.key}')">Fuldført</button>` : ''}<button class="btn ghost" onclick="dismissPriority('${item.key}')">Fjern</button></div></div>
     </div>
   </div>`).join('') : '<div class="priority-empty-state">Ingen punkter her.</div>';
   return rows;
@@ -2016,7 +2046,7 @@ function renderPrioritySide(targetId, items, type){
       <div class="priority-side-top"><div class="priority-side-name">${escapeAttr(item.title)}</div><span class="priority-tag ${item.bucket}">${priorityBucketLabel(item.bucket)}</span></div>
       <div class="priority-side-meta">${escapeAttr(item.meta)}</div>
       <div class="priority-side-reason">${escapeAttr(item.actionText || item.reason)}</div>
-      <div class="priority-side-actions">${priorityActionButtons(item.links, 'side')}${item.emailId ? `<button class="side-btn" onclick="markPriorityDone('${item.emailId}','${item.key}')">Fuldført</button>` : ''}<button class="side-btn" onclick="dismissPriority('${item.key}')">Fjern</button></div>
+      <div class="priority-side-actions">${priorityActionButtons(item.links, 'side')}${item.internalTaskId ? `<button class="side-btn" onclick="markInternalTaskDone('${item.internalTaskId}','${item.key}')">Fuldført</button>` : item.emailId ? `<button class="side-btn" onclick="markPriorityDone('${item.emailId}','${item.key}')">Fuldført</button>` : ''}<button class="side-btn" onclick="dismissPriority('${item.key}')">Fjern</button></div>
     </div>
   </div>`).join('') : '<div class="priority-side-empty">Intet ventende her.</div>';
 }
@@ -2095,6 +2125,9 @@ function buildAppendixEntries(){
     (s.mailDrafts || []).forEach((item)=>{ entries.push({ type:'Draft', title:item.subject || 'Mail draft', customer:s.kunde, date:item.createdAt || '', body:item.preview || item.body || item.status || 'Draft oprettet til godkendelse.', tags:['draft', item.status || 'afventer'], action:`setActiveTab('sager'); openSag(${index})`, actionLabel:'Åbn kunde' }); });
     (s.activityLog || []).forEach((item)=>{ entries.push({ type:'Aktivitet', title:item.title || item.type || 'Systemaktivitet', customer:s.kunde, date:item.createdAt || '', body:item.summary || item.notes || item.message || 'Aktivitet registreret på sagen.', tags:[item.type || 'aktivitet'], action:`setActiveTab('sager'); openSag(${index})`, actionLabel:'Åbn kunde' }); });
   });
+  internalTasks.forEach((task)=>{
+    entries.push({ type:'Intern opgave', title:task.title || 'Intern opgave', customer:'NSTSF', date:task.createdAt || '', body:task.notes || 'Intern opgave registreret via Custom GPT.', tags:[task.domain || 'intern', task.status || 'Åben'], action:`setActiveTab('prioriteringer')`, actionLabel:'Åbn Sager' });
+  });
   return entries.sort((a,b)=> String(b.date || '').localeCompare(String(a.date || '')));
 }
 function renderAppendix(){
@@ -2103,13 +2136,16 @@ function renderAppendix(){
   const actions = document.getElementById('appendixActions');
   if(!stream || !summary || !actions) return;
   const entries = buildAppendixEntries();
-  const tasks = sager.flatMap((s, index)=>(s.tasks || []).map((task)=>({task, customer:s.kunde, index}))).sort((a,b)=>String(a.task?.dueDate || '').localeCompare(String(b.task?.dueDate || '')));
+  const tasks = [
+    ...sager.flatMap((s, index)=>(s.tasks || []).map((task)=>({task, customer:s.kunde, index, internal:false}))),
+    ...internalTasks.filter((task)=>String(task.status || '').toLowerCase() !== 'fuldført').map((task)=>({task, customer:'NSTSF', index:null, internal:true}))
+  ].sort((a,b)=>String(a.task?.dueDate || '').localeCompare(String(b.task?.dueDate || '')));
   const transcripts = entries.filter((entry)=>entry.type === 'Transkript').length;
   const drafts = entries.filter((entry)=>entry.type === 'Draft').length;
   const internalDialogs = entries.filter((entry)=>entry.type === 'Intern dialog').length;
   stream.innerHTML = entries.length ? entries.slice(0,18).map((entry)=>`<div class="appendix-item"><div><div class="appendix-meta">${entry.type} · ${entry.customer} · ${displayDate(entry.date)}</div><h3>${escapeAttr(entry.title)}</h3><div class="appendix-body">${escapeAttr(entry.body)}</div><div class="appendix-tags">${(entry.tags || []).slice(0,4).map((tag)=>`<span class="chip">${escapeAttr(tag)}</span>`).join('')}</div></div><div><button class="icon-btn" onclick="${entry.action}">${entry.actionLabel}</button></div></div>`).join('') : '<div class="appendix-empty">Ingen samtaler eller artefakter fundet endnu.</div>';
   summary.innerHTML = `<table><tbody><tr><td>Interne dialoger</td><td class="num">${internalDialogs}</td></tr><tr><td>Transcripts</td><td class="num">${transcripts}</td></tr><tr><td>Drafts til godkendelse</td><td class="num">${drafts}</td></tr><tr><td>Samlede action points</td><td class="num">${tasks.length}</td></tr></tbody></table>`;
-  actions.innerHTML = tasks.length ? tasks.slice(0,10).map(({task, customer, index})=>`<div class="mini-item"><strong>${escapeAttr(task.title || 'Opgave')}</strong><div class="meta">${escapeAttr(customer)}${task.dueDate ? ` · frist ${displayDate(task.dueDate)}` : ''}</div><div class="meta">${escapeAttr(task.notes || task.status || 'Åben')}</div><div class="priority-item-links" style="margin-top:6px"><button class="icon-btn" onclick="setActiveTab('sager'); openSag(${index})">Åbn kunde</button></div></div>`).join('') : '<div class="appendix-empty">Ingen action points registreret endnu.</div>';
+  actions.innerHTML = tasks.length ? tasks.slice(0,10).map(({task, customer, index, internal})=>`<div class="mini-item"><strong>${escapeAttr(task.title || 'Opgave')}</strong><div class="meta">${escapeAttr(customer)}${task.dueDate ? ` · frist ${displayDate(task.dueDate)}` : ''}</div><div class="meta">${escapeAttr(task.notes || task.status || 'Åben')}</div><div class="priority-item-links" style="margin-top:6px"><button class="icon-btn" onclick="${internal ? `setActiveTab('prioriteringer')` : `setActiveTab('sager'); openSag(${index})`}">${internal ? 'Åbn Sager' : 'Åbn kunde'}</button></div></div>`).join('') : '<div class="appendix-empty">Ingen action points registreret endnu.</div>';
 }
 function showAgentDetail(agentId){
   selectedAgentId = AGENTS[agentId] ? agentId : 'chief-of-staff';
