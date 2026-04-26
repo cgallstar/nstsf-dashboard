@@ -246,15 +246,42 @@
   }
   .org-hero-title{font-size:22px;font-weight:700;color:var(--ink);margin:4px 0 8px}
   .org-hero-sub{font-size:13px;color:var(--muted);max-width:760px;line-height:1.5}
-  .org-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
-  .org-card{
-    border:1px solid var(--line);border-radius:12px;background:#fff;padding:16px;
-    min-height:190px;
+  .org-layout{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(320px,.8fr);gap:20px}
+  .org-diagram{
+    border:1px solid var(--line);border-radius:14px;background:#fff;padding:24px 18px 20px;
   }
-  .org-card .role{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:8px}
-  .org-card h3{font-size:16px;margin:0 0 8px;color:var(--ink)}
-  .org-card ul{margin:10px 0 0 18px;padding:0;color:#415365;font-size:13px;line-height:1.5}
-  .org-card .agent-meta{font-size:12px;color:var(--muted)}
+  .org-diagram-row{display:flex;justify-content:center;gap:18px;flex-wrap:wrap}
+  .org-diagram-row.executive{margin-bottom:18px}
+  .org-diagram-row.primary{margin-bottom:18px}
+  .org-diagram-connector{
+    width:2px;height:30px;background:#d7dfeb;margin:0 auto;
+  }
+  .org-branch{
+    display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px;position:relative;
+  }
+  .org-branch::before{
+    content:'';position:absolute;left:16.66%;right:16.66%;top:-16px;height:2px;background:#d7dfeb;
+  }
+  .org-column{display:grid;gap:14px;align-content:start}
+  .org-column .org-connector{width:2px;height:14px;background:#d7dfeb;margin:0 auto}
+  .org-node{
+    width:100%;text-align:left;border:1px solid var(--line);border-radius:12px;background:#fff;padding:14px 16px;
+    cursor:pointer;transition:border-color .15s, box-shadow .15s, transform .15s;
+  }
+  .org-node:hover{border-color:#9db4cf;box-shadow:0 6px 16px rgba(28,53,82,.08)}
+  .org-node.active{border-color:var(--brand);box-shadow:0 0 0 2px rgba(74,119,168,.14)}
+  .org-node.director{background:#f7fafc}
+  .org-node-role{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:6px}
+  .org-node h3{font-size:16px;margin:0 0 6px;color:var(--ink)}
+  .org-node p{margin:0;color:#415365;font-size:13px;line-height:1.45}
+  .org-detail{
+    border:1px solid var(--line);border-radius:14px;background:#fff;padding:18px 20px;min-height:100%;
+  }
+  .org-detail .meta{font-size:12px;color:var(--muted);margin-bottom:8px}
+  .org-detail h3{font-size:22px;margin:0 0 8px;color:var(--ink)}
+  .org-detail p{font-size:13px;color:#415365;line-height:1.55;margin:0 0 14px}
+  .org-detail ul{margin:0 0 16px 18px;padding:0;color:#415365;font-size:13px;line-height:1.55}
+  .org-detail-actions{display:flex;gap:8px;flex-wrap:wrap}
   .priority-shell{background:#f5f2ec;border:1px solid rgba(0,0,0,.06);border-radius:18px;overflow:hidden}
   .priority-topbar{display:flex;align-items:center;justify-content:space-between;padding:14px 24px;background:#fff;border-bottom:.5px solid rgba(0,0,0,.08);gap:16px;position:sticky;top:0;z-index:1}
   .priority-topbar-title{font-size:13px;font-weight:600;color:#8a8680;text-transform:uppercase;letter-spacing:.08em}
@@ -1159,66 +1186,69 @@
       Færre agenttyper, men tættere koblet til kunder, mails, møder, drafts og Drive.
     </div>
   </div>
-  <div class="org-grid">
-    <div class="org-card">
-      <div class="role">Ledelse</div>
-      <h3>Chief of Staff / Koordinering</h3>
-      <div class="agent-meta">Holder sammen på dagens prioriteringer, mødenoter og næste handlinger.</div>
-      <ul>
-        <li>samler input fra ChatGPT, mail og interne møder</li>
-        <li>fordeler action points til Sager</li>
-        <li>løfter ting til Søren ved blokeringer</li>
-      </ul>
+  <div class="org-layout">
+    <div class="org-diagram">
+      <div class="org-diagram-row executive">
+        <button class="org-node director" data-agent="director" onclick="showAgentDetail('director')">
+          <div class="org-node-role">Direktion</div>
+          <h3>Søren Mygdal</h3>
+          <p>Direktør. Beslutter tilbud, bemanding, kundeprioritet og økonomiske løft.</p>
+        </button>
+      </div>
+      <div class="org-diagram-connector"></div>
+      <div class="org-diagram-row primary">
+        <button class="org-node" data-agent="chief-of-staff" onclick="showAgentDetail('chief-of-staff')">
+          <div class="org-node-role">Ledelse</div>
+          <h3>Chief of Staff</h3>
+          <p>Samler input og fordeler næste handlinger.</p>
+        </button>
+      </div>
+      <div class="org-diagram-connector"></div>
+      <div class="org-branch">
+        <div class="org-column">
+          <div class="org-connector"></div>
+          <button class="org-node" data-agent="sales-followup" onclick="showAgentDetail('sales-followup')">
+            <div class="org-node-role">Salg</div>
+            <h3>Tilbuds- og opfølgningsagent</h3>
+            <p>Driver tilbud, opfølgning og næste kundeskridt.</p>
+          </button>
+          <button class="org-node" data-agent="customer-notes" onclick="showAgentDetail('customer-notes')">
+            <div class="org-node-role">Kundeproces</div>
+            <h3>Kunde- og referatagent</h3>
+            <p>Omsætter møder til referater, drafts og tasks.</p>
+          </button>
+        </div>
+        <div class="org-column">
+          <div class="org-connector"></div>
+          <button class="org-node" data-agent="capacity-planning" onclick="showAgentDetail('capacity-planning')">
+            <div class="org-node-role">Drift</div>
+            <h3>Kapacitets- og bemandingsagent</h3>
+            <p>Oversætter sager til kalender og kapacitetsbelastning.</p>
+          </button>
+          <button class="org-node" data-agent="hr-people" onclick="showAgentDetail('hr-people')">
+            <div class="org-node-role">HR</div>
+            <h3>HR- og personaleagent</h3>
+            <p>Ferie, skoleuger, onboarding og mandskabsstatus.</p>
+          </button>
+        </div>
+        <div class="org-column">
+          <div class="org-connector"></div>
+          <button class="org-node" data-agent="liquidity-margin" onclick="showAgentDetail('liquidity-margin')">
+            <div class="org-node-role">Økonomi</div>
+            <h3>Likviditets- og marginagent</h3>
+            <p>Holder styr på udeståender, stade og DB.</p>
+          </button>
+          <button class="org-node" data-agent="ks-archive" onclick="showAgentDetail('ks-archive')">
+            <div class="org-node-role">Dokumentation</div>
+            <h3>KS- og arkiveringsagent</h3>
+            <p>Billeder, KS, referater og Drive-struktur.</p>
+          </button>
+        </div>
+      </div>
     </div>
-    <div class="org-card">
-      <div class="role">Salg</div>
-      <h3>Tilbuds- og opfølgningsagent</h3>
-      <div class="agent-meta">Driver tilbud, opfølgning og næste kundeskridt.</div>
-      <ul>
-        <li>opdager leads og ubesvarede tilbud</li>
-        <li>klargør tilbudsdrafts og opfølgninger</li>
-        <li>kobler dialog direkte til kundesagen</li>
-      </ul>
-    </div>
-    <div class="org-card">
-      <div class="role">Drift</div>
-      <h3>Kapacitets- og bemandingsagent</h3>
-      <div class="agent-meta">Oversætter sager til konkret kapacitetsbelastning uge for uge.</div>
-      <ul>
-        <li>kobler aktive sager til kalender og medarbejdere</li>
-        <li>flagger overbooking, ferie og skoleuger</li>
-        <li>viser hvad der fylder denne og næste uge</li>
-      </ul>
-    </div>
-    <div class="org-card">
-      <div class="role">Kundeproces</div>
-      <h3>Kunde- og referatagent</h3>
-      <div class="agent-meta">Omsætter møder og samtaler til referater, tasks og dokumentation.</div>
-      <ul>
-        <li>strukturerer transcripts og byggemøder</li>
-        <li>opretter draft-first mails til godkendelse</li>
-        <li>sikrer at action points havner på den rigtige sag</li>
-      </ul>
-    </div>
-    <div class="org-card">
-      <div class="role">Økonomi</div>
-      <h3>Likviditets- og marginagent</h3>
-      <div class="agent-meta">Holder styr på udeståender, stade og DB på tværs af sager.</div>
-      <ul>
-        <li>kobler betalinger til stade og milepæle</li>
-        <li>følger op på udeståender og fakturastatus</li>
-        <li>trækker margindata fra Minuba, når integrationen er klar</li>
-      </ul>
-    </div>
-    <div class="org-card">
-      <div class="role">Dokumentation</div>
-      <h3>KS- og arkiveringsagent</h3>
-      <div class="agent-meta">Sikrer at billeder, KS, referater og kontrakter bliver lagt korrekt på Drive.</div>
-      <ul>
-        <li>opretter og vedligeholder kundemappestruktur</li>
-        <li>arkiverer billeder, KS og underskrifter</li>
-        <li>gør dokumenter synlige direkte under kunden</li>
-      </ul>
+    <div id="orgDetail" class="org-detail"></div>
+  </div>
+</section>
     </div>
   </div>
 </section>
@@ -1358,7 +1388,65 @@ let liquiditySubtab = 'overview';
 let inboxFilter = 'alle';
 let selectedEmailId = null;
 let priorityView = 'todos';
+let selectedAgentId = 'chief-of-staff';
 const ACTIVE_CASE_CATEGORIES = new Set([1,2,3,4,5]);
+const AGENTS = {
+  'director': {
+    role: 'Direktion',
+    title: 'Søren Mygdal',
+    summary: 'Direktør og beslutningstager på tværs af tilbud, kundeprioritet, bemanding og økonomiske løft.',
+    points: ['godkender retning på større tilbud og kundeprioriteter', 'træffer beslutninger ved blokeringer på tværs af salg, drift og økonomi', 'ejer den samlede fremdrift i NSTSF'],
+  },
+  'chief-of-staff': {
+    role: 'Ledelse',
+    title: 'Chief of Staff',
+    summary: 'Holder sammen på dagens prioriteringer, mødenoter og næste handlinger på tværs af hele forretningen.',
+    doc: '/agents/chief-of-staff.md',
+    points: ['samler input fra ChatGPT, mail og interne møder', 'fordeler action points videre til Sager', 'eskalerer kun det, der reelt kræver Søren'],
+  },
+  'sales-followup': {
+    role: 'Salg',
+    title: 'Tilbuds- og opfølgningsagent',
+    summary: 'Driver tilbud, svarfrister og konkret salgsopfølgning direkte på de relevante kunder.',
+    doc: '/agents/sales-followup.md',
+    points: ['finder leads og ubesvarede tilbud', 'bygger draft-first opfølgninger', 'kobler salgsdialog direkte til kundesagen'],
+  },
+  'capacity-planning': {
+    role: 'Drift',
+    title: 'Kapacitets- og bemandingsagent',
+    summary: 'Oversætter sager til konkret kapacitet, bemanding og ugeplan.',
+    doc: '/agents/capacity-planning.md',
+    points: ['kobler aktive sager til kalender og medarbejdere', 'flagger overbooking, ferie og skoleuger', 'viser hvad der fylder denne og næste uge'],
+  },
+  'customer-notes': {
+    role: 'Kundeproces',
+    title: 'Kunde- og referatagent',
+    summary: 'Omsætter møder, transcripts og kundedialog til referater, tasks og mail drafts.',
+    doc: '/agents/customer-notes.md',
+    points: ['strukturerer transcripts og byggemøder', 'opretter draft-first mails til godkendelse', 'sikrer at næste handling havner på den rigtige sag'],
+  },
+  'liquidity-margin': {
+    role: 'Økonomi',
+    title: 'Likviditets- og marginagent',
+    summary: 'Holder styr på udeståender, stade, DB og sammenhængen mellem levering og betaling.',
+    doc: '/agents/liquidity-margin.md',
+    points: ['kobler betalinger til stade og milepæle', 'følger op på udeståender og fakturastatus', 'trækker margindata fra Minuba når integrationen er klar'],
+  },
+  'ks-archive': {
+    role: 'Dokumentation',
+    title: 'KS- og arkiveringsagent',
+    summary: 'Sikrer at billeder, KS, referater og kontrakter bliver lagt rigtigt og er tilgængelige under kunden.',
+    doc: '/agents/ks-archive.md',
+    points: ['vedligeholder kundemappestruktur i Drive', 'arkiverer billeder, KS og underskrifter', 'gør dokumenter synlige direkte på sagen'],
+  },
+  'hr-people': {
+    role: 'HR',
+    title: 'HR- og personaleagent',
+    summary: 'Holder styr på mandskab, ferie, skoleforløb, onboarding og kapacitetsrelevante personaleforhold.',
+    doc: '/agents/hr-people.md',
+    points: ['styrer ferie, skoleuger og udenlandske rotationer', 'holder overblik over onboarding og bemandingsstatus', 'sørger for at kapacitetskalenderen matcher virkeligheden'],
+  },
+};
 function setSyncStatus(text, tone){ const el = document.getElementById('syncStatus'); if(!el) return; el.textContent = text; el.style.color = tone === 'error' ? 'var(--red)' : tone === 'ok' ? 'var(--green)' : 'var(--muted)'; }
 function setAdminMessage(text='', tone=''){ const el = document.getElementById('adminMessage'); if(!el) return; el.textContent = text; el.style.color = tone === 'error' ? 'var(--red)' : tone === 'ok' ? 'var(--green)' : 'var(--muted)'; }
 function textValue(value, fallback=''){ if(value === null || value === undefined) return fallback; return String(value); }
@@ -1699,6 +1787,14 @@ function renderAppendix(){
   summary.innerHTML = `<table><tbody><tr><td>Interne dialoger</td><td class="num">${internalDialogs}</td></tr><tr><td>Transcripts</td><td class="num">${transcripts}</td></tr><tr><td>Drafts til godkendelse</td><td class="num">${drafts}</td></tr><tr><td>Samlede action points</td><td class="num">${tasks.length}</td></tr></tbody></table>`;
   actions.innerHTML = tasks.length ? tasks.slice(0,10).map(({task, customer, index})=>`<div class="mini-item"><strong>${escapeAttr(task.title || 'Opgave')}</strong><div class="meta">${escapeAttr(customer)}${task.dueDate ? ` · frist ${displayDate(task.dueDate)}` : ''}</div><div class="meta">${escapeAttr(task.notes || task.status || 'Åben')}</div><div class="priority-item-links" style="margin-top:6px"><button class="icon-btn" onclick="setActiveTab('sager'); openSag(${index})">Åbn kunde</button></div></div>`).join('') : '<div class="appendix-empty">Ingen action points registreret endnu.</div>';
 }
+function showAgentDetail(agentId){
+  selectedAgentId = AGENTS[agentId] ? agentId : 'chief-of-staff';
+  const detail = document.getElementById('orgDetail');
+  if(!detail) return;
+  const agent = AGENTS[selectedAgentId];
+  document.querySelectorAll('.org-node').forEach((node)=>node.classList.toggle('active', node.dataset.agent === selectedAgentId));
+  detail.innerHTML = `<div class="meta">${agent.role}</div><h3>${agent.title}</h3><p>${agent.summary}</p><ul>${(agent.points || []).map((point)=>`<li>${escapeAttr(point)}</li>`).join('')}</ul><div class="org-detail-actions">${agent.doc ? `<a class="btn primary" href="${agent.doc}" target="_blank" rel="noopener">Åbn .md fil</a>` : ''}<button class="btn" onclick="setActiveTab('appendix')">Åbn Appendix</button></div>`;
+}
 function renderSagDetail(i){
   const s = sager[i];
   const caseDetail = document.getElementById('caseDetail');
@@ -1991,6 +2087,7 @@ renderBetalinger();
 renderCapacity();
 renderInbox();
 renderPriorities();
+showAgentDetail(selectedAgentId);
 updateAuthUi();
 setActiveTab('dashboard');
 checkAuth();
