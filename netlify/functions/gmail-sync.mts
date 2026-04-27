@@ -72,6 +72,68 @@ function inferTagsAndType(subject = "", body = "", from = "") {
   };
 }
 
+function topicTokens(subject = "", body = "") {
+  const source = `${subject} ${body}`
+    .toLowerCase()
+    .replace(/[^a-z0-9æøå\s]/g, " ");
+  const stop = new Set([
+    "vedr",
+    "re",
+    "sv",
+    "vs",
+    "fw",
+    "fwd",
+    "mail",
+    "sag",
+    "kunde",
+    "til",
+    "fra",
+    "ang",
+    "status",
+    "helt",
+    "skal",
+    "med",
+    "for",
+    "der",
+    "det",
+    "har",
+    "som",
+    "ikke",
+  ]);
+  return [...new Set(source.split(/\s+/).filter((token) => token.length >= 4 && !stop.has(token)))];
+}
+
+function similarTopic(a: any, b: any) {
+  const left = topicTokens(a?.subject, a?.body);
+  const right = new Set(topicTokens(b?.subject, b?.body));
+  const overlap = left.filter((token) => right.has(token));
+  return overlap.length >= 1;
+}
+
+function sameCustomer(a: any, b: any) {
+  const left = String(a?.kunde || "").toLowerCase();
+  const right = String(b?.kunde || "").toLowerCase();
+  if (!left || !right) return false;
+  if (left === right) return true;
+  if (left.includes("dke") && right.includes("dke")) return true;
+  return false;
+}
+
+function resolveHandledItems(items: any[]) {
+  return items.map((item) => {
+    if (item.handled) return item;
+    const currentDate = new Date(String(item.date || "")).getTime();
+    const newerInternal = items.find((candidate) => {
+      if (!candidate || candidate === item) return false;
+      if (candidate.latestSenderType !== "internal") return false;
+      if (!sameCustomer(item, candidate)) return false;
+      if (!similarTopic(item, candidate)) return false;
+      return new Date(String(candidate.date || "")).getTime() > currentDate;
+    });
+    return newerInternal ? { ...item, handled: true } : item;
+  });
+}
+
 function toEmailEntry(thread: any, sager: any[]) {
   const summaries = Array.isArray(thread?.messages) ? thread.messages.map(gmailMessageSummary) : [];
   if (!summaries.length) return null;
@@ -119,10 +181,10 @@ export default async (request: Request) => {
 
   const threads = await listRecentGmailThreads(SYNC_QUERY, 40);
   const fullThreads = await Promise.all(threads.map((thread: any) => getGmailThread(String(thread.id))));
-  const items = fullThreads
+  const items = resolveHandledItems(fullThreads
     .map((thread) => toEmailEntry(thread, state.sager || []))
     .filter(Boolean)
-    .sort((a: any, b: any) => String(b.date).localeCompare(String(a.date)));
+    .sort((a: any, b: any) => String(b.date).localeCompare(String(a.date))));
 
   state.emails = items;
   const savedAt = await saveDashboardState(state);
