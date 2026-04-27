@@ -576,6 +576,15 @@
   .mini-item strong{display:block;font-size:12px}
   .mini-item .meta{font-size:11px;color:var(--muted);margin-top:2px}
   .payment-inline-table td,.payment-inline-table th{font-size:12px;padding:8px 9px}
+  .payment-inline-table .status-cell{white-space:nowrap}
+  .status-chip{
+    display:inline-flex;align-items:center;gap:6px;padding:4px 8px;border-radius:999px;
+    font-size:11px;font-weight:700;line-height:1;
+  }
+  .status-chip.paid{background:#edf7f1;color:#2f7a52;border:1px solid #b9deca}
+  .status-chip.open{background:#fdf2ef;color:#b45d4e;border:1px solid #efcbc4}
+  .status-chip .check{font-size:11px;line-height:1}
+  .pay-action-btn{margin-left:8px}
   .capacity-tools{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:16px}
   .capacity-tools input{width:80px;padding:6px 8px;border:1px solid var(--line);border-radius:6px;text-align:right}
   .capacity-layout{display:grid;grid-template-columns:1fr;gap:18px}
@@ -2023,6 +2032,30 @@ function paymentSummaryRows(){
 function getSagPayments(s){
   return paymentSummaryRows().filter((b)=> (s.nr && b.nr === s.nr) || matchCustomer(b.kunde, s.kunde) || (getCustomerAccount(s) && b.kunde === getCustomerAccount(s).shortTitle && String(b.milepael || '').includes(s.adr || '')));
 }
+function getSagPaymentHistory(s){
+  const explicit = betalinger
+    .filter((b)=> (s.nr && b.nr === s.nr) || matchCustomer(b.kunde, s.kunde) || (getCustomerAccount(s) && b.kunde === getCustomerAccount(s).shortTitle && String(b.milepael || '').includes(s.adr || '')))
+    .map((b, index)=>({
+      ...b,
+      source:'betaling',
+      historyKey:`betaling-${index}-${b.nr || b.dato || b.beloeb}`,
+    }));
+  const hasCurrentExplicit = explicit.some((b)=>String(b.status || '').toLowerCase() !== 'betalt' && String(b.dato || '') === String(s.dato || '') && parseNumber(b.beloeb) === parseNumber(s.u));
+  const derived = ACTIVE_CASE_CATEGORIES.has(+s.k) && parseNumber(s.u) > 0 && s.dato && !hasCurrentExplicit
+    ? [{
+        nr:s.nr || '',
+        kunde:casePaymentLabel(s),
+        milepael:s.adr || s.opg || 'Udestående betaling',
+        dato:s.dato,
+        beloeb:String(parseNumber(s.u)),
+        fak:s.fak || '',
+        status:'udestaaende',
+        source:'case',
+        historyKey:`case-${s.nr || s.kunde}-${s.dato}-${parseNumber(s.u)}`,
+      }]
+    : [];
+  return [...explicit, ...derived].sort((a,b)=> String(b.dato || '').localeCompare(String(a.dato || '')));
+}
 function isEmailHandled(mail){ return !!mail.handled || handledEmailIds.includes(mail.id); }
 function getRelatedEmails(s){ return emails.filter((mail)=> (s.nr && `${mail.subject} ${mail.body}`.includes(s.nr)) || matchCustomer(mail.kunde, s.kunde) || matchCustomer(mail.subject, s.kunde) || matchCustomer(mail.body, s.kunde)).sort((a,b)=> String(b.date).localeCompare(String(a.date))); }
 function latestDialogDate(s){ const related = getRelatedEmails(s); return related.length ? related[0].date : ''; }
@@ -2519,7 +2552,10 @@ function changeKat(i,v){ sager[i].k = +v; saveState(); render(); renderPrioritie
 function changeStatus(i,v){ sager[i].status = v; saveState(); render(); renderPriorities(); }
 function openSag(i){ if(selectedCustomerIndex === i){ closeSag(); return; } selectedCustomerIndex = i; render(); renderSagDetail(i); }
 function renderDocs(items){ if(!items || !items.length) return '<div class="doc-empty">Ingen dokumenter registreret endnu.</div>'; return items.map(d=>`<div class="doc-item"><div><strong>${d.titel}</strong><div class="doc-meta">${d.dato || 'Dato mangler'}</div></div>${d.url ? `<a href="${d.url}" target="_blank" rel="noopener">Åbn</a>` : '<span class="dim">Mangler link</span>'}</div>`).join(''); }
-function renderCasePayments(s){ const rows = getSagPayments(s); return rows.length ? `<table class="payment-inline-table"><thead><tr><th>Milepæl</th><th>Dato</th><th class="num">Beløb</th><th>Status</th></tr></thead><tbody>${rows.map((p)=>`<tr><td>${p.milepael}</td><td>${displayDate(p.dato)}</td><td class="num">${p.beloeb} kr.</td><td>${p.status === 'betalt' ? 'Betalt' : 'Udestående'}</td></tr>`).join('')}</tbody></table>` : '<div class="doc-empty">Ingen betalinger registreret på kunden endnu.</div>'; }
+function renderCasePayments(caseIndex, s){
+  const rows = getSagPaymentHistory(s);
+  return rows.length ? `<table class="payment-inline-table"><thead><tr><th>Milepæl</th><th>Dato</th><th class="num">Beløb</th><th>Status</th></tr></thead><tbody>${rows.map((p)=>`<tr><td>${p.milepael}</td><td>${displayDate(p.dato)}</td><td class="num">${p.beloeb} kr.</td><td class="status-cell">${String(p.status || '').toLowerCase() === 'betalt' ? `<span class="status-chip paid"><span class="check">✓</span>Faktura betalt</span>` : `<span class="status-chip open">Udestående</span><button class="icon-btn pay-action-btn" onclick="markCasePaymentPaid(${caseIndex}, '${escapeAttr(p.historyKey)}')">Marker som betalt</button>`}</td></tr>`).join('')}</tbody></table>` : '<div class="doc-empty">Ingen betalinger registreret på kunden endnu.</div>';
+}
 function renderRelatedMailList(s){ const related = getRelatedEmails(s).slice(0,4); return related.length ? related.map((mail)=>`<div class="mini-item"><strong>${mail.subject}</strong><div class="meta">${displayDate(mail.date)} · ${mail.from}</div><div class="priority-item-links" style="margin-top:6px"><button class="icon-btn" onclick="setActiveTab('indbakke'); openEmail('${mail.id}')">Åbn mail</button></div></div>`).join('') : '<div class="doc-empty">Ingen relateret dialog fundet endnu.</div>'; }
 function renderDrafts(items=[]){ return items.length ? `<div class="mini-list">${items.map((item)=>`<div class="mini-item"><strong>${item.subject || item.type || 'Draft'}</strong><div class="meta">${item.status || 'Afventer'}${item.createdAt ? ` · ${displayDate(String(item.createdAt).slice(0,10))}` : ''}</div></div>`).join('')}</div>` : '<div class="doc-empty">Ingen drafts oprettet endnu.</div>'; }
 function renderTaskList(items=[]){ return items.length ? `<div class="mini-list">${items.map((item)=>`<div class="mini-item"><strong>${item.title || 'Opgave'}</strong><div class="meta">${item.status || 'Åben'}${item.dueDate ? ` · frist ${displayDate(item.dueDate)}` : ''}</div><div class="meta">${item.owner || 'Ingen ansvarlig'}${item.notes ? ` · ${item.notes}` : ''}</div></div>`).join('')}</div>` : '<div class="doc-empty">Ingen to-do&apos;s registreret endnu.</div>'; }
@@ -2612,7 +2648,7 @@ function renderSagDetail(i){
       </div>
       <div class="case-card">
         <h3>Betalinger</h3>
-        ${renderCasePayments(s)}
+        ${renderCasePayments(i, s)}
       </div>
       <div class="case-card">
         <h3>Noter og mødereferater</h3>
@@ -2638,12 +2674,45 @@ function renderSagDetail(i){
     </div>
   </div>`;
 }
-function closeSag(){ const caseDetail = document.getElementById('caseDetail'); const customerLayout = document.querySelector('.customers-layout'); selectedCustomerIndex = null; render(); if(customerLayout) customerLayout.classList.remove('detail-open'); if(caseDetail){ caseDetail.classList.remove('active'); caseDetail.innerHTML = '<div class="case-placeholder">Vælg en kunde i listen for at se info, betalinger, noter, referater og links i højre side.</div>'; } }
+function closeSag(){ const caseDetail = document.getElementById('caseDetail'); const customerLayout = document.querySelector('.customers-layout'); selectedCustomerIndex = null; editSagIndex = null; render(); if(customerLayout) customerLayout.classList.remove('detail-open'); if(caseDetail){ caseDetail.classList.remove('active'); caseDetail.innerHTML = '<div class="case-placeholder">Vælg en kunde i listen for at se info, betalinger, noter, referater og links i højre side.</div>'; } }
 function addSag(){ const idx = sager.length; sager.push(normalizeSag({ k:3,nr:"",kunde:"Ny kunde",adr:"",opg:"",b:"0",u:"0",dato:"",status:"—",timer:"",fak:"",start:"",slut:"",info:"",mail:"",tlf:"",drive:"",sort:idx,docs:{drive:"",byggereferater:docDemo.byggereferater,transkripter:docDemo.transkripter}}, idx)); saveState(); openEditSag(idx); render(); }
 let editSagIndex = null;
-function openEditSag(i){ const s = sager[i]; const caseDetail = document.getElementById('caseDetail'); if(!s || !caseDetail) return; editSagIndex = i; caseDetail.classList.add('active'); caseDetail.innerHTML = `<div class="panel-hd"><h2>Rediger sag</h2><button class="btn ghost" onclick="closeSag()">Luk</button></div><div class="case-form"><label>Kategori<select id="edit-k">${Object.entries(KAT).map(([k,v])=>`<option value="${k}"${+k===s.k?' selected':''}>${v}</option>`).join('')}</select></label><label>Sagsnr.<input id="edit-nr" value="${escapeAttr(s.nr)}"></label><label>Kundenavn<input id="edit-kunde" value="${escapeAttr(s.kunde)}"></label><label class="wide">Adresse<input id="edit-adr" value="${escapeAttr(s.adr === '—' ? '' : s.adr)}"></label><label class="wide">Opgave<textarea id="edit-opg">${escapeAttr(s.opg)}</textarea></label><label>Est. beløb<input id="edit-b" value="${escapeAttr(s.b)}"></label><label>Udestående<input id="edit-u" value="${escapeAttr(s.u)}"></label><label>Betalingsdato<input id="edit-dato" type="date" value="${escapeAttr(s.dato)}"></label><label>Startdato<input id="edit-start" type="date" value="${escapeAttr(s.start)}"></label><label>Slutdato<input id="edit-slut" type="date" value="${escapeAttr(s.slut)}"></label><label>Fin. status<input id="edit-status" value="${escapeAttr(s.status)}"></label><label>Est. timer<input id="edit-timer" value="${escapeAttr(s.timer)}"></label><label>Fakturanr.<input id="edit-fak" value="${escapeAttr(s.fak)}"></label><label>Mail<input id="edit-mail" value="${escapeAttr(s.mail)}"></label><label>Telefon<input id="edit-tlf" value="${escapeAttr(s.tlf)}"></label><label class="wide">Google Drive-folder URL<input id="edit-drive" value="${escapeAttr(getSagDrive(s))}" placeholder="Indsæt link til kundens Drive-mappe"></label><label class="wide">Noter/info<textarea id="edit-info">${escapeAttr(s.info)}</textarea></label></div><div style="display:flex;gap:8px;margin-top:14px"><button class="btn primary" onclick="saveSagEdit()">Gem</button><button class="btn" onclick="renderSagDetail(${i})">Annuller</button></div>`; }
+function openEditSag(i){ const s = sager[i]; const caseDetail = document.getElementById('caseDetail'); const customerLayout = document.querySelector('.customers-layout'); if(!s || !caseDetail) return; editSagIndex = i; selectedCustomerIndex = i; render(); if(customerLayout) customerLayout.classList.add('detail-open'); caseDetail.classList.add('active'); caseDetail.innerHTML = `<div class="case-shell"><div class="case-head"><div class="case-eyebrow">NSTSF kundesystem</div><div class="case-head-top"><div><h2>Rediger sag</h2><div class="sub">${s.kunde || 'Ukendt kunde'}${s.nr ? ` · Sag ${s.nr}` : ''}</div></div><button class="btn ghost" onclick="closeSag()">Luk</button></div></div><div class="case-card"><div class="case-form"><label>Kategori<select id="edit-k">${Object.entries(KAT).map(([k,v])=>`<option value="${k}"${+k===s.k?' selected':''}>${v}</option>`).join('')}</select></label><label>Sagsnr.<input id="edit-nr" value="${escapeAttr(s.nr)}"></label><label>Kundenavn<input id="edit-kunde" value="${escapeAttr(s.kunde)}"></label><label class="wide">Adresse<input id="edit-adr" value="${escapeAttr(s.adr === '—' ? '' : s.adr)}"></label><label class="wide">Opgave<textarea id="edit-opg">${escapeAttr(s.opg)}</textarea></label><label>Est. beløb<input id="edit-b" value="${escapeAttr(s.b)}"></label><label>Udestående<input id="edit-u" value="${escapeAttr(s.u)}"></label><label>Betalingsdato<input id="edit-dato" type="date" value="${escapeAttr(s.dato)}"></label><label>Startdato<input id="edit-start" type="date" value="${escapeAttr(s.start)}"></label><label>Slutdato<input id="edit-slut" type="date" value="${escapeAttr(s.slut)}"></label><label>Fin. status<input id="edit-status" value="${escapeAttr(s.status)}"></label><label>Est. timer<input id="edit-timer" value="${escapeAttr(s.timer)}"></label><label>Fakturanr.<input id="edit-fak" value="${escapeAttr(s.fak)}"></label><label>Mail<input id="edit-mail" value="${escapeAttr(s.mail)}"></label><label>Telefon<input id="edit-tlf" value="${escapeAttr(s.tlf)}"></label><label class="wide">Google Drive-folder URL<input id="edit-drive" value="${escapeAttr(getSagDrive(s))}" placeholder="Indsæt link til kundens Drive-mappe"></label><label class="wide">Noter/info<textarea id="edit-info">${escapeAttr(s.info)}</textarea></label></div><div style="display:flex;gap:8px;margin-top:14px"><button class="btn primary" onclick="saveSagEdit()">Gem</button><button class="btn" onclick="renderSagDetail(${i})">Annuller</button></div></div></div>`; }
 function readEdit(id){ return document.getElementById(id).value.trim(); }
 function saveSagEdit(){ if(editSagIndex === null || !sager[editSagIndex]) return; const s = sager[editSagIndex]; s.k = +readEdit('edit-k') || 3; s.nr = readEdit('edit-nr'); s.kunde = readEdit('edit-kunde') || 'Ukendt kunde'; s.adr = readEdit('edit-adr'); s.opg = readEdit('edit-opg'); s.b = readEdit('edit-b') || '0'; s.u = readEdit('edit-u') || '0'; s.dato = readEdit('edit-dato'); s.start = readEdit('edit-start'); s.slut = readEdit('edit-slut'); s.status = readEdit('edit-status') || '—'; s.timer = readEdit('edit-timer'); s.fak = readEdit('edit-fak'); s.mail = readEdit('edit-mail'); s.tlf = readEdit('edit-tlf'); s.drive = readEdit('edit-drive'); s.info = readEdit('edit-info'); s.docs = s.docs || {byggereferater:docDemo.byggereferater, transkripter:docDemo.transkripter}; s.docs.drive = s.drive; saveState(); render(); renderPriorities(); renderCapacity(); renderSagDetail(editSagIndex); }
+function markCasePaymentPaid(caseIndex, historyKey=''){
+  const s = sager[caseIndex];
+  if(!s) return;
+  const history = getSagPaymentHistory(s);
+  const target = history.find((item)=>item.historyKey === historyKey);
+  if(!target) return;
+  if(target.source === 'betaling'){
+    const match = betalinger.find((entry)=>(s.nr && entry.nr === target.nr && String(entry.dato || '') === String(target.dato || '') && parseNumber(entry.beloeb) === parseNumber(target.beloeb)) || (String(entry.kunde || '') === String(target.kunde || '') && String(entry.milepael || '') === String(target.milepael || '') && String(entry.dato || '') === String(target.dato || '') && parseNumber(entry.beloeb) === parseNumber(target.beloeb)));
+    if(match){
+      match.status = 'betalt';
+      match.paidAt = new Date().toISOString();
+    }
+  } else {
+    betalinger.unshift(normalizeBetaling({
+      nr:s.nr || '',
+      kunde:casePaymentLabel(s),
+      milepael:target.milepael || s.adr || s.opg || 'Betaling',
+      dato:target.dato || s.dato,
+      beloeb:String(parseNumber(target.beloeb)),
+      fak:s.fak || '',
+      status:'betalt',
+      paidAt:new Date().toISOString(),
+    }));
+    s.u = '0';
+    s.status = 'Faktura betalt';
+  }
+  saveState();
+  render();
+  renderBetalinger();
+  renderFinancials();
+  renderPriorities();
+  renderSagDetail(caseIndex);
+}
 function startOfWeek(date){ const d = new Date(date); const day = (d.getDay() + 6) % 7; d.setDate(d.getDate() - day); d.setHours(0,0,0,0); return d; }
 function addDays(date, days){ const d = new Date(date); d.setDate(d.getDate() + days); return d; }
 function isoWeek(date){ const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate())); const dayNum = d.getUTCDay() || 7; d.setUTCDate(d.getUTCDate() + 4 - dayNum); const yearStart = new Date(Date.UTC(d.getUTCFullYear(),0,1)); return Math.ceil((((d - yearStart) / 86400000) + 1) / 7); }
