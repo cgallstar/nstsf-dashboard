@@ -2346,6 +2346,14 @@ function archivePriorityItem(item, mode='arkiv'){
   });
   archivedPriorityItems = archivedPriorityItems.slice(0, 50);
 }
+function markPriorityComplete(key=''){
+  archivePriorityItem(findPriorityByKey(key), 'fuldført');
+  if(key && !dismissedPriorityKeys.includes(key)) dismissedPriorityKeys.push(key);
+  saveState();
+  renderPriorities();
+  renderInbox();
+  render();
+}
 function markPriorityDone(emailId='', key=''){
   archivePriorityItem(findPriorityByKey(key), 'fuldført');
   if(emailId && !handledEmailIds.includes(emailId)) handledEmailIds.push(emailId);
@@ -2387,7 +2395,7 @@ function renderPriorityRows(targetId, items, buckets, type){
     </div>
     <div class="priority-row-tools">
       <button class="btn ghost" onclick="dismissPriority('${item.key}')">Slet</button>
-      ${item.internalTaskId ? `<button class="btn" onclick="markInternalTaskDone('${item.internalTaskId}','${item.key}')">Fuldført</button>` : item.emailId ? `<button class="btn" onclick="markPriorityDone('${item.emailId}','${item.key}')">Fuldført</button>` : ''}
+      ${item.internalTaskId ? `<button class="btn" onclick="markInternalTaskDone('${item.internalTaskId}','${item.key}')">Fuldført</button>` : item.emailId ? `<button class="btn" onclick="markPriorityDone('${item.emailId}','${item.key}')">Fuldført</button>` : `<button class="btn" onclick="markPriorityComplete('${item.key}')">Fuldført</button>`}
       ${priorityEditButton(item.links, item)}
     </div>
   </div>`).join('') : '<div class="priority-empty-state">Ingen punkter her.</div>';
@@ -2402,7 +2410,7 @@ function renderPrioritySide(targetId, items, type){
       <div class="priority-side-top"><div class="priority-side-name">${escapeAttr(item.title)}</div><span class="priority-tag ${item.bucket}">${priorityBucketLabel(item.bucket)}</span></div>
       <div class="priority-side-meta">${escapeAttr(item.meta)}</div>
       <div class="priority-side-reason">${escapeAttr(item.actionText || item.reason)}</div>
-      <div class="priority-side-actions">${priorityActionButtons(item.links, 'side')}${item.internalTaskId ? `<button class="side-btn" onclick="markInternalTaskDone('${item.internalTaskId}','${item.key}')">Fuldført</button>` : item.emailId ? `<button class="side-btn" onclick="markPriorityDone('${item.emailId}','${item.key}')">Fuldført</button>` : ''}<button class="side-btn" onclick="dismissPriority('${item.key}')">Fjern</button></div>
+      <div class="priority-side-actions">${priorityActionButtons(item.links, 'side')}${item.internalTaskId ? `<button class="side-btn" onclick="markInternalTaskDone('${item.internalTaskId}','${item.key}')">Fuldført</button>` : item.emailId ? `<button class="side-btn" onclick="markPriorityDone('${item.emailId}','${item.key}')">Fuldført</button>` : `<button class="side-btn" onclick="markPriorityComplete('${item.key}')">Fuldført</button>`}<button class="side-btn" onclick="dismissPriority('${item.key}')">Fjern</button></div>
     </div>
   </div>`).join('') : '<div class="priority-side-empty">Intet ventende her.</div>';
 }
