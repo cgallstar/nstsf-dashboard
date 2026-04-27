@@ -2204,6 +2204,23 @@ function resolvePriorityBucket(flags = {}){
   if(flags.today) return 'today';
   return 'week';
 }
+function casePriorityTitle(s){
+  const base = getCustomerDisplay(s);
+  const address = String(s?.adr || '').trim();
+  return address ? `${base} · ${address}` : base;
+}
+function casePriorityMeta(s, options = {}){
+  const parts = [KAT[s.k]];
+  if(s.opg) parts.push(s.opg);
+  if(parseNumber(s.u) > 0) parts.push(`udestående ${formatCurrency(parseNumber(s.u))}`);
+  if(s.dato) parts.push(`betaling ${displayDate(s.dato)}`);
+  if(options.openMailsText) parts.push(options.openMailsText);
+  if(options.latestDialog) parts.push(`seneste dialog ${displayDate(options.latestDialog)}`);
+  if(options.latestOffer) parts.push(`seneste tilbud ${displayDate(options.latestOffer)}`);
+  if(options.latestActivity) parts.push(classifyActivity(options.latestActivity));
+  if(options.pendingDraft) parts.push('draft afventer');
+  return parts.filter(Boolean).join(' · ');
+}
 function buildPriorities(includeDismissed=false){
   const sales = [];
   const todos = [];
@@ -2249,8 +2266,12 @@ function buildPriorities(includeDismissed=false){
         emailId: strongestMail?.id || '',
         bucket,
         score: 4 + mailWeight + gptWeight + (strongestSignal?.asksForApproval ? 2 : 0) + (strongestSignal?.asksForReply ? 1 : 0),
-        title: s.kunde,
-        meta: `${KAT[s.k]} · ${latestOffer ? `seneste tilbud ${displayDate(latestOffer)}` : 'ingen tilbudsdato'}${latestDialog ? ` · seneste dialog ${displayDate(latestDialog)}` : ''}${pendingDraft ? ' · draft afventer' : ''}`,
+        title: casePriorityTitle(s),
+        meta: casePriorityMeta(s, {
+          latestOffer,
+          latestDialog,
+          pendingDraft
+        }),
         reason,
         actionText: pendingDraft ? 'Gennemgå og godkend udkastet, hvis det stadig er relevant.' : priorityActionText(strongestMail, strongestSignal, 'Følg op på tilbuddet og aftal næste skridt med kunden.'),
         links: `${priorityLink('sag', i, 'Åbn sag')}${strongestMail ? priorityLink('mail', strongestMail.id, 'Seneste mail') : ''}`
@@ -2290,8 +2311,12 @@ function buildPriorities(includeDismissed=false){
         emailId: strongestMail?.id || '',
         bucket,
         score: 3 + mailWeight + paymentWeight + gptWeight + (pendingDraft ? 3 : 0) + (strongestSignal?.hasIssue ? 2 : 0),
-        title: s.kunde,
-        meta: `${KAT[s.k]} · ${incoming.length ? `${incoming.length} uløste mails` : 'ingen åbne mails'}${latestDialog ? ` · seneste dialog ${displayDate(latestDialog)}` : ''}${latestActivity ? ` · ${classifyActivity(latestActivity)}` : ''}`,
+        title: casePriorityTitle(s),
+        meta: casePriorityMeta(s, {
+          openMailsText: incoming.length ? `${incoming.length} uløste mails` : 'ingen åbne mails',
+          latestDialog,
+          latestActivity
+        }),
         reason,
         actionText: pendingDraft ? 'Gennemgå og godkend draftet, eller fjern det hvis det ikke længere er relevant.' : strongestMail ? priorityActionText(strongestMail, strongestSignal, reason) : reason,
         links: `${priorityLink('sag', i, 'Åbn sag')}${strongestMail ? priorityLink('mail', strongestMail.id, 'Relevant mail') : ''}`
