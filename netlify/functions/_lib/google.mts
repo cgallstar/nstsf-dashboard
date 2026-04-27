@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 
 const GOOGLE_TOKEN_URL = "https://oauth2.googleapis.com/token";
 const GMAIL_DRAFTS_URL = "https://gmail.googleapis.com/gmail/v1/users/me/drafts";
+const GMAIL_THREADS_URL = "https://gmail.googleapis.com/gmail/v1/users/me/threads";
 const DRIVE_FILES_URL = "https://www.googleapis.com/drive/v3/files";
 const DRIVE_UPLOAD_URL = "https://www.googleapis.com/upload/drive/v3/files";
 const GOOGLE_DRIVE_FOLDER_MIME = "application/vnd.google-apps.folder";
@@ -151,6 +152,66 @@ async function googleFetch(url: string, init: RequestInit = {}) {
     throw new Error(`google_api_error:${response.status}:${JSON.stringify(details)}`);
   }
   return response;
+}
+
+function decodeBase64UrlText(data = "") {
+  if (!data) return "";
+  try {
+    return fromBase64(data).toString("utf8");
+  } catch {
+    return "";
+  }
+}
+
+function headerValue(headers: any[] = [], name: string) {
+  const hit = headers.find((header) => String(header?.name || "").toLowerCase() === name.toLowerCase());
+  return text(hit?.value, "");
+}
+
+function collectPlainText(payload: any): string[] {
+  if (!payload) return [];
+  const mimeType = text(payload.mimeType, "");
+  const bodyText = decodeBase64UrlText(text(payload?.body?.data, ""));
+  const parts = Array.isArray(payload.parts) ? payload.parts.flatMap(collectPlainText) : [];
+  if (mimeType.startsWith("text/plain") && bodyText.trim()) return [bodyText, ...parts];
+  return parts;
+}
+
+export function gmailMessageSummary(message: any) {
+  const payload = message?.payload || {};
+  const headers = Array.isArray(payload.headers) ? payload.headers : [];
+  const plainTextParts = collectPlainText(payload);
+  const snippet = text(message?.snippet, "");
+  const body = text(plainTextParts.join("\n\n").trim(), snippet);
+  return {
+    id: text(message?.id, ""),
+    threadId: text(message?.threadId, ""),
+    subject: headerValue(headers, "Subject"),
+    from: headerValue(headers, "From"),
+    to: headerValue(headers, "To"),
+    cc: headerValue(headers, "Cc"),
+    dateHeader: headerValue(headers, "Date"),
+    internalDate: text(message?.internalDate, ""),
+    labelIds: Array.isArray(message?.labelIds) ? message.labelIds : [],
+    snippet,
+    body,
+  };
+}
+
+export async function listRecentGmailThreads(query: string, maxResults = 30) {
+  const params = new URLSearchParams({
+    q: query,
+    maxResults: String(maxResults),
+  });
+  const response = await googleFetch(`${GMAIL_THREADS_URL}?${params.toString()}`);
+  const payload = await response.json();
+  return Array.isArray(payload.threads) ? payload.threads : [];
+}
+
+export async function getGmailThread(threadId: string) {
+  const params = new URLSearchParams({ format: "full" });
+  const response = await googleFetch(`${GMAIL_THREADS_URL}/${threadId}?${params.toString()}`);
+  return response.json();
 }
 
 export function googleIntegrationStatus() {

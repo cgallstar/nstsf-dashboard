@@ -1170,6 +1170,7 @@
       </div>
       <div class="priority-topbar-right">
         <span class="priority-updated" id="priorityGeneratedAt"></span>
+        <button class="btn" onclick="syncGmail(true)">Synk Gmail</button>
         <div class="priority-toggle">
           <button class="active" id="priorityBtnTodos" onclick="setPriorityView('todos')">Aktive</button>
           <button id="priorityBtnSalg" onclick="setPriorityView('salg')">Salg</button>
@@ -1211,11 +1212,14 @@
                   <div class="title">Indbakke</div>
                   <div class="addr">SMG / NSTSF</div>
                 </div>
-                <span class="chip chip-red">8 nye</span>
+                <div style="display:flex;align-items:center;gap:8px">
+                  <button class="btn" onclick="syncGmail(true)">Synk Gmail</button>
+                  <span class="chip chip-red" id="inboxNewCount">0 nye</span>
+                </div>
               </div>
               <div class="inbox-tabs">
                 <button class="inbox-tab active" data-filter="alle">Alle</button>
-                <button class="inbox-tab" data-filter="uhaandteret">Uhåndteret <span class="badge">8</span></button>
+                <button class="inbox-tab" data-filter="uhaandteret">Uhåndteret <span class="badge" id="inboxUnhandledBadge">0</span></button>
                 <button class="inbox-tab" data-filter="haandteret">Håndteret</button>
               </div>
               <div id="priorityEmailList"></div>
@@ -1304,18 +1308,21 @@
 <section id="indbakke" class="section">
   <div class="inbox-layout">
     <div class="inbox-list">
-      <div class="inbox-hd">
-        <div>
-          <div class="title">Indbakke</div>
-          <div class="addr">SMG / NSTSF</div>
-        </div>
-        <span class="chip chip-red">8 nye</span>
+    <div class="inbox-hd">
+      <div>
+        <div class="title">Indbakke</div>
+        <div class="addr">SMG / NSTSF</div>
       </div>
-      <div class="inbox-tabs">
-        <button class="inbox-tab active" data-filter="alle">Alle</button>
-        <button class="inbox-tab" data-filter="uhaandteret">Uhåndteret <span class="badge">8</span></button>
-        <button class="inbox-tab" data-filter="haandteret">Håndteret</button>
+      <div style="display:flex;align-items:center;gap:8px">
+        <button class="btn" onclick="syncGmail(true)">Synk Gmail</button>
+        <span class="chip chip-red" id="inboxNewCountStandalone">0 nye</span>
       </div>
+    </div>
+    <div class="inbox-tabs">
+      <button class="inbox-tab active" data-filter="alle">Alle</button>
+      <button class="inbox-tab" data-filter="uhaandteret">Uhåndteret <span class="badge" id="inboxUnhandledBadgeStandalone">0</span></button>
+      <button class="inbox-tab" data-filter="haandteret">Håndteret</button>
+    </div>
       <div id="emailList"></div>
     </div>
     <div id="emailView" class="inbox-view"></div>
@@ -1657,7 +1664,7 @@ const DOC_DEFAULTS = {
 const sager = [];
 const betalinger = [];
 const internalTasks = [];
-const emails = [
+const DEFAULT_EMAILS = [
   {id:'19dc318e09d2bb29', kunde:'Blågårdsgade 14', from:'Søren Mygdal <smg@nstsf.dk>', subject:'Afleveringsreferat – Blågårdsgade 14, kælderbutik', date:'2026-04-25T07:24:41+02:00', preview:'Afleveringsreferat med mangler, udbedring i gang og forventet færdig 27. april.', body:'Hermed referat fra afleveringsmøde vedrørende Blågårdsgade 14, kælderbutik. Termostat mangler, forkert håndbruser og flader skal udbedres. Arbejdet forventes færdigt mandag den 27. april.', tags:['referat','aflevering','mangler'], handled:false, type:'todo'},
   {id:'19dc30f8ee3223eb', kunde:'Ryesgade 62, lejlighed 30', from:'Søren Mygdal <smg@nstsf.dk>', subject:'Byggemødereferat – 24. april | Ryesgade 62, lejlighed 30', date:'2026-04-25T07:14:30+02:00', preview:'Arbejde følger plan, men blikkenslager og ventilation er en risiko mandag.', body:'Arbejdet går planmæssigt fremad, men blikkenslageren er ikke færdig med ventilationsanlægget og kan endnu ikke garantere mandag. Billeder er delt i link.', tags:['referat','fremdrift','blokering'], handled:false, type:'todo'},
   {id:'19dbee025f0cb9bd', kunde:'Lykkesholms Allé', from:'Charlotte Køfer Kristensen <ckk@dke.dk>', subject:'Lykkesholms Alle -', date:'2026-04-24T11:44:14+02:00', preview:'Tilbud er godkendt. Der mangler dato for udførelse.', body:'Charlotte godkender tilbuddet vedrørende slidlag i kældertrappen på Lykkesholms Alle og beder om en dato for udførelsen.', tags:['tilbud','godkendt','dato'], handled:false, type:'sales'},
@@ -1670,10 +1677,12 @@ const emails = [
   {id:'19da9fde83a10cdf', kunde:'Tilbygning / Mikkel', from:'Søren Mygdal <smg@nstsf.dk>', subject:'Overslagspris på tilbygning', date:'2026-04-20T10:24:43+02:00', preview:'Overslagspris sendt på baggrund af projektmateriale og kommunal godkendelse.', body:'SMG har sendt overslagspris på tilbygning. Dette er et aktivt salgsforløb, hvor næste skridt er opfølgning på pris og videre proces.', tags:['overslagspris','tilbud','opfoelg'], handled:true, type:'sales'},
   {id:'19db0b63f0a5ddcf', kunde:'Ordre 446', from:'Anna Andersen <anna3632@hotmail.com>', subject:'Re: Vedrørende ordre: 446', date:'2026-04-21T17:43:47+02:00', preview:'Kunden spørger om gulvet endnu ikke er medregnet og om der kommer ekstra regning.', body:'Anna spørger til budget og om gulvet er medregnet i samlet pris eller kommer som ekstra regning efter udførelse.', tags:['ordre','ekstraarbejde','afklaring'], handled:false, type:'sales'}
 ];
+const emails = [...DEFAULT_EMAILS];
 const STORAGE_KEY = 'nstsf-dashboard-state-v3';
 const AUTH_API = '/api/auth';
 const STATE_API = '/api/state';
 const USERS_API = '/api/users';
+const GMAIL_SYNC_API = '/api/gmail-sync';
 let remoteSaveTimer = null;
 let isApplyingRemoteState = false;
 let authUser = null;
@@ -1855,7 +1864,8 @@ function normalizeSag(saved={}, i=0){
 function normalizeBetaling(saved={}){ return { ...saved, nr:textValue(saved.nr, ''), kunde:textValue(saved.kunde, 'Ukendt kunde'), milepael:textValue(saved.milepael, 'Udestående betaling'), dato:textValue(saved.dato, ''), beloeb:textValue(saved.beloeb, '0'), fak:textValue(saved.fak, ''), status:textValue(saved.status, 'udestaaende') }; }
 function normalizeEmployee(saved={}, i=0){ return { id:textValue(saved.id, `employee-${i + 1}`), name:textValue(saved.name, `Medarbejder ${i + 1}`), hours:Number(saved.hours) || 37, type:textValue(saved.type, 'employee'), overrides: saved && typeof saved.overrides === 'object' && !Array.isArray(saved.overrides) ? saved.overrides : {} }; }
 function normalizeInternalTask(saved={}){ return { id:textValue(saved.id, `internal-${Date.now()}`), title:textValue(saved.title || saved.name, 'Intern opgave'), status:textValue(saved.status, 'Åben'), dueDate:textValue(saved.dueDate, ''), owner:textValue(saved.owner, ''), notes:textValue(saved.notes, ''), source:textValue(saved.source, 'custom-gpt'), bucket:textValue(saved.bucket, ''), domain:textValue(saved.domain, 'intern'), createdAt:textValue(saved.createdAt, new Date().toISOString()) }; }
-function collectState(){ const capacityHours = document.getElementById('capacityHours') ? +document.getElementById('capacityHours').value || 37 : 37; return { schema:'nstsf-dashboard-state-v1', savedFrom:location.hostname || 'local-file', savedAt:new Date().toISOString(), sager:sager, betalinger:betalinger, employees:employees, internalTasks:internalTasks, settings:{capacityHours, handledEmailIds, dismissedPriorityKeys} }; }
+function normalizeEmail(saved={}){ return { id:textValue(saved.id, `mail-${Date.now()}`), threadId:textValue(saved.threadId, ''), kunde:textValue(saved.kunde, ''), from:textValue(saved.from, ''), subject:textValue(saved.subject, ''), date:textValue(saved.date, ''), preview:textValue(saved.preview, ''), body:textValue(saved.body, ''), tags:Array.isArray(saved.tags) ? saved.tags.map((tag)=>String(tag)) : [], handled:!!saved.handled, type:textValue(saved.type, 'todo'), latestSenderType:textValue(saved.latestSenderType, ''), repliedAt:textValue(saved.repliedAt, ''), syncedAt:textValue(saved.syncedAt, '') }; }
+function collectState(){ const capacityHours = document.getElementById('capacityHours') ? +document.getElementById('capacityHours').value || 37 : 37; return { schema:'nstsf-dashboard-state-v1', savedFrom:location.hostname || 'local-file', savedAt:new Date().toISOString(), sager:sager, betalinger:betalinger, emails:emails, employees:employees, internalTasks:internalTasks, settings:{capacityHours, handledEmailIds, dismissedPriorityKeys} }; }
 function formatHeaderUpdated(value){
   const date = parseDateValue(value) || new Date();
   return `Pipeline, sager og økonomi — opdateret ${date.toLocaleDateString('da-DK', { day:'numeric', month:'short', year:'numeric' })}`;
@@ -1870,13 +1880,33 @@ function updatePreviewNotice(){
   if(!notice) return;
   notice.classList.toggle('visible', location.protocol === 'file:');
 }
-function applyState(state){ if(!state || typeof state !== 'object') return; if(Array.isArray(state.sager)){ sager.splice(0, sager.length, ...state.sager.map(normalizeSag)); } if(Array.isArray(state.betalinger)){ betalinger.splice(0, betalinger.length, ...state.betalinger.map(normalizeBetaling)); } if(Array.isArray(state.employees)){ employees.splice(0, employees.length, ...state.employees.map(normalizeEmployee)); } if(Array.isArray(state.internalTasks)){ internalTasks.splice(0, internalTasks.length, ...state.internalTasks.map(normalizeInternalTask)); } if(state.settings && document.getElementById('capacityHours')){ document.getElementById('capacityHours').value = state.settings.capacityHours || 37; handledEmailIds = Array.isArray(state.settings.handledEmailIds) ? state.settings.handledEmailIds : []; dismissedPriorityKeys = Array.isArray(state.settings.dismissedPriorityKeys) ? state.settings.dismissedPriorityKeys : []; } if(state.savedAt) updateHeaderTimestamp(state.savedAt); }
+function applyState(state){ if(!state || typeof state !== 'object') return; if(Array.isArray(state.sager)){ sager.splice(0, sager.length, ...state.sager.map(normalizeSag)); } if(Array.isArray(state.betalinger)){ betalinger.splice(0, betalinger.length, ...state.betalinger.map(normalizeBetaling)); } if(Array.isArray(state.emails)){ emails.splice(0, emails.length, ...state.emails.map(normalizeEmail)); } if(Array.isArray(state.employees)){ employees.splice(0, employees.length, ...state.employees.map(normalizeEmployee)); } if(Array.isArray(state.internalTasks)){ internalTasks.splice(0, internalTasks.length, ...state.internalTasks.map(normalizeInternalTask)); } if(state.settings && document.getElementById('capacityHours')){ document.getElementById('capacityHours').value = state.settings.capacityHours || 37; handledEmailIds = Array.isArray(state.settings.handledEmailIds) ? state.settings.handledEmailIds : []; dismissedPriorityKeys = Array.isArray(state.settings.dismissedPriorityKeys) ? state.settings.dismissedPriorityKeys : []; } if(state.savedAt) updateHeaderTimestamp(state.savedAt); }
 function persistLocalState(){ const state = collectState(); localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); updateHeaderTimestamp(state.savedAt); }
 function loadState(){ try{ const state = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}'); applyState(state); }catch(e){} updateHeaderTimestamp(lastUpdatedAt || new Date().toISOString()); updatePreviewNotice(); }
 async function saveRemoteState(manual=false){ if(!authUser){ if(manual) setSyncStatus('Du skal være logget ind for at gemme centralt.', 'error'); return; } if(location.protocol === 'file:'){ if(manual) setSyncStatus('Backend virker først på Netlify eller via netlify dev. Lokal fil er kun browser-kopi.', 'error'); return; } try{ setSyncStatus('Gemmer til central backend...'); const payload = collectState(); const res = await fetch(STATE_API, { method:'PUT', credentials:'include', headers:{'content-type':'application/json'}, body:JSON.stringify(payload) }); const data = await res.json().catch(()=>({})); if(!res.ok) throw new Error(data.error || `HTTP ${res.status}`); updateHeaderTimestamp(data.savedAt || payload.savedAt); setSyncStatus(`Gemt centralt ${new Date(data.savedAt || Date.now()).toLocaleString('da-DK')}`, 'ok'); }catch(err){ setSyncStatus(`Kun lokal kopi gemt. Backend-fejl: ${err.message}`, 'error'); } }
 function queueRemoteSave(){ clearTimeout(remoteSaveTimer); remoteSaveTimer = setTimeout(()=>saveRemoteState(false), 700); }
 function saveState(manual=false){ try{ persistLocalState(); if(!isApplyingRemoteState) manual ? saveRemoteState(true) : queueRemoteSave(); }catch(e){ setSyncStatus(`Kunne ikke gemme lokalt: ${e.message}`, 'error'); } }
 async function loadRemoteState(manual=false){ if(!authUser){ if(manual) setSyncStatus('Du skal være logget ind for at hente central data.', 'error'); return; } if(location.protocol === 'file:'){ if(manual) setSyncStatus('Backend kan ikke hentes fra file://. Test på Netlify-linket efter deploy.', 'error'); return; } try{ setSyncStatus('Henter central data...'); const res = await fetch(STATE_API, {credentials:'include'}); const data = await res.json().catch(()=>({})); if(res.status === 404 && data.error === 'no_state'){ await saveRemoteState(true); return; } if(res.status === 401){ authUser = null; updateAuthUi(); showAuthOverlay('Session udløbet. Log ind igen.'); return; } if(!res.ok) throw new Error(data.error || `HTTP ${res.status}`); isApplyingRemoteState = true; applyState(data.state); persistLocalState(); isApplyingRemoteState = false; updateHeaderTimestamp(data.savedAt || data.state?.savedAt || new Date().toISOString()); render(); renderBetalinger(); renderCapacity(); renderPriorities(); setSyncStatus(`Central data hentet ${new Date(data.savedAt || Date.now()).toLocaleString('da-DK')}`, 'ok'); }catch(err){ isApplyingRemoteState = false; setSyncStatus(`Kunne ikke hente central data: ${err.message}`, 'error'); } }
+async function syncGmail(manual=false){
+  if(!authUser){ if(manual) setSyncStatus('Du skal være logget ind for at synkronisere Gmail.', 'error'); return; }
+  if(location.protocol === 'file:'){ if(manual) setSyncStatus('Gmail-sync virker kun på Netlify-linket. Den lokale fil er kun preview.', 'error'); return; }
+  try{
+    setSyncStatus('Synkroniserer Gmail...');
+    const res = await fetch(GMAIL_SYNC_API, { method:'POST', credentials:'include', headers:{'content-type':'application/json'} });
+    const data = await res.json().catch(()=>({}));
+    if(res.status === 401){
+      authUser = null;
+      updateAuthUi();
+      showAuthOverlay('Session udløbet. Log ind igen.');
+      return;
+    }
+    if(!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+    await loadRemoteState(false);
+    setSyncStatus(`Gmail synkroniseret. ${data.synced || 0} tråde · ${data.unhandled || 0} åbne.`, 'ok');
+  }catch(err){
+    setSyncStatus(`Kunne ikke synkronisere Gmail: ${err.message}`, 'error');
+  }
+}
 loadState();
 function setActiveTab(tab){ currentTab = tab; document.querySelectorAll('.tab-btn').forEach((btn)=>btn.classList.toggle('active', btn.dataset.tab === tab)); document.querySelectorAll('.section').forEach((section)=>section.classList.toggle('active', section.id === tab)); if(tab === 'likviditet') setLiquiditySubtab(liquiditySubtab); }
 function setLiquiditySubtab(subtab){ liquiditySubtab = subtab === 'marginer' ? 'marginer' : 'overview'; document.querySelectorAll('.subtab-btn').forEach((btn)=>btn.classList.toggle('active', btn.dataset.subtab === liquiditySubtab)); const overview = document.getElementById('likviditetOverview'); const marginer = document.getElementById('likviditetMarginer'); if(overview) overview.classList.toggle('active', liquiditySubtab === 'overview'); if(marginer) marginer.classList.toggle('active', liquiditySubtab === 'marginer'); }
@@ -2694,6 +2724,17 @@ function setEmployeeWeekStatus(){ const emp = employees.find(e=>e.id === documen
 function clearEmployeeWeekStatus(){ const emp = employees.find(e=>e.id === document.getElementById('statusEmployee').value); if(!emp || !emp.overrides) return; delete emp.overrides[document.getElementById('statusWeek').value]; saveState(); renderCapacity(); }
 function renderCapacity(){ const calendar = document.getElementById('capacityCalendar'); const capacityInput = document.getElementById('capacityHours'); if(!calendar || !capacityInput) return; const defaultHours = +capacityInput.value || 37; const now = new Date(); const weekendMode = [0,6].includes(now.getDay()); const focusBase = weekendMode ? addDays(now, now.getDay() === 6 ? 2 : 1) : now; const firstWeek = startOfWeek(focusBase); const yearEnd = new Date(new Date().getFullYear(), 11, 31); const weekCount = Math.ceil((startOfWeek(yearEnd) - firstWeek) / (7 * 86400000)) + 1; const rows = []; for(let w=0; w<weekCount; w++){ const weekStart = addDays(firstWeek, w*7); const weekEnd = addDays(weekStart, 6); const weekKey = weekStart.toISOString().slice(0,10); const details = []; let hours = 0; sager.forEach(s=>{ if(![2,3,4,5].includes(+s.k) || !s.start || !s.slut) return; const start = new Date(s.start + 'T00:00:00'); const end = new Date(s.slut + 'T00:00:00'); if(Number.isNaN(start.getTime()) || Number.isNaN(end.getTime()) || end < start) return; const days = overlapDays(start, end, weekStart, weekEnd); if(!days) return; const totalDays = Math.max(1, overlapDays(start, end, start, end)); const h = estimatedHours(s) * days / totalDays; if(!h) return; hours += h; details.push({kunde:s.kunde, hours:h}); }); const staff = employees.map(emp=>({emp, ...employeeWeek(emp, weekKey, w, defaultHours)})); const capacity = staff.reduce((sum,e)=>sum + e.hours, 0); details.sort((a,b)=>b.hours-a.hours); rows.push({weekStart, weekEnd, weekKey, weekNo:isoWeek(weekStart), hours, capacity, details, staff}); } renderEmployees(rows); const currentWeek = rows[0]; const nextWeek = rows[1]; const upcoming = rows.slice(1, 6); calendar.innerHTML = `<div class="capacity-summary-bar"><div>Kapacitetskalender — ${new Date().getFullYear()}</div><div class="meta-right">${employees.length} medarbejdere · ${defaultHours} t/uge · I dag: ${weekdayLong(now)} ${fullDateLabel(now)}</div></div>${currentWeek ? renderCurrentWeekBoard(currentWeek, focusBase) : ''}${nextWeek ? renderComingWeekCases(nextWeek) : ''}<div><div class="capacity-section-label">Kommende uger</div><div class="upcoming-list">${upcoming.map(renderUpcomingWeekRow).join('')}</div></div>`; }
 function filteredEmails(){ return emails.filter((mail)=> inboxFilter === 'alle' ? true : inboxFilter === 'uhaandteret' ? !isEmailHandled(mail) : isEmailHandled(mail)).sort((a,b)=>String(b.date).localeCompare(String(a.date))); }
+function updateInboxCounts(){
+  const unhandled = emails.filter((mail)=>!isEmailHandled(mail)).length;
+  const countA = document.getElementById('inboxNewCount');
+  const countB = document.getElementById('inboxNewCountStandalone');
+  const badgeA = document.getElementById('inboxUnhandledBadge');
+  const badgeB = document.getElementById('inboxUnhandledBadgeStandalone');
+  if(countA) countA.textContent = `${unhandled} nye`;
+  if(countB) countB.textContent = `${unhandled} nye`;
+  if(badgeA) badgeA.textContent = String(unhandled);
+  if(badgeB) badgeB.textContent = String(unhandled);
+}
 function openEmail(id){ selectedEmailId = id; renderInbox(); }
 function renderInboxInto(listId, viewId){
   const list = document.getElementById(listId);
@@ -2706,6 +2747,7 @@ function renderInboxInto(listId, viewId){
   view.innerHTML = active ? `<div class="email-view"><div class="subject">${active.subject}</div><div class="meta-row"><div class="who"><strong>${active.from}</strong><div class="addr">${active.kunde || 'Ukendt kunde'}</div></div><div class="date">${displayDate(active.date)}</div></div><div style="margin-bottom:12px">${active.tags.map((tag)=>`<span class="tag tag-${tag === 'tilbud' ? 'tilbud' : tag === 'sag' ? 'sag' : tag === 'opfoelg' ? 'opfoelg' : tag === 'faktura' ? 'faktura' : 'new'}">${tag}</span>`).join(' ')}</div><div class="body">${active.body}</div></div>` : '<div class="dim">Ingen mail valgt.</div>';
 }
 function renderInbox(){
+  updateInboxCounts();
   renderInboxInto('emailList', 'emailView');
   renderInboxInto('priorityEmailList', 'priorityEmailView');
 }
