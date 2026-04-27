@@ -83,6 +83,21 @@
   }
   .tabs button:hover{color:rgba(255,255,255,.7)}
   .tabs button.active{color:#fff;border-bottom-color:var(--green)}
+  .preview-notice{
+    display:none;
+    margin:0 28px 18px;
+    padding:12px 14px;
+    border:1px solid #e7d8b2;
+    border-radius:12px;
+    background:#fff8e8;
+    color:#71591f;
+    font-size:12px;
+    line-height:1.5;
+  }
+  .preview-notice.visible{display:flex;justify-content:space-between;gap:12px;align-items:center}
+  .preview-notice strong{color:#5e4917}
+  .preview-notice a{color:#1d4e7c;font-weight:600;text-decoration:none}
+  .preview-notice a:hover{text-decoration:underline}
 
   main{padding:0;max-width:none;margin:0}
   .section{display:none}
@@ -955,6 +970,11 @@
   <button class="tab-btn" data-tab="organisation">Organisation</button>
   <button class="tab-btn" data-tab="settings" style="display:none">Indstillinger</button>
 </nav>
+
+<div id="previewNotice" class="preview-notice">
+  <div><strong>Lokal preview.</strong> Du kører `file://`-versionen. Den viser ikke central backend-state eller nye opgaver fra Custom GPT. Brug Netlify-versionen for at se live data.</div>
+  <a href="http://willowy-parfait-a287e5.netlify.app" target="_blank" rel="noopener">Åbn live version</a>
+</div>
 
 <div id="authOverlay" class="auth-overlay">
   <div class="auth-card">
@@ -1845,9 +1865,14 @@ function updateHeaderTimestamp(value){
   const el = document.getElementById('dashboardHeaderMeta');
   if(el) el.textContent = formatHeaderUpdated(lastUpdatedAt);
 }
+function updatePreviewNotice(){
+  const notice = document.getElementById('previewNotice');
+  if(!notice) return;
+  notice.classList.toggle('visible', location.protocol === 'file:');
+}
 function applyState(state){ if(!state || typeof state !== 'object') return; if(Array.isArray(state.sager)){ sager.splice(0, sager.length, ...state.sager.map(normalizeSag)); } if(Array.isArray(state.betalinger)){ betalinger.splice(0, betalinger.length, ...state.betalinger.map(normalizeBetaling)); } if(Array.isArray(state.employees)){ employees.splice(0, employees.length, ...state.employees.map(normalizeEmployee)); } if(Array.isArray(state.internalTasks)){ internalTasks.splice(0, internalTasks.length, ...state.internalTasks.map(normalizeInternalTask)); } if(state.settings && document.getElementById('capacityHours')){ document.getElementById('capacityHours').value = state.settings.capacityHours || 37; handledEmailIds = Array.isArray(state.settings.handledEmailIds) ? state.settings.handledEmailIds : []; dismissedPriorityKeys = Array.isArray(state.settings.dismissedPriorityKeys) ? state.settings.dismissedPriorityKeys : []; } if(state.savedAt) updateHeaderTimestamp(state.savedAt); }
 function persistLocalState(){ const state = collectState(); localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); updateHeaderTimestamp(state.savedAt); }
-function loadState(){ try{ const state = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}'); applyState(state); }catch(e){} updateHeaderTimestamp(lastUpdatedAt || new Date().toISOString()); }
+function loadState(){ try{ const state = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}'); applyState(state); }catch(e){} updateHeaderTimestamp(lastUpdatedAt || new Date().toISOString()); updatePreviewNotice(); }
 async function saveRemoteState(manual=false){ if(!authUser){ if(manual) setSyncStatus('Du skal være logget ind for at gemme centralt.', 'error'); return; } if(location.protocol === 'file:'){ if(manual) setSyncStatus('Backend virker først på Netlify eller via netlify dev. Lokal fil er kun browser-kopi.', 'error'); return; } try{ setSyncStatus('Gemmer til central backend...'); const payload = collectState(); const res = await fetch(STATE_API, { method:'PUT', credentials:'include', headers:{'content-type':'application/json'}, body:JSON.stringify(payload) }); const data = await res.json().catch(()=>({})); if(!res.ok) throw new Error(data.error || `HTTP ${res.status}`); updateHeaderTimestamp(data.savedAt || payload.savedAt); setSyncStatus(`Gemt centralt ${new Date(data.savedAt || Date.now()).toLocaleString('da-DK')}`, 'ok'); }catch(err){ setSyncStatus(`Kun lokal kopi gemt. Backend-fejl: ${err.message}`, 'error'); } }
 function queueRemoteSave(){ clearTimeout(remoteSaveTimer); remoteSaveTimer = setTimeout(()=>saveRemoteState(false), 700); }
 function saveState(manual=false){ try{ persistLocalState(); if(!isApplyingRemoteState) manual ? saveRemoteState(true) : queueRemoteSave(); }catch(e){ setSyncStatus(`Kunne ikke gemme lokalt: ${e.message}`, 'error'); } }
