@@ -488,35 +488,46 @@
   .priority-toggle button{font-size:11px;font-weight:500;padding:6px 13px;border-radius:6px;border:none;background:transparent;color:var(--muted);cursor:pointer;font-family:var(--font)}
   .priority-toggle button.active{background:#fff;color:var(--text);box-shadow:0 1px 3px rgba(0,0,0,.08)}
   .priority-toggle button{min-width:86px;text-align:center;line-height:1.2}
-  .priority-layout{display:grid;grid-template-columns:minmax(0,1fr) 260px;min-height:620px}
-  .priority-main{border-right:.5px solid var(--line);background:#fff}
-  .priority-side{background:#fafaf8}
+  .priority-layout{display:block;min-height:620px}
+  .priority-main{background:#fff}
+  .priority-side{display:none}
   .priority-view{display:none}
   .priority-view.active{display:block}
   .priority-main-head{padding:20px 24px 14px;border-bottom:.5px solid var(--line)}
   .priority-main-title{font-size:28px;font-weight:600;color:var(--ink);letter-spacing:-.03em}
   .priority-main-sub{font-size:11px;color:var(--muted);margin-top:4px}
-  .priority-divider{padding:14px 24px 6px;font-size:9px;font-weight:700;color:#b0ada8;text-transform:uppercase;letter-spacing:.1em;display:flex;align-items:center;gap:8px}
+  .priority-divider{padding:18px 24px 8px;font-size:9px;font-weight:700;color:#b0ada8;text-transform:uppercase;letter-spacing:.1em;display:flex;align-items:center;gap:8px}
   .priority-divider::after{content:'';flex:1;height:.5px;background:var(--line)}
-  .priority-row{display:flex;gap:14px;padding:16px 24px;border-bottom:.5px solid rgba(0,0,0,.05);align-items:flex-start;background:#fff}
-  .priority-row.week{background:#fafaf8}
+  .priority-row{display:grid;grid-template-columns:22px 10px minmax(0,1fr) auto;gap:14px;padding:18px 24px;border-bottom:.5px solid rgba(0,0,0,.05);align-items:flex-start;background:#fff}
+  .priority-row.later{background:#fcfbf8;color:#8f8b84}
+  .priority-row.later .priority-name,
+  .priority-row.later .priority-reason{color:#8f8b84}
+  .priority-row.later .priority-meta{color:#b0ada8}
+  .priority-row.later .priority-suggestion{background:#fcfaf6;border-color:#efebe4}
   .priority-rank{font-size:18px;font-weight:500;color:#b8b5b0;min-width:22px;line-height:1.4;font-family:var(--mono);flex-shrink:0}
   .priority-rank.now{color:var(--ink)}
   .priority-body{flex:1;min-width:0}
   .priority-name{font-size:14px;font-weight:600;color:var(--ink);margin-bottom:2px}
   .priority-meta{font-size:11px;color:var(--muted);margin-bottom:8px}
   .priority-reason{font-size:12px;color:var(--ink);line-height:1.55}
-  .priority-topline{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:2px}
+  .priority-topline{display:block;margin-bottom:2px}
+  .priority-row-tools{display:flex;align-items:center;gap:10px;justify-content:flex-end;flex-wrap:wrap}
   .priority-tag{
     display:inline-flex;align-items:center;justify-content:center;border-radius:4px;padding:2px 7px;
     font-size:9px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;border:1px solid transparent;flex:none;
   }
   .priority-tag.now{background:#f9e3de;border-color:#e8b7ad;color:#962f24}
-  .priority-tag.today{background:#fbf0cf;border-color:#edd39b;color:#8a5a00}
-  .priority-tag.week{background:#e6eef8;border-color:#bfd2ea;color:#335c92}
-  .priority-actions{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
+  .priority-tag.today{background:#f2eee6;border-color:#e2dbcf;color:#8a8378}
+  .priority-tag.week{background:#f2eee6;border-color:#e2dbcf;color:#8a8378}
+  .priority-actions{display:flex;gap:8px;flex-wrap:wrap}
   .priority-actions .btn,.priority-side-actions .side-btn{background:#fff}
   .priority-actions .btn.primary-cta{background:#fff;color:var(--ink);border-color:var(--line)}
+  .priority-actions--top .btn{font-size:11px;padding:8px 14px;border-radius:10px}
+  .priority-actions--top .btn.ghost{background:#fff}
+  .priority-edit-btn{
+    width:42px;height:38px;padding:0;border-radius:10px;display:inline-flex;align-items:center;justify-content:center;
+    font-size:14px;line-height:1
+  }
   .priority-type{flex-shrink:0;margin-top:4px}
   .priority-dot{width:10px;height:10px;border-radius:50%;margin-top:7px}
   .priority-dot.sales{background:#e8a020}
@@ -1185,9 +1196,9 @@
             <div class="priority-main-title">Aktive sager</div>
             <div class="priority-main-sub">Fremdrift, KS, mangler, afleveringer, godkendelser og andre konkrete handlinger.</div>
           </div>
-          <div class="priority-divider">Now</div>
+          <div class="priority-divider">Nu</div>
           <div id="priorityTodoNow"></div>
-          <div class="priority-divider">Today</div>
+          <div class="priority-divider">Senere</div>
           <div id="priorityTodoToday"></div>
         </div>
         <div class="priority-view" id="priorityViewSalg">
@@ -1195,9 +1206,9 @@
             <div class="priority-main-title">Salgsrelateret arbejde</div>
             <div class="priority-main-sub">Leads, tilbud, afklaringer og opfølgning der kan flytte omsætning frem.</div>
           </div>
-          <div class="priority-divider">Now</div>
+          <div class="priority-divider">Nu</div>
           <div id="prioritySalesNow"></div>
-          <div class="priority-divider">Today</div>
+          <div class="priority-divider">Senere</div>
           <div id="prioritySalesToday"></div>
         </div>
         <div class="priority-view priority-inbox-view" id="priorityViewInbox">
@@ -1230,7 +1241,7 @@
       </div>
       <aside class="priority-side">
         <div class="priority-side-head">
-          <div class="priority-side-title">This week</div>
+          <div class="priority-side-title">Senere</div>
         </div>
         <div class="priority-side-view" id="prioritySideTodos"></div>
         <div class="priority-side-view" id="prioritySideSalg"></div>
@@ -2271,8 +2282,16 @@ function priorityActionButtons(links='', mode='main'){
     return `<button class="${klass}" onclick="${action.onclick}">${action.label}</button>`;
   }).join('');
 }
+function priorityEditButton(links='', item={}){
+  const actions = parsePriorityActions(links);
+  let onclick = actions[0]?.onclick || '';
+  if(!onclick && item.emailId) onclick = `openEmail('${String(item.emailId).replace(/'/g,"\\'")}'); setPriorityView('indbakke')`;
+  if(!onclick && item.internalTaskId) onclick = `setActiveTab('appendix')`;
+  if(!onclick) return '';
+  return `<button class="btn ghost priority-edit-btn" title="Edit" aria-label="Edit" onclick="${onclick}">✎</button>`;
+}
 function priorityBucketLabel(bucket){
-  return bucket === 'now' ? 'Now' : bucket === 'today' ? 'Today' : 'This week';
+  return bucket === 'now' ? 'Nu' : 'Senere';
 }
 function markPriorityDone(emailId='', key=''){
   if(emailId && !handledEmailIds.includes(emailId)) handledEmailIds.push(emailId);
@@ -2295,18 +2314,25 @@ function dismissPriority(key=''){
   saveState();
   renderPriorities();
 }
-function renderPriorityRows(targetId, items, bucket, type){
+function renderPriorityRows(targetId, items, buckets, type){
   const el = document.getElementById(targetId);
   if(!el) return [];
-  const rows = items.filter((item)=>item.bucket === bucket);
-  el.innerHTML = rows.length ? rows.map((item, index)=>`<div class="priority-row ${bucket}">
-    <div class="priority-rank ${bucket === 'now' ? 'now' : ''}">${index + 1}</div>
+  const wanted = Array.isArray(buckets) ? buckets : [buckets];
+  const primaryBucket = wanted[0] || 'now';
+  const rows = items.filter((item)=>wanted.includes(item.bucket));
+  el.innerHTML = rows.length ? rows.map((item, index)=>`<div class="priority-row ${primaryBucket === 'now' ? 'now' : 'later'}">
+    <div class="priority-rank ${primaryBucket === 'now' ? 'now' : ''}">${index + 1}</div>
     <div class="priority-type"><div class="priority-dot ${type === 'sales' ? 'sales' : 'todo'}"></div></div>
     <div class="priority-body">
-      <div class="priority-topline"><div class="priority-name">${escapeAttr(item.title)}</div><span class="priority-tag ${bucket}">${priorityBucketLabel(bucket)}</span></div>
+      <div class="priority-topline"><div class="priority-name">${escapeAttr(item.title)}</div></div>
       <div class="priority-meta">${escapeAttr(item.meta)}</div>
       <div class="priority-reason">${escapeAttr(item.reason)}</div>
-      <div class="priority-suggestion"><div class="priority-suggestion-label">Suggestion</div><div class="priority-reason">${escapeAttr(item.actionText || item.reason)}</div><div class="priority-actions">${priorityActionButtons(item.links, 'main')}${item.internalTaskId ? `<button class="btn" onclick="markInternalTaskDone('${item.internalTaskId}','${item.key}')">Fuldført</button>` : item.emailId ? `<button class="btn" onclick="markPriorityDone('${item.emailId}','${item.key}')">Fuldført</button>` : ''}<button class="btn ghost" onclick="dismissPriority('${item.key}')">Fjern</button></div></div>
+      <div class="priority-suggestion"><div class="priority-suggestion-label">Suggestion</div><div class="priority-reason">${escapeAttr(item.actionText || item.reason)}</div></div>
+    </div>
+    <div class="priority-row-tools">
+      <button class="btn ghost" onclick="dismissPriority('${item.key}')">Slet</button>
+      ${item.internalTaskId ? `<button class="btn" onclick="markInternalTaskDone('${item.internalTaskId}','${item.key}')">Fuldført</button>` : item.emailId ? `<button class="btn" onclick="markPriorityDone('${item.emailId}','${item.key}')">Fuldført</button>` : ''}
+      ${priorityEditButton(item.links, item)}
     </div>
   </div>`).join('') : '<div class="priority-empty-state">Ingen punkter her.</div>';
   return rows;
@@ -2350,12 +2376,12 @@ function setPriorityView(view){
 }
 function renderPriorities(){
   const priorities = buildPriorities();
-  renderPriorityRows('prioritySalesNow', priorities.sales, 'now', 'sales');
-  renderPriorityRows('priorityTodoNow', priorities.todos, 'now', 'todo');
-  renderPriorityRows('prioritySalesToday', priorities.sales, 'today', 'sales');
-  renderPriorityRows('priorityTodoToday', priorities.todos, 'today', 'todo');
-  renderPrioritySide('prioritySideSalg', priorities.sales.filter((item)=>item.bucket === 'week'), 'sales');
-  renderPrioritySide('prioritySideTodos', priorities.todos.filter((item)=>item.bucket === 'week'), 'todo');
+  renderPriorityRows('prioritySalesNow', priorities.sales, ['now'], 'sales');
+  renderPriorityRows('priorityTodoNow', priorities.todos, ['now'], 'todo');
+  renderPriorityRows('prioritySalesToday', priorities.sales, ['today','week'], 'sales');
+  renderPriorityRows('priorityTodoToday', priorities.todos, ['today','week'], 'todo');
+  renderPrioritySide('prioritySideSalg', [], 'sales');
+  renderPrioritySide('prioritySideTodos', [], 'todo');
   const stamp = document.getElementById('priorityGeneratedAt');
   if(stamp) stamp.textContent = `Opdateret ${new Date().toLocaleString('da-DK')}`;
   renderPriorityInbox();
