@@ -561,6 +561,8 @@
     width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:#fff;font:inherit;font-size:12px;color:var(--ink)
   }
   .priority-sidebar-form textarea{min-height:92px;resize:vertical}
+  .priority-sidebar-actions{display:flex;gap:8px;flex-wrap:wrap}
+  .priority-sidebar-helper{font-size:11px;color:var(--muted);line-height:1.45}
   .priority-mini-list{display:grid;gap:12px}
   .priority-mini-item{display:grid;gap:3px}
   .priority-mini-item strong{font-size:13px;line-height:1.35}
@@ -1268,6 +1270,7 @@
           <div class="priority-sidebar-form">
             <input id="priorityTaskTitle" type="text" placeholder="Beskriv opgaven...">
             <input id="priorityTaskDueDate" type="date">
+            <input id="priorityTaskOwner" type="text" placeholder="Ansvarlig">
             <select id="priorityTaskDomain">
               <option value="arbejde">Arbejde</option>
               <option value="hr">HR</option>
@@ -1279,7 +1282,11 @@
               <option value="now">Nu</option>
             </select>
             <textarea id="priorityTaskNotes" placeholder="Kontekst eller note"></textarea>
-            <button class="btn primary" onclick="addSidebarTask()">Tilføj</button>
+            <div class="priority-sidebar-actions">
+              <button class="btn primary" id="priorityTaskSubmitBtn" onclick="saveSidebarTask()">Tilføj</button>
+              <button class="btn ghost" id="priorityTaskCancelBtn" onclick="cancelSidebarTaskEdit()" style="display:none">Annuller</button>
+            </div>
+            <div class="priority-sidebar-helper" id="priorityTaskHelper">Opret interne opgaver direkte herfra, eller brug Edit på en eksisterende opgave.</div>
           </div>
         </div>
         <div class="priority-sidebar-section">
@@ -1748,6 +1755,7 @@ let liquiditySubtab = 'overview';
 let inboxFilter = 'alle';
 let selectedEmailId = null;
 let priorityView = 'todos';
+let editingPriorityTaskId = null;
 let selectedAgentId = 'chief-of-staff';
 let handledEmailIds = [];
 let dismissedPriorityKeys = [];
@@ -2388,7 +2396,7 @@ function priorityEditButton(links='', item={}){
   const actions = parsePriorityActions(links);
   let onclick = actions[0]?.onclick || '';
   if(!onclick && item.emailId) onclick = `openEmail('${String(item.emailId).replace(/'/g,"\\'")}'); setPriorityView('indbakke')`;
-  if(!onclick && item.internalTaskId) onclick = `setActiveTab('appendix')`;
+  if(!onclick && item.internalTaskId) onclick = `openPriorityTaskEditor('${String(item.internalTaskId).replace(/'/g,"\\'")}')`;
   if(!onclick) return '';
   return `<button class="btn ghost priority-edit-btn" title="Edit" aria-label="Edit" onclick="${onclick}">✎</button>`;
 }
@@ -2507,24 +2515,81 @@ function renderSidebarSummaries(priorities){
     archived.innerHTML = items.length ? items.map((item)=>`<div class="priority-mini-item"><strong>${escapeAttr(item.title)}</strong><div class="meta">${escapeAttr(item.meta || '')}</div></div>`).join('') : '<div class="priority-sidebar-empty">Ingen arkiverede opgaver.</div>';
   }
 }
-function addSidebarTask(){
+function fillSidebarTaskForm(task={}){
+  const title = document.getElementById('priorityTaskTitle');
+  const dueDate = document.getElementById('priorityTaskDueDate');
+  const owner = document.getElementById('priorityTaskOwner');
+  const domain = document.getElementById('priorityTaskDomain');
+  const bucket = document.getElementById('priorityTaskBucket');
+  const notes = document.getElementById('priorityTaskNotes');
+  if(title) title.value = task.title || '';
+  if(dueDate) dueDate.value = task.dueDate || '';
+  if(owner) owner.value = task.owner || '';
+  if(domain) domain.value = task.domain || 'arbejde';
+  if(bucket) bucket.value = task.bucket || 'today';
+  if(notes) notes.value = task.notes || '';
+}
+function resetSidebarTaskForm(){
+  editingPriorityTaskId = null;
+  fillSidebarTaskForm({});
+  const title = document.querySelector('.priority-sidebar-section .priority-sidebar-title');
+  const submit = document.getElementById('priorityTaskSubmitBtn');
+  const cancel = document.getElementById('priorityTaskCancelBtn');
+  const helper = document.getElementById('priorityTaskHelper');
+  if(title) title.textContent = 'Ny opgave';
+  if(submit) submit.textContent = 'Tilføj';
+  if(cancel) cancel.style.display = 'none';
+  if(helper) helper.textContent = 'Opret interne opgaver direkte herfra, eller brug Edit på en eksisterende opgave.';
+}
+function openPriorityTaskEditor(taskId=''){
+  const task = internalTasks.find((entry)=>entry.id === taskId);
+  if(!task) return;
+  editingPriorityTaskId = taskId;
+  fillSidebarTaskForm(task);
+  const title = document.querySelector('.priority-sidebar-section .priority-sidebar-title');
+  const submit = document.getElementById('priorityTaskSubmitBtn');
+  const cancel = document.getElementById('priorityTaskCancelBtn');
+  const helper = document.getElementById('priorityTaskHelper');
+  if(title) title.textContent = 'Rediger opgave';
+  if(submit) submit.textContent = 'Gem';
+  if(cancel) cancel.style.display = 'inline-flex';
+  if(helper) helper.textContent = 'Ret tekst, dato, ansvarlig og note direkte her. Ændringer gemmes i samme opgave.';
+}
+function cancelSidebarTaskEdit(){
+  resetSidebarTaskForm();
+}
+function saveSidebarTask(){
   const title = document.getElementById('priorityTaskTitle')?.value.trim();
   if(!title) return;
   const dueDate = document.getElementById('priorityTaskDueDate')?.value || '';
+  const owner = document.getElementById('priorityTaskOwner')?.value.trim() || '';
   const domain = document.getElementById('priorityTaskDomain')?.value || 'arbejde';
   const bucket = document.getElementById('priorityTaskBucket')?.value || 'today';
   const notes = document.getElementById('priorityTaskNotes')?.value.trim() || '';
-  internalTasks.unshift(normalizeInternalTask({
-    id:`internal-${Date.now()}`,
-    title,
-    dueDate,
-    notes,
-    domain,
-    bucket,
-    source:'dashboard',
-    status:'Åben'
-  }));
-  ['priorityTaskTitle','priorityTaskDueDate','priorityTaskNotes'].forEach((id)=>{ const el = document.getElementById(id); if(el) el.value = ''; });
+  if(editingPriorityTaskId){
+    const task = internalTasks.find((entry)=>entry.id === editingPriorityTaskId);
+    if(task){
+      task.title = title;
+      task.dueDate = dueDate;
+      task.owner = owner;
+      task.domain = domain;
+      task.bucket = bucket;
+      task.notes = notes;
+    }
+  }else{
+    internalTasks.unshift(normalizeInternalTask({
+      id:`internal-${Date.now()}`,
+      title,
+      dueDate,
+      owner,
+      notes,
+      domain,
+      bucket,
+      source:'dashboard',
+      status:'Åben'
+    }));
+  }
+  resetSidebarTaskForm();
   saveState();
   renderPriorities();
 }
