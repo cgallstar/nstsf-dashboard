@@ -1794,12 +1794,27 @@ function buildCaseNumberRegistry(){
   const ordered = sager.map((entry, index)=>({entry, index})).sort((a,b)=>(a.entry.sort || 0) - (b.entry.sort || 0) || a.index - b.index);
   const customerNumbers = new Map();
   const caseRefs = new Map();
-  let nextCustomerNumber = 1001;
+  const usedCustomerNumbers = new Set();
+  let highestCustomerNumber = 1000;
+  ordered.forEach(({entry})=>{
+    const normalized = normalizeSagsId(entry?.sid);
+    const match = normalized.match(/^(\d+)([a-z]+)$/);
+    if(!match) return;
+    const customerNumber = match[1];
+    const numeric = Number(customerNumber);
+    if(Number.isFinite(numeric)) highestCustomerNumber = Math.max(highestCustomerNumber, numeric);
+    usedCustomerNumbers.add(customerNumber);
+    const key = customerGroupKey(entry);
+    if(!customerNumbers.has(key)) customerNumbers.set(key, customerNumber);
+  });
   ordered.forEach(({entry})=>{
     const key = customerGroupKey(entry);
-    if(!customerNumbers.has(key)){
-      customerNumbers.set(key, String(nextCustomerNumber++));
-    }
+    if(customerNumbers.has(key)) return;
+    let candidate = highestCustomerNumber + 1;
+    while(usedCustomerNumbers.has(String(candidate))) candidate += 1;
+    customerNumbers.set(key, String(candidate));
+    usedCustomerNumbers.add(String(candidate));
+    highestCustomerNumber = Math.max(highestCustomerNumber, candidate);
   });
   const grouped = new Map();
   ordered.forEach(({entry, index})=>{
@@ -1808,17 +1823,44 @@ function buildCaseNumberRegistry(){
   });
   grouped.forEach((items, key)=>{
     const customerNumber = customerNumbers.get(key);
-    items.forEach(({index}, itemIndex)=>{
-      caseRefs.set(index, `${customerNumber}${caseLetter(itemIndex)}`);
+    const usedLetters = new Set();
+    items.forEach(({entry, index})=>{
+      const normalized = normalizeSagsId(entry?.sid);
+      const match = normalized.match(/^(\d+)([a-z]+)$/);
+      if(match && match[1] === customerNumber){
+        caseRefs.set(index, normalized);
+        usedLetters.add(match[2]);
+      }
+    });
+    items.forEach(({entry, index})=>{
+      if(caseRefs.has(index)) return;
+      let letterIndex = 0;
+      let nextLetter = caseLetter(letterIndex);
+      while(usedLetters.has(nextLetter)){
+        letterIndex += 1;
+        nextLetter = caseLetter(letterIndex);
+      }
+      const sid = `${customerNumber}${nextLetter}`;
+      entry.sid = sid;
+      caseRefs.set(index, sid);
+      usedLetters.add(nextLetter);
     });
   });
   return { customerNumbers, caseRefs };
 }
+function ensureCaseIds(){
+  const registry = buildCaseNumberRegistry();
+  sager.forEach((entry, index)=>{
+    const sid = registry.caseRefs.get(index);
+    if(sid) entry.sid = sid;
+  });
+  return registry;
+}
 function getCustomerNumber(entry){
-  return buildCaseNumberRegistry().customerNumbers.get(customerGroupKey(entry)) || '';
+  return ensureCaseIds().customerNumbers.get(customerGroupKey(entry)) || '';
 }
 function getCaseRefByIndex(index){
-  return buildCaseNumberRegistry().caseRefs.get(index) || '';
+  return ensureCaseIds().caseRefs.get(index) || '';
 }
 function getCaseRef(entry){
   const index = sager.indexOf(entry);
@@ -1945,10 +1987,14 @@ function cloneDocs(docs={}, drive=''){
     mails: Array.isArray(docs?.mails) ? docs.mails : [...DOC_DEFAULTS.mails],
   };
 }
+function normalizeSagsId(value=''){
+  return String(value || '').replace(/\s+/g,'').trim().toLowerCase();
+}
 function normalizeSag(saved={}, i=0){
   return {
     ...saved,
     k:+saved.k || 5,
+    sid:textValue(saved.sid, ''),
     nr:textValue(saved.nr, ''),
     kunde:textValue(saved.kunde, 'Ukendt kunde'),
     adr:textValue(saved.adr, ''),
@@ -1989,7 +2035,7 @@ function normalizeEmployee(saved={}, i=0){ return { id:textValue(saved.id, `empl
 function normalizeInternalTask(saved={}){ return { id:textValue(saved.id, `internal-${Date.now()}`), title:textValue(saved.title || saved.name, 'Intern opgave'), status:textValue(saved.status, 'Åben'), dueDate:textValue(saved.dueDate, ''), owner:textValue(saved.owner, ''), notes:textValue(saved.notes, ''), source:textValue(saved.source, 'custom-gpt'), bucket:textValue(saved.bucket, ''), domain:textValue(saved.domain, 'intern'), createdAt:textValue(saved.createdAt, new Date().toISOString()) }; }
 function normalizeEmail(saved={}){ return { id:textValue(saved.id, `mail-${Date.now()}`), threadId:textValue(saved.threadId, ''), kunde:textValue(saved.kunde, ''), from:textValue(saved.from, ''), subject:textValue(saved.subject, ''), date:textValue(saved.date, ''), preview:textValue(saved.preview, ''), body:textValue(saved.body, ''), tags:Array.isArray(saved.tags) ? saved.tags.map((tag)=>String(tag)) : [], handled:!!saved.handled, type:textValue(saved.type, 'todo'), latestSenderType:textValue(saved.latestSenderType, ''), repliedAt:textValue(saved.repliedAt, ''), syncedAt:textValue(saved.syncedAt, '') }; }
 function stripDemoEmails(items=[]){ return items.filter((item)=>!DEMO_EMAIL_IDS.has(textValue(item?.id, ''))); }
-function collectState(){ const capacityHours = document.getElementById('capacityHours') ? +document.getElementById('capacityHours').value || 37 : 37; return { schema:'nstsf-dashboard-state-v1', savedFrom:location.hostname || 'local-file', savedAt:new Date().toISOString(), sager:sager, betalinger:betalinger, emails:emails, employees:employees, internalTasks:internalTasks, settings:{capacityHours, handledEmailIds, dismissedPriorityKeys, archivedPriorityItems} }; }
+function collectState(){ ensureCaseIds(); const capacityHours = document.getElementById('capacityHours') ? +document.getElementById('capacityHours').value || 37 : 37; return { schema:'nstsf-dashboard-state-v1', savedFrom:location.hostname || 'local-file', savedAt:new Date().toISOString(), sager:sager, betalinger:betalinger, emails:emails, employees:employees, internalTasks:internalTasks, settings:{capacityHours, handledEmailIds, dismissedPriorityKeys, archivedPriorityItems} }; }
 function formatHeaderUpdated(value){
   const date = parseDateValue(value) || new Date();
   return `Pipeline, sager og økonomi — opdateret ${date.toLocaleDateString('da-DK', { day:'numeric', month:'short', year:'numeric' })}`;
@@ -2004,7 +2050,7 @@ function updatePreviewNotice(){
   if(!notice) return;
   notice.classList.toggle('visible', location.protocol === 'file:');
 }
-function applyState(state){ if(!state || typeof state !== 'object') return; if(Array.isArray(state.sager)){ sager.splice(0, sager.length, ...state.sager.map(normalizeSag)); } if(Array.isArray(state.betalinger)){ betalinger.splice(0, betalinger.length, ...state.betalinger.map(normalizeBetaling)); } if(Array.isArray(state.emails)){ emails.splice(0, emails.length, ...stripDemoEmails(state.emails).map(normalizeEmail)); } if(Array.isArray(state.employees)){ employees.splice(0, employees.length, ...state.employees.map(normalizeEmployee)); } if(Array.isArray(state.internalTasks)){ internalTasks.splice(0, internalTasks.length, ...state.internalTasks.map(normalizeInternalTask)); } if(state.settings && document.getElementById('capacityHours')){ document.getElementById('capacityHours').value = state.settings.capacityHours || 37; handledEmailIds = Array.isArray(state.settings.handledEmailIds) ? state.settings.handledEmailIds : []; dismissedPriorityKeys = Array.isArray(state.settings.dismissedPriorityKeys) ? state.settings.dismissedPriorityKeys : []; archivedPriorityItems = Array.isArray(state.settings.archivedPriorityItems) ? state.settings.archivedPriorityItems : []; } if(state.savedAt) updateHeaderTimestamp(state.savedAt); }
+function applyState(state){ if(!state || typeof state !== 'object') return; if(Array.isArray(state.sager)){ sager.splice(0, sager.length, ...state.sager.map(normalizeSag)); ensureCaseIds(); } if(Array.isArray(state.betalinger)){ betalinger.splice(0, betalinger.length, ...state.betalinger.map(normalizeBetaling)); } if(Array.isArray(state.emails)){ emails.splice(0, emails.length, ...stripDemoEmails(state.emails).map(normalizeEmail)); } if(Array.isArray(state.employees)){ employees.splice(0, employees.length, ...state.employees.map(normalizeEmployee)); } if(Array.isArray(state.internalTasks)){ internalTasks.splice(0, internalTasks.length, ...state.internalTasks.map(normalizeInternalTask)); } if(state.settings && document.getElementById('capacityHours')){ document.getElementById('capacityHours').value = state.settings.capacityHours || 37; handledEmailIds = Array.isArray(state.settings.handledEmailIds) ? state.settings.handledEmailIds : []; dismissedPriorityKeys = Array.isArray(state.settings.dismissedPriorityKeys) ? state.settings.dismissedPriorityKeys : []; archivedPriorityItems = Array.isArray(state.settings.archivedPriorityItems) ? state.settings.archivedPriorityItems : []; } if(state.savedAt) updateHeaderTimestamp(state.savedAt); }
 function persistLocalState(){ const state = collectState(); localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); updateHeaderTimestamp(state.savedAt); }
 function loadState(){ try{ const state = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}'); const hadDemoEmails = Array.isArray(state?.emails) && state.emails.some((item)=>DEMO_EMAIL_IDS.has(textValue(item?.id, ''))); applyState(state); if(hadDemoEmails) persistLocalState(); }catch(e){} updateHeaderTimestamp(lastUpdatedAt || new Date().toISOString()); updatePreviewNotice(); }
 async function saveRemoteState(manual=false){ if(!authUser){ if(manual) setSyncStatus('Du skal være logget ind for at gemme centralt.', 'error'); return; } if(location.protocol === 'file:'){ if(manual) setSyncStatus('Backend virker først på Netlify eller via netlify dev. Lokal fil er kun browser-kopi.', 'error'); return; } try{ setSyncStatus('Gemmer til central backend...'); const payload = collectState(); const res = await fetch(STATE_API, { method:'PUT', credentials:'include', headers:{'content-type':'application/json'}, body:JSON.stringify(payload) }); const data = await res.json().catch(()=>({})); if(!res.ok) throw new Error(data.error || `HTTP ${res.status}`); updateHeaderTimestamp(data.savedAt || payload.savedAt); setSyncStatus(`Gemt centralt ${new Date(data.savedAt || Date.now()).toLocaleString('da-DK')}`, 'ok'); }catch(err){ setSyncStatus(`Kun lokal kopi gemt. Backend-fejl: ${err.message}`, 'error'); } }

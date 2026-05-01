@@ -19,6 +19,10 @@ export function textValue(value: unknown, fallback = "") {
   return String(value);
 }
 
+function normalizeCaseId(value: unknown) {
+  return textValue(value, "").replace(/\s+/g, "").trim().toLowerCase();
+}
+
 function parseCookies(header = "") {
   return Object.fromEntries(
     header
@@ -228,11 +232,13 @@ export function ensureCaseShape(entry: any) {
 }
 
 export function matchCase(sager: any[], caseNumber: string, customerName: string) {
-  const nr = textValue(caseNumber, "").trim().toLowerCase();
+  const nr = normalizeCaseId(caseNumber);
   const customer = textValue(customerName, "").trim().toLowerCase();
   return sager.find((entry) => {
-    const sagNr = textValue(entry?.nr, "").trim().toLowerCase();
+    const sagNr = normalizeCaseId(entry?.nr);
+    const sagsId = normalizeCaseId(entry?.sid);
     const kunde = textValue(entry?.kunde, "").trim().toLowerCase();
+    if (nr && sagsId && nr === sagsId) return true;
     if (nr && sagNr && nr === sagNr) return true;
     if (!customer || !kunde) return false;
     return kunde.includes(customer) || customer.includes(kunde);
