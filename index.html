@@ -2478,7 +2478,7 @@ function archivePriorityItem(item, mode='arkiv'){
 function markPriorityComplete(key=''){
   archivePriorityItem(findPriorityByKey(key), 'fuldført');
   if(key && !dismissedPriorityKeys.includes(key)) dismissedPriorityKeys.push(key);
-  saveState();
+  saveState(true);
   renderPriorities();
   renderInbox();
   render();
@@ -2487,7 +2487,7 @@ function markPriorityDone(emailId='', key=''){
   archivePriorityItem(findPriorityByKey(key), 'fuldført');
   if(emailId && !handledEmailIds.includes(emailId)) handledEmailIds.push(emailId);
   if(key && !dismissedPriorityKeys.includes(key)) dismissedPriorityKeys.push(key);
-  saveState();
+  saveState(true);
   renderPriorities();
   renderInbox();
   render();
@@ -2497,14 +2497,14 @@ function markInternalTaskDone(taskId='', key=''){
   const task = internalTasks.find((entry)=>entry.id === taskId);
   if(task) task.status = 'Fuldført';
   if(key && !dismissedPriorityKeys.includes(key)) dismissedPriorityKeys.push(key);
-  saveState();
+  saveState(true);
   renderPriorities();
   renderAppendix();
 }
 function dismissPriority(key=''){
   archivePriorityItem(findPriorityByKey(key), 'slettet');
   if(key && !dismissedPriorityKeys.includes(key)) dismissedPriorityKeys.push(key);
-  saveState();
+  saveState(true);
   renderPriorities();
 }
 function renderPriorityRows(targetId, items, buckets, type){
