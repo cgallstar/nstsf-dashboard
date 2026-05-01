@@ -1774,6 +1774,54 @@ function getCustomerDisplay(entry){
   const account = getCustomerAccount(entry);
   return account ? account.shortTitle : (entry?.kunde || 'Ukendt kunde');
 }
+function customerGroupKey(entry){
+  const account = getCustomerAccount(entry);
+  if(account?.id) return `account:${account.id}`;
+  return `customer:${String(entry?.kunde || 'Ukendt kunde').trim().toLowerCase()}`;
+}
+function caseLetter(index=0){
+  let n = Number(index) || 0;
+  let value = '';
+  do{
+    value = String.fromCharCode(97 + (n % 26)) + value;
+    n = Math.floor(n / 26) - 1;
+  }while(n >= 0);
+  return value;
+}
+function buildCaseNumberRegistry(){
+  const ordered = sager.map((entry, index)=>({entry, index})).sort((a,b)=>(a.entry.sort || 0) - (b.entry.sort || 0) || a.index - b.index);
+  const customerNumbers = new Map();
+  const caseRefs = new Map();
+  let nextCustomerNumber = 1001;
+  ordered.forEach(({entry})=>{
+    const key = customerGroupKey(entry);
+    if(!customerNumbers.has(key)){
+      customerNumbers.set(key, String(nextCustomerNumber++));
+    }
+  });
+  const grouped = new Map();
+  ordered.forEach(({entry, index})=>{
+    const key = customerGroupKey(entry);
+    grouped.set(key, [...(grouped.get(key) || []), {entry, index}]);
+  });
+  grouped.forEach((items, key)=>{
+    const customerNumber = customerNumbers.get(key);
+    items.forEach(({index}, itemIndex)=>{
+      caseRefs.set(index, `${customerNumber}${caseLetter(itemIndex)}`);
+    });
+  });
+  return { customerNumbers, caseRefs };
+}
+function getCustomerNumber(entry){
+  return buildCaseNumberRegistry().customerNumbers.get(customerGroupKey(entry)) || '';
+}
+function getCaseRefByIndex(index){
+  return buildCaseNumberRegistry().caseRefs.get(index) || '';
+}
+function getCaseRef(entry){
+  const index = sager.indexOf(entry);
+  return index >= 0 ? getCaseRefByIndex(index) : '';
+}
 function getCustomerPortfolioCases(accountId, currentIndex){
   return sager
     .map((entry, index)=>({entry, index}))
@@ -1785,16 +1833,18 @@ function getCustomerPortfolioCases(accountId, currentIndex){
       title: entry.opg || entry.kunde || 'Sag uden titel',
       address: entry.adr || 'Adresse mangler',
       category: KAT[+entry.k] || 'Sag',
-      caseNumber: entry.nr || '—',
+      caseNumber: getCaseRefByIndex(index) || '—',
       amount: entry.b && entry.b !== '0' ? `${entry.b} kr.` : 'Estimat mangler',
     }));
 }
 function renderCustomerPortfolio(account, currentIndex){
   if(!account) return '';
   const items = getCustomerPortfolioCases(account.id, currentIndex);
+  const current = sager[currentIndex];
+  const customerNumber = current ? getCustomerNumber(current) : '';
   return `<div class="case-card">
     <h3>Kundesystem</h3>
-    <div class="case-account-chip">${escapeAttr(account.shortTitle)}</div>
+    <div class="case-account-chip">${escapeAttr(account.shortTitle)}${customerNumber ? ` · Kundenr. ${escapeAttr(customerNumber)}` : ''}</div>
     <div class="case-account-note">${escapeAttr(account.note)}</div>
     <div class="case-inline-actions" style="margin-top:0;margin-bottom:12px">
       <a class="btn primary" href="${account.sheetUrl}" target="_blank" rel="noopener">${escapeAttr(account.sheetTitle)}</a>
@@ -2223,10 +2273,15 @@ function resolvePriorityBucket(flags = {}){
 function casePriorityTitle(s){
   const base = getCustomerDisplay(s);
   const address = String(s?.adr || '').trim();
-  return address ? `${base} · ${address}` : base;
+  const ref = getCaseRef(s);
+  const title = address ? `${base} · ${address}` : base;
+  return ref ? `${ref} · ${title}` : title;
 }
 function casePriorityMeta(s, options = {}){
-  const parts = [KAT[s.k]];
+  const parts = [];
+  const customerNumber = getCustomerNumber(s);
+  if(customerNumber) parts.push(`kundenr. ${customerNumber}`);
+  parts.push(KAT[s.k]);
   if(s.opg) parts.push(s.opg);
   if(parseNumber(s.u) > 0) parts.push(`udestående ${formatCurrency(parseNumber(s.u))}`);
   if(s.dato) parts.push(`betaling ${displayDate(s.dato)}`);
@@ -2645,7 +2700,7 @@ function setCustomerView(view){
   closeSag();
   render();
 }
-function render(){ const tbody = document.getElementById('sagerBody'); const q = (document.getElementById('sagerSoeg').value || '').toLowerCase(); const katF = document.getElementById('filterKat').value; const allowed = customerView === 'archived' ? ARCHIVED_CASE_CATEGORIES : ACTIVE_CASE_CATEGORIES; const rows = sager.filter(s=>{ if(!allowed.has(+s.k)) return false; if(katF && String(s.k)!==katF) return false; if(q){ const hay = `${s.nr} ${s.kunde} ${s.adr} ${s.opg}`.toLowerCase(); if(!hay.includes(q)) return false; } return true; }).sort((a,b)=>a.k-b.k || a.sort-b.sort); tbody.innerHTML = rows.map(s=>{ const idx = sager.indexOf(s); const account = getCustomerAccount(s); const kundeCell = getCustomerDisplay(s); const subline = account ? (s.adr || 'Ejendom ikke angivet') : (s.kunde || 'Kunde mangler'); const activeRow = selectedCustomerIndex === idx ? ' style="background:#fcfbf8"' : ''; return `<tr data-kat="${s.k}"${activeRow}><td><select class="kategori kat-${s.k}" onchange="changeKat(${idx}, this.value)">${Object.entries(KAT).map(([k,v])=>`<option value="${k}"${+k===s.k?' selected':''}>${v}</option>`).join('')}</select></td><td>${s.nr || '—'}</td><td title="${escapeAttr(`${s.kunde} ${s.adr || ''}`)}"><button class="kunde-link" onclick="openSag(${idx})"><strong>${escapeAttr(kundeCell)}</strong></button><div class="kunde-address">${escapeAttr(subline)}</div></td><td class="wrap" title="${escapeAttr(s.opg)}"><div class="opg-main">${s.opg || '—'}</div><div class="opg-sub">${s.b && s.b !== '0' ? `Est. entreprise ${s.b} kr.` : 'Est. entreprise mangler'}</div></td><td class="num">${s.u && s.u !== '0' ? '<span class="chip chip-amber">' + formatCurrency(parseNumber(s.u)).replace(' kr.','') + ' kr.</span>' : '—'}</td><td class="dim date-cell">${displayDate(s.start)}</td><td class="dim date-cell">${displayDate(s.slut)}</td><td class="num"><button class="icon-btn" title="Rediger" aria-label="Rediger" onclick="openEditSag(${idx})">✎</button></td></tr>`; }).join(''); document.getElementById('count').textContent = customerView === 'archived' ? `${rows.length} arkiverede kunder` : `${rows.length} aktive/potentielle kunder`; updateCaseTabCount(); renderAppendix(); renderFinancials(); renderBetalinger(); }
+function render(){ const tbody = document.getElementById('sagerBody'); const q = (document.getElementById('sagerSoeg').value || '').toLowerCase(); const katF = document.getElementById('filterKat').value; const allowed = customerView === 'archived' ? ARCHIVED_CASE_CATEGORIES : ACTIVE_CASE_CATEGORIES; const rows = sager.filter(s=>{ if(!allowed.has(+s.k)) return false; if(katF && String(s.k)!==katF) return false; if(q){ const idx = sager.indexOf(s); const derivedRef = getCaseRefByIndex(idx); const customerNumber = getCustomerNumber(s); const hay = `${derivedRef} ${customerNumber} ${s.nr} ${s.kunde} ${s.adr} ${s.opg}`.toLowerCase(); if(!hay.includes(q)) return false; } return true; }).sort((a,b)=>a.k-b.k || a.sort-b.sort); tbody.innerHTML = rows.map(s=>{ const idx = sager.indexOf(s); const account = getCustomerAccount(s); const kundeCell = getCustomerDisplay(s); const subline = account ? (s.adr || 'Ejendom ikke angivet') : (s.kunde || 'Kunde mangler'); const derivedRef = getCaseRefByIndex(idx) || '—'; const activeRow = selectedCustomerIndex === idx ? ' style="background:#fcfbf8"' : ''; return `<tr data-kat="${s.k}"${activeRow}><td><select class="kategori kat-${s.k}" onchange="changeKat(${idx}, this.value)">${Object.entries(KAT).map(([k,v])=>`<option value="${k}"${+k===s.k?' selected':''}>${v}</option>`).join('')}</select></td><td>${derivedRef}</td><td title="${escapeAttr(`${s.kunde} ${s.adr || ''}`)}"><button class="kunde-link" onclick="openSag(${idx})"><strong>${escapeAttr(kundeCell)}</strong></button><div class="kunde-address">${escapeAttr(subline)}</div></td><td class="wrap" title="${escapeAttr(s.opg)}"><div class="opg-main">${s.opg || '—'}</div><div class="opg-sub">${s.b && s.b !== '0' ? `Est. entreprise ${s.b} kr.` : 'Est. entreprise mangler'}</div></td><td class="num">${s.u && s.u !== '0' ? '<span class="chip chip-amber">' + formatCurrency(parseNumber(s.u)).replace(' kr.','') + ' kr.</span>' : '—'}</td><td class="dim date-cell">${displayDate(s.start)}</td><td class="dim date-cell">${displayDate(s.slut)}</td><td class="num"><button class="icon-btn" title="Rediger" aria-label="Rediger" onclick="openEditSag(${idx})">✎</button></td></tr>`; }).join(''); document.getElementById('count').textContent = customerView === 'archived' ? `${rows.length} arkiverede kunder` : `${rows.length} aktive/potentielle kunder`; updateCaseTabCount(); renderAppendix(); renderFinancials(); renderBetalinger(); }
 function changeKat(i,v){ sager[i].k = +v; saveState(); render(); renderPriorities(); }
 function changeStatus(i,v){ sager[i].status = v; saveState(); render(); renderPriorities(); }
 function openSag(i){ if(selectedCustomerIndex === i){ closeSag(); return; } selectedCustomerIndex = i; render(); renderSagDetail(i); }
@@ -2707,6 +2762,8 @@ function renderSagDetail(i){
   const customerLayout = document.querySelector('.customers-layout');
   if(!s || !caseDetail) return;
   const account = getCustomerAccount(s);
+  const customerNumber = getCustomerNumber(s);
+  const caseRef = getCaseRefByIndex(i);
   const driveUrl = getSagDrive(s);
   const driveLink = driveUrl ? `<a class="btn primary" href="${driveUrl}" target="_blank" rel="noopener">Åbn kundemappe</a>` : `<a class="btn" href="${CUSTOMER_DRIVE_ROOT}" target="_blank" rel="noopener">Find/opret kundemappe</a>`;
   const latestDialog = latestDialogDate(s);
@@ -2722,7 +2779,7 @@ function renderSagDetail(i){
       <div class="case-head-top">
         <div>
           <h2>${account ? account.title : s.kunde}</h2>
-          <div class="sub">${s.opg || 'Sag uden titel'}${s.nr ? ` · Sag ${s.nr}` : ''}${s.adr ? ` · ${s.adr}` : ''}</div>
+          <div class="sub">${s.opg || 'Sag uden titel'}${caseRef ? ` · Sag ${caseRef}` : ''}${s.adr ? ` · ${s.adr}` : ''}</div>
         </div>
         <button class="btn" onclick="closeSag()">Tilbage</button>
       </div>
@@ -2732,6 +2789,8 @@ function renderSagDetail(i){
       <div class="case-card">
         <h3>Overblik</h3>
         <table class="case-summary-table"><tbody>
+          <tr><td>Kundenr.</td><td>${customerNumber || '—'}</td></tr>
+          <tr><td>Sagsnr.</td><td>${caseRef || '—'}</td></tr>
           ${account ? `<tr><td>Kundekonto</td><td>${account.title}</td></tr>` : ''}
           <tr><td>Adresse</td><td>${s.adr || 'Adresse mangler'}</td></tr>
           <tr><td>Status</td><td>${wf.summaryStatus || s.status || '—'}</td></tr>
@@ -2775,7 +2834,7 @@ function renderSagDetail(i){
 function closeSag(){ const caseDetail = document.getElementById('caseDetail'); const customerLayout = document.querySelector('.customers-layout'); selectedCustomerIndex = null; editSagIndex = null; render(); if(customerLayout) customerLayout.classList.remove('detail-open'); if(caseDetail){ caseDetail.classList.remove('active'); caseDetail.innerHTML = '<div class="case-placeholder">Vælg en kunde i listen for at se info, betalinger, noter, referater og links i højre side.</div>'; } }
 function addSag(){ const idx = sager.length; sager.push(normalizeSag({ k:3,nr:"",kunde:"Ny kunde",adr:"",opg:"",b:"0",u:"0",dato:"",status:"—",timer:"",fak:"",start:"",slut:"",info:"",mail:"",tlf:"",drive:"",sort:idx,docs:{drive:"",byggereferater:docDemo.byggereferater,transkripter:docDemo.transkripter}}, idx)); saveState(); openEditSag(idx); render(); }
 let editSagIndex = null;
-function openEditSag(i){ const s = sager[i]; const caseDetail = document.getElementById('caseDetail'); const customerLayout = document.querySelector('.customers-layout'); if(!s || !caseDetail) return; editSagIndex = i; selectedCustomerIndex = i; render(); if(customerLayout) customerLayout.classList.add('detail-open'); caseDetail.classList.add('active'); caseDetail.innerHTML = `<div class="case-shell"><div class="case-head"><div class="case-eyebrow">NSTSF kundesystem</div><div class="case-head-top"><div><h2>Rediger sag</h2><div class="sub">${s.kunde || 'Ukendt kunde'}${s.nr ? ` · Sag ${s.nr}` : ''}</div></div><button class="btn ghost" onclick="closeSag()">Luk</button></div></div><div class="case-card"><div class="case-form"><label>Kategori<select id="edit-k">${Object.entries(KAT).map(([k,v])=>`<option value="${k}"${+k===s.k?' selected':''}>${v}</option>`).join('')}</select></label><label>Sagsnr.<input id="edit-nr" value="${escapeAttr(s.nr)}"></label><label>Kundenavn<input id="edit-kunde" value="${escapeAttr(s.kunde)}"></label><label class="wide">Adresse<input id="edit-adr" value="${escapeAttr(s.adr === '—' ? '' : s.adr)}"></label><label class="wide">Opgave<textarea id="edit-opg">${escapeAttr(s.opg)}</textarea></label><label>Est. beløb<input id="edit-b" value="${escapeAttr(s.b)}"></label><label>Udestående<input id="edit-u" value="${escapeAttr(s.u)}"></label><label>Betalingsdato<input id="edit-dato" type="date" value="${escapeAttr(s.dato)}"></label><label>Startdato<input id="edit-start" type="date" value="${escapeAttr(s.start)}"></label><label>Slutdato<input id="edit-slut" type="date" value="${escapeAttr(s.slut)}"></label><label>Fin. status<input id="edit-status" value="${escapeAttr(s.status)}"></label><label>Est. timer<input id="edit-timer" value="${escapeAttr(s.timer)}"></label><label>Fakturanr.<input id="edit-fak" value="${escapeAttr(s.fak)}"></label><label>Mail<input id="edit-mail" value="${escapeAttr(s.mail)}"></label><label>Telefon<input id="edit-tlf" value="${escapeAttr(s.tlf)}"></label><label class="wide">Google Drive-folder URL<input id="edit-drive" value="${escapeAttr(getSagDrive(s))}" placeholder="Indsæt link til kundens Drive-mappe"></label><label class="wide">Noter/info<textarea id="edit-info">${escapeAttr(s.info)}</textarea></label></div><div style="display:flex;gap:8px;margin-top:14px"><button class="btn primary" onclick="saveSagEdit()">Gem</button><button class="btn" onclick="renderSagDetail(${i})">Annuller</button></div></div></div>`; }
+function openEditSag(i){ const s = sager[i]; const caseDetail = document.getElementById('caseDetail'); const customerLayout = document.querySelector('.customers-layout'); if(!s || !caseDetail) return; const customerNumber = getCustomerNumber(s); const caseRef = getCaseRefByIndex(i); editSagIndex = i; selectedCustomerIndex = i; render(); if(customerLayout) customerLayout.classList.add('detail-open'); caseDetail.classList.add('active'); caseDetail.innerHTML = `<div class="case-shell"><div class="case-head"><div class="case-eyebrow">NSTSF kundesystem</div><div class="case-head-top"><div><h2>Rediger sag</h2><div class="sub">${s.kunde || 'Ukendt kunde'}${caseRef ? ` · Sag ${caseRef}` : ''}</div></div><button class="btn ghost" onclick="closeSag()">Luk</button></div></div><div class="case-card"><div class="case-form"><label>Kundenr.<input value="${escapeAttr(customerNumber)}" disabled></label><label>Sagsnr.<input value="${escapeAttr(caseRef)}" disabled></label><label>Kategori<select id="edit-k">${Object.entries(KAT).map(([k,v])=>`<option value="${k}"${+k===s.k?' selected':''}>${v}</option>`).join('')}</select></label><label>Eksisterende ref.<input id="edit-nr" value="${escapeAttr(s.nr)}" placeholder="Valgfrit eksternt referencenr."></label><label>Kundenavn<input id="edit-kunde" value="${escapeAttr(s.kunde)}"></label><label class="wide">Adresse<input id="edit-adr" value="${escapeAttr(s.adr === '—' ? '' : s.adr)}"></label><label class="wide">Opgave<textarea id="edit-opg">${escapeAttr(s.opg)}</textarea></label><label>Est. beløb<input id="edit-b" value="${escapeAttr(s.b)}"></label><label>Udestående<input id="edit-u" value="${escapeAttr(s.u)}"></label><label>Betalingsdato<input id="edit-dato" type="date" value="${escapeAttr(s.dato)}"></label><label>Startdato<input id="edit-start" type="date" value="${escapeAttr(s.start)}"></label><label>Slutdato<input id="edit-slut" type="date" value="${escapeAttr(s.slut)}"></label><label>Fin. status<input id="edit-status" value="${escapeAttr(s.status)}"></label><label>Est. timer<input id="edit-timer" value="${escapeAttr(s.timer)}"></label><label>Fakturanr.<input id="edit-fak" value="${escapeAttr(s.fak)}"></label><label>Mail<input id="edit-mail" value="${escapeAttr(s.mail)}"></label><label>Telefon<input id="edit-tlf" value="${escapeAttr(s.tlf)}"></label><label class="wide">Google Drive-folder URL<input id="edit-drive" value="${escapeAttr(getSagDrive(s))}" placeholder="Indsæt link til kundens Drive-mappe"></label><label class="wide">Noter/info<textarea id="edit-info">${escapeAttr(s.info)}</textarea></label></div><div style="display:flex;gap:8px;margin-top:14px"><button class="btn primary" onclick="saveSagEdit()">Gem</button><button class="btn" onclick="renderSagDetail(${i})">Annuller</button></div></div></div>`; }
 function readEdit(id){ return document.getElementById(id).value.trim(); }
 function saveSagEdit(){ if(editSagIndex === null || !sager[editSagIndex]) return; const s = sager[editSagIndex]; s.k = +readEdit('edit-k') || 3; s.nr = readEdit('edit-nr'); s.kunde = readEdit('edit-kunde') || 'Ukendt kunde'; s.adr = readEdit('edit-adr'); s.opg = readEdit('edit-opg'); s.b = readEdit('edit-b') || '0'; s.u = readEdit('edit-u') || '0'; s.dato = readEdit('edit-dato'); s.start = readEdit('edit-start'); s.slut = readEdit('edit-slut'); s.status = readEdit('edit-status') || '—'; s.timer = readEdit('edit-timer'); s.fak = readEdit('edit-fak'); s.mail = readEdit('edit-mail'); s.tlf = readEdit('edit-tlf'); s.drive = readEdit('edit-drive'); s.info = readEdit('edit-info'); s.docs = s.docs || {byggereferater:docDemo.byggereferater, transkripter:docDemo.transkripter}; s.docs.drive = s.drive; saveState(); render(); renderPriorities(); renderCapacity(); renderSagDetail(editSagIndex); }
 function markCasePaymentPaid(caseIndex, historyKey=''){
