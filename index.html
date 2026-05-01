@@ -2475,6 +2475,15 @@ function archivePriorityItem(item, mode='arkiv'){
   });
   archivedPriorityItems = archivedPriorityItems.slice(0, 50);
 }
+function restoreArchivedPriority(key=''){
+  if(!key) return;
+  archivedPriorityItems = archivedPriorityItems.filter((item)=>item.key !== key);
+  dismissedPriorityKeys = dismissedPriorityKeys.filter((itemKey)=>itemKey !== key);
+  saveState(true);
+  renderPriorities();
+  renderInbox();
+  render();
+}
 function markPriorityComplete(key=''){
   archivePriorityItem(findPriorityByKey(key), 'fuldført');
   if(key && !dismissedPriorityKeys.includes(key)) dismissedPriorityKeys.push(key);
@@ -2555,7 +2564,7 @@ function renderPriorityArchive(){
       <div class="priority-meta">${escapeAttr(item.meta || '')}</div>
       <div class="priority-reason">${escapeAttr(item.reason || '')}</div>
     </div>
-    <div class="priority-row-tools"><span class="priority-tag week">${item.mode === 'fuldført' ? 'Fuldført' : 'Arkiv'}</span></div>
+    <div class="priority-row-tools"><span class="priority-tag week">${item.mode === 'fuldført' ? 'Fuldført' : 'Arkiv'}</span><button class="btn" onclick="restoreArchivedPriority('${item.key}')">Genskab</button></div>
   </div>`).join('') : '<div class="priority-empty-state">Ingen arkiverede opgaver endnu.</div>';
 }
 function renderSidebarSummaries(priorities){
