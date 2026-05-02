@@ -165,7 +165,7 @@ function formatCaseIdForDisplay(entry: any) {
 function plainCompactText(value = "") {
   return String(value || "")
     .replace(/\bN\s*\.?\s*V\s*\.?\s*Gadesvej/gi, "NV Gadesvej")
-    .replace(/\bNW\s+Gadesvej/gi, "NV Gadesvej")
+    .replace(/\bNW[\s_.-]*Gadesvej/gi, "NV Gadesvej")
     .replace(/[æÆ]/g, "ae")
     .replace(/[øØ]/g, "o")
     .replace(/[åÅ]/g, "a")
@@ -174,6 +174,40 @@ function plainCompactText(value = "") {
     .replace(/[^a-zA-Z0-9]+/g, " ")
     .trim()
     .toLowerCase();
+}
+
+function isGadesvejArchiveThread(signal: any, text = "") {
+  if (!signal || signal.category !== "referater") return false;
+  const compact = plainCompactText(text);
+  return compact.includes("nv gadesvej") && /\b12a?\b/.test(compact);
+}
+
+function findOrCreateGadesvejCase(state: any) {
+  const entries = Array.isArray(state?.sager) ? state.sager : [];
+  const existing = entries.find((entry: any) => {
+    const driveUrl = textValue(entry?.docs?.drive || entry?.drive, "");
+    const marker = plainCompactText(`${entry?.kunde || ""} ${entry?.adr || ""} ${entry?.opg || ""} ${driveUrl}`);
+    return driveUrl.includes("1IPXK472x8-Peasfv7kKU-JrG9oUNb6-4") || (marker.includes("nv gadesvej") && /\b12a?\b/.test(marker));
+  });
+  if (existing) return existing;
+
+  const created = ensureCaseShape({
+    k: 2,
+    sid: "1006a",
+    nr: "",
+    kunde: "Mathias & Anna",
+    adr: "N. V. Gadesvej 12A, 1. sal, Fredensborg",
+    opg: "Byggemodereferat",
+    b: "0",
+    u: "0",
+    dato: "",
+    status: "Referat arkiveret",
+    sort: entries.length,
+    docs: { drive: GADESVEJ_DRIVE_URL },
+  });
+  entries.push(created);
+  state.sager = entries;
+  return created;
 }
 
 async function ensureDriveFoldersForLinkedCases(state: any) {
@@ -368,6 +402,7 @@ async function extractAttachmentContext(thread: any) {
           extractedText: pdfText,
           sourceMessageId: message.id,
         });
+        texts.push(filename);
         if (pdfText.trim()) texts.push(pdfText.trim());
       } catch {}
     }
@@ -577,7 +612,11 @@ async function archiveQualifiedThread(thread: any, item: any, state: any, integr
   const combined = [threadText, attachmentContext.text].filter(Boolean).join("\n\n");
   const signal = inferArchiveSignal(item?.subject, combined || threadText || item?.body, item?.from) || initialSignal;
 
-  const matched = matchCaseFromText(state.sager || [], combined || `${item?.subject}\n${item?.body}`);
+  const archiveText = combined || `${item?.subject}\n${item?.body}`;
+  let matched = matchCaseFromText(state.sager || [], archiveText);
+  if (isGadesvejArchiveThread(signal, archiveText)) {
+    matched = findOrCreateGadesvejCase(state);
+  }
   if (!matched) {
     return {
       ok: false,
@@ -591,6 +630,10 @@ async function archiveQualifiedThread(thread: any, item: any, state: any, integr
   }
 
   ensureCaseShape(matched);
+  if (isGadesvejArchiveThread(signal, archiveText)) {
+    matched.docs.drive = GADESVEJ_DRIVE_URL;
+    matched.drive = GADESVEJ_DRIVE_URL;
+  }
   const documentDate = extractDocumentDate(item?.subject, combined || item?.body, item?.date);
   const displayCaseId = formatCaseIdForDisplay(matched) || textValue(matched?.nr, "");
   const archiveKey = [
@@ -602,7 +645,10 @@ async function archiveQualifiedThread(thread: any, item: any, state: any, integr
   ].join(":");
 
   const alreadyArchived = (matched.activityLog || []).some((entry: any) => {
-    return String(entry?.type) === "gmail_archive" && String(entry?.archiveKey || "") === archiveKey;
+    if (String(entry?.type) !== "gmail_archive" || String(entry?.archiveKey || "") !== archiveKey) return false;
+    const hasDriveFile = Boolean(textValue(entry?.driveUrl, "") || textValue(entry?.fileId, ""));
+    const hasExpectedAttachments = signal.category !== "referater" || Number(entry?.attachmentCount || 0) > 0;
+    return hasDriveFile && hasExpectedAttachments;
   });
   if (alreadyArchived) {
     return {
