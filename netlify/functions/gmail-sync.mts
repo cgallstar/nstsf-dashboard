@@ -104,6 +104,7 @@ function parseMessageDate(summary: any) {
 
 function matchCaseFromText(sager: any[], haystack: string) {
   const lower = String(haystack || "").toLowerCase();
+  const compact = plainCompactText(haystack);
   let best: any = null;
   let bestScore = 0;
   for (const entry of sager) {
@@ -112,10 +113,18 @@ function matchCaseFromText(sager: any[], haystack: string) {
     const adr = String(entry?.adr || "").toLowerCase();
     const nr = String(entry?.nr || "").toLowerCase();
     const opg = String(entry?.opg || "").toLowerCase();
+    const compactKunde = plainCompactText(kunde);
+    const compactAdr = plainCompactText(adr);
+    const compactNr = plainCompactText(nr);
+    const compactOpg = plainCompactText(opg);
     if (kunde && lower.includes(kunde)) score += 3;
     if (adr && lower.includes(adr)) score += 5;
     if (nr && lower.includes(nr)) score += 2;
     if (opg && opg.length > 12 && lower.includes(opg)) score += 1;
+    if (compactKunde && compact.includes(compactKunde)) score += 3;
+    if (compactAdr && compact.includes(compactAdr)) score += 8;
+    if (compactNr && compact.includes(compactNr)) score += 4;
+    if (compactOpg && compactOpg.length > 12 && compact.includes(compactOpg)) score += 2;
     if (score > bestScore) {
       best = entry;
       bestScore = score;
@@ -139,6 +148,9 @@ function formatCaseIdForDisplay(entry: any) {
 
 function plainCompactText(value = "") {
   return String(value || "")
+    .replace(/[æÆ]/g, "ae")
+    .replace(/[øØ]/g, "o")
+    .replace(/[åÅ]/g, "a")
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
     .replace(/[^a-zA-Z0-9]+/g, " ")
@@ -167,14 +179,23 @@ function extractDocumentDate(subject = "", body = "", fallbackIso = "") {
 }
 
 function inferArchiveSignal(subject = "", body = "", from = "") {
+  const subjectSource = plainCompactText(subject);
   const source = plainCompactText(`${subject}\n${body}`);
   const rawSubject = String(subject || "").trim();
   const invoiceMatch = rawSubject.match(/faktura\s+(\d{3,})/i);
   if (!source) return null;
-  if (/byggemodereferat|byggemode referat|byggemode|byggemode/.test(source)) {
+  if (/byggemodereferat|byggemode referat|byggemode/.test(subjectSource) || /byggemodereferat|byggemode referat|byggemode/.test(source)) {
     return {
       category: "referater",
       documentType: "Byggemodereferat",
+      sourceType: isInternalSender(from) ? "internal" : "external",
+      fileLabel: "",
+    };
+  }
+  if (/tilbud|overslagspris|prisgrundlag/.test(subjectSource)) {
+    return {
+      category: "tilbud",
+      documentType: "Tilbud",
       sourceType: isInternalSender(from) ? "internal" : "external",
       fileLabel: "",
     };
