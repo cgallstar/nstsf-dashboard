@@ -113,18 +113,24 @@ function matchCaseFromText(sager: any[], haystack: string) {
     const kunde = String(entry?.kunde || "").toLowerCase();
     const adr = String(entry?.adr || "").toLowerCase();
     const nr = String(entry?.nr || "").toLowerCase();
+    const sid = String(entry?.sid || "").toLowerCase();
     const opg = String(entry?.opg || "").toLowerCase();
     const compactKunde = plainCompactText(kunde);
     const compactAdr = plainCompactText(adr);
     const compactNr = plainCompactText(nr);
+    const compactSid = plainCompactText(sid);
+    const compactPrimary = primaryCaseNumber(entry);
     const compactOpg = plainCompactText(opg);
     if (kunde && lower.includes(kunde)) score += 3;
     if (adr && lower.includes(adr)) score += 5;
     if (nr && lower.includes(nr)) score += 2;
+    if (sid && lower.includes(sid)) score += 4;
     if (opg && opg.length > 12 && lower.includes(opg)) score += 1;
     if (compactKunde && compact.includes(compactKunde)) score += 3;
     if (compactAdr && compact.includes(compactAdr)) score += 8;
     if (compactNr && compact.includes(compactNr)) score += 4;
+    if (compactSid && compact.includes(compactSid)) score += 5;
+    if (compactPrimary && compact.includes(compactPrimary)) score += 5;
     if (compactOpg && compactOpg.length > 12 && compact.includes(compactOpg)) score += 2;
     if (score > bestScore) {
       best = entry;
@@ -138,12 +144,21 @@ function normalizeCaseKey(value: unknown) {
   return String(value || "").replace(/\s+/g, "").trim().toLowerCase();
 }
 
+function primaryCaseNumberFromValue(value: unknown) {
+  const compact = textValue(value, "").replace(/\s+/g, "").trim();
+  const match = compact.match(/^(\d+)/);
+  return match ? match[1] : "";
+}
+
+function primaryCaseNumber(entry: any) {
+  return primaryCaseNumberFromValue(entry?.sid) || primaryCaseNumberFromValue(entry?.nr);
+}
+
 function formatCaseIdForDisplay(entry: any) {
+  const primary = primaryCaseNumber(entry);
+  if (primary) return primary;
   const raw = textValue(entry?.sid || entry?.nr, "").trim();
   if (!raw) return "";
-  const compact = raw.replace(/\s+/g, "");
-  const match = compact.match(/^(\d+)([a-z])$/i);
-  if (match) return `${match[1]} ${match[2].toUpperCase()}`;
   return raw.toUpperCase();
 }
 
@@ -166,7 +181,7 @@ async function ensureDriveFoldersForLinkedCases(state: any) {
   const entries = Array.isArray(state?.sager) ? state.sager : [];
   const ensureOne = async (entry: any) => {
     ensureCaseShape(entry);
-    await ensureCaseDriveFolders(entry, textValue(entry?.sid || entry?.nr, ""), textValue(entry?.kunde, ""));
+    await ensureCaseDriveFolders(entry, formatCaseIdForDisplay(entry), textValue(entry?.kunde, ""));
     const caseId = formatCaseIdForDisplay(entry);
     const customerName = textValue(entry?.kunde, "");
     appendSyncLog(state, {
@@ -506,7 +521,7 @@ function buildArchiveMarkdown(thread: any, item: any, matched: any, signal: any,
     `# ${signal.documentType}`,
     "",
     `- Dato: ${documentDate}`,
-    `- SagsID: ${displayCaseId || "Ikke fundet"}`,
+    `- Sagsnummer: ${displayCaseId || "Ikke fundet"}`,
     `- Kunde: ${textValue(matched?.kunde, item.kunde || "Ukendt kunde")}`,
     address ? `- Adresse: ${address}` : "",
     `- Arkiveret fra mailtråd: ${textValue(item.subject, "Mail uden emne")}`,
@@ -617,7 +632,7 @@ async function archiveQualifiedThread(thread: any, item: any, state: any, integr
   const uploadedAttachments: any[] = [];
   applyArchiveSideEffects(matched, signal);
   if (integration.configured) {
-    const folderInfo = await ensureCaseDriveFolders(matched, textValue(matched?.sid || matched?.nr, ""), matched.kunde);
+    const folderInfo = await ensureCaseDriveFolders(matched, displayCaseId, matched.kunde);
     driveFolder = textValue(folderInfo?.caseFolder?.webViewLink, driveFolder);
     matched.docs.drive = driveFolder;
     const folderId = textValue(folderInfo?.folders?.[signal.category]?.id, "");

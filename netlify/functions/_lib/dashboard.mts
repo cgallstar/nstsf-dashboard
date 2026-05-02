@@ -234,12 +234,20 @@ export function ensureCaseShape(entry: any) {
 export function matchCase(sager: any[], caseNumber: string, customerName: string) {
   const nr = normalizeCaseId(caseNumber);
   const customer = textValue(customerName, "").trim().toLowerCase();
+  const primary = (value: unknown) => {
+    const match = normalizeCaseId(value).match(/^(\d+)/);
+    return match ? match[1] : "";
+  };
   return sager.find((entry) => {
     const sagNr = normalizeCaseId(entry?.nr);
     const sagsId = normalizeCaseId(entry?.sid);
+    const sagPrimary = primary(entry?.nr);
+    const sagsIdPrimary = primary(entry?.sid);
     const kunde = textValue(entry?.kunde, "").trim().toLowerCase();
     if (nr && sagsId && nr === sagsId) return true;
     if (nr && sagNr && nr === sagNr) return true;
+    if (nr && sagsIdPrimary && nr === sagsIdPrimary) return true;
+    if (nr && sagPrimary && nr === sagPrimary) return true;
     if (!customer || !kunde) return false;
     return kunde.includes(customer) || customer.includes(kunde);
   });
