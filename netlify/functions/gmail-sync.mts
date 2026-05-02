@@ -48,6 +48,21 @@ function appendSyncLog(state: any, payload: Record<string, unknown>) {
   state.syncLog = state.syncLog.slice(0, 80);
 }
 
+function formatSyncError(error: unknown) {
+  const message = textValue((error as Error)?.message, "archive_failed");
+  if (message.startsWith("google_token_error:")) return "Google OAuth-token kunne ikke fornyes.";
+  if (message.startsWith("google_api_error:401:")) return "Google afviste forbindelsen. OAuth-sessionen er ugyldig eller udløbet.";
+  if (message.startsWith("google_api_error:403:")) return "Google afviste adgangen til Gmail eller Drive.";
+  if (message.startsWith("google_api_error:429:")) return "Google API-rate limit er ramt. Prøv igen senere.";
+  if (message.startsWith("google_api_error:")) return "Google API returnerede en fejl under sync.";
+  if (message === "google_not_configured") return "Google integration er ikke konfigureret.";
+  if (message === "drive_root_missing") return "Drive-roden mangler for den matchede sag.";
+  if (message.startsWith("drive_folder_missing:")) return "Den forventede undermappe findes ikke i Drive-strukturen.";
+  if (message === "drive_document_content_missing") return "Der manglede filindhold til Drive-upload.";
+  if (message === "archive_failed") return "Arkiveringen fejlede.";
+  return message;
+}
+
 function isInternalSender(value = "") {
   return INTERNAL_PATTERNS.some((pattern) => pattern.test(String(value).toLowerCase()));
 }
@@ -563,101 +578,164 @@ export default async (request: Request) => {
 
   const state = await loadDashboardState();
   if (!state) return json({ ok: false, error: "no_state" }, 404);
-
-  const threads = await listRecentGmailThreads(SYNC_QUERY, 40);
-  const fullThreads = await Promise.all(threads.map((thread: any) => getGmailThread(String(thread.id))));
-  const items = resolveHandledItems(fullThreads
-    .map((thread) => toEmailEntry(thread, state.sager || []))
-    .filter(Boolean)
-    .sort((a: any, b: any) => String(b.date).localeCompare(String(a.date))));
-  const itemByThreadId = new Map(items.map((item: any) => [textValue(item.threadId || item.id, ""), item]));
   const archivedResults: any[] = [];
   const archiveErrors: any[] = [];
 
-  for (const thread of fullThreads) {
-    const threadId = textValue(thread?.id, "");
-    const item = itemByThreadId.get(threadId);
-    if (!item) continue;
-    try {
-      const result = await archiveQualifiedThread(thread, item, state, integration, auth.actor);
-      if (!result) continue;
-      if (result.ok) {
-        appendSyncLog(state, {
-          status: result.skipped ? "skipped" : "archived",
-          subject: textValue(item?.subject, ""),
-          customerName: textValue(result.customerName, ""),
-          caseId: textValue(result.matchedCaseId, ""),
-          documentType: textValue(result.documentType, ""),
-          category: textValue(result.documentType ? signalCategoryFromResult(result) : "", ""),
-          fileName: textValue(result.fileName, ""),
-          driveUrl: textValue(result.driveUrl, ""),
-          notes: result.skipped
-            ? "Mailen var allerede arkiveret på sagen."
-            : `Arkiveret i Drive som ${textValue(result.fileName, "dokument")}.`,
-        });
-        if (!result.skipped) {
-          item.archivedAt = new Date().toISOString();
-          item.archivedCaseId = result.matchedCaseId;
-          item.archivedCustomer = result.customerName;
-          item.archivedType = result.documentType;
-          item.archivedDate = result.documentDate;
-          item.archivedUrl = result.driveUrl || "";
-          archivedResults.push(result);
-        }
-      } else {
-        appendSyncLog(state, {
-          status: "error",
-          subject: textValue(item?.subject, ""),
-          customerName: textValue(result.customerName, ""),
-          caseId: textValue(result.matchedCaseId, ""),
-          documentType: textValue(result.documentType, ""),
-          category: textValue(result.category, ""),
-          error: textValue(result.error, "archive_failed"),
-          notes: textValue(result.error, "Arkiveringen fejlede."),
-        });
-        archiveErrors.push(result);
-      }
-    } catch (error) {
-      appendSyncLog(state, {
-        status: "error",
-        subject: textValue(item?.subject, ""),
-        customerName: textValue(item?.kunde, ""),
-        caseId: "",
-        documentType: "",
-        category: "",
-        error: textValue((error as Error)?.message, "archive_failed"),
-        notes: "Teknisk fejl under Gmail-sync.",
-      });
+  try {
+    const threads = await listRecentGmailThreads(SYNC_QUERY, 40);
+    const fullThreadResults = await Promise.allSettled(
+      threads.map((thread: any) => getGmailThread(String(thread.id))),
+    );
+    const fullThreads = fullThreadResults
+      .filter((result): result is PromiseFulfilledResult<any> => result.status === "fulfilled")
+      .map((result) => result.value);
+
+    fullThreadResults.forEach((result, index) => {
+      if (result.status === "fulfilled") return;
+      const threadId = textValue(threads[index]?.id, "");
+      const errorText = formatSyncError(result.reason);
       archiveErrors.push({
         ok: false,
         threadId,
-        subject: textValue(item?.subject, ""),
-        error: textValue((error as Error)?.message, "archive_failed"),
+        subject: threadId ? `Mailtråd ${threadId}` : "Mailtråd",
+        error: errorText,
       });
+      appendSyncLog(state, {
+        status: "error",
+        subject: threadId ? `Mailtråd ${threadId}` : "Mailtråd",
+        customerName: "",
+        caseId: "",
+        documentType: "",
+        category: "",
+        error: errorText,
+        notes: "Kunne ikke hente mailtråden fra Gmail.",
+      });
+    });
+
+    const items = resolveHandledItems(fullThreads
+      .map((thread) => toEmailEntry(thread, state.sager || []))
+      .filter(Boolean)
+      .sort((a: any, b: any) => String(b.date).localeCompare(String(a.date))));
+    const itemByThreadId = new Map(items.map((item: any) => [textValue(item.threadId || item.id, ""), item]));
+
+    for (const thread of fullThreads) {
+      const threadId = textValue(thread?.id, "");
+      const item = itemByThreadId.get(threadId);
+      if (!item) continue;
+      try {
+        const result = await archiveQualifiedThread(thread, item, state, integration, auth.actor);
+        if (!result) continue;
+        if (result.ok) {
+          appendSyncLog(state, {
+            status: result.skipped ? "skipped" : "archived",
+            subject: textValue(item?.subject, ""),
+            customerName: textValue(result.customerName, ""),
+            caseId: textValue(result.matchedCaseId, ""),
+            documentType: textValue(result.documentType, ""),
+            category: textValue(result.documentType ? signalCategoryFromResult(result) : "", ""),
+            fileName: textValue(result.fileName, ""),
+            driveUrl: textValue(result.driveUrl, ""),
+            notes: result.skipped
+              ? "Mailen var allerede arkiveret på sagen."
+              : `Arkiveret i Drive som ${textValue(result.fileName, "dokument")}.`,
+          });
+          if (!result.skipped) {
+            item.archivedAt = new Date().toISOString();
+            item.archivedCaseId = result.matchedCaseId;
+            item.archivedCustomer = result.customerName;
+            item.archivedType = result.documentType;
+            item.archivedDate = result.documentDate;
+            item.archivedUrl = result.driveUrl || "";
+            archivedResults.push(result);
+          }
+        } else {
+          const errorText = formatSyncError(result.error);
+          appendSyncLog(state, {
+            status: "error",
+            subject: textValue(item?.subject, ""),
+            customerName: textValue(result.customerName, ""),
+            caseId: textValue(result.matchedCaseId, ""),
+            documentType: textValue(result.documentType, ""),
+            category: textValue(result.category, ""),
+            error: errorText,
+            notes: errorText,
+          });
+          archiveErrors.push({ ...result, error: errorText });
+        }
+      } catch (error) {
+        const errorText = formatSyncError(error);
+        appendSyncLog(state, {
+          status: "error",
+          subject: textValue(item?.subject, ""),
+          customerName: textValue(item?.kunde, ""),
+          caseId: "",
+          documentType: "",
+          category: "",
+          error: errorText,
+          notes: "Teknisk fejl under Gmail-sync.",
+        });
+        archiveErrors.push({
+          ok: false,
+          threadId,
+          subject: textValue(item?.subject, ""),
+          error: errorText,
+        });
+      }
     }
+
+    state.emails = items;
+    const savedAt = await saveDashboardState(state);
+
+    return json({
+      ok: true,
+      savedAt,
+      synced: items.length,
+      unhandled: items.filter((item: any) => !item.handled).length,
+      archived: archivedResults.length,
+      archiveErrors,
+      archivedCases: archivedResults.map((entry) => ({
+        caseId: entry.matchedCaseId,
+        customerName: entry.customerName,
+        documentType: entry.documentType,
+        documentDate: entry.documentDate,
+        driveUrl: entry.driveUrl,
+        fileName: entry.fileName,
+      })),
+      note: archivedResults.length
+        ? "Gmail-tråde er hentet, relevante dokumenter er arkiveret i Drive og state er opdateret."
+        : archiveErrors.length
+          ? "Gmail-tråde blev behandlet, men en eller flere arkiveringer fejlede."
+          : "Gmail-tråde er hentet og gemt i central state.",
+    });
+  } catch (error) {
+    const errorText = formatSyncError(error);
+    appendSyncLog(state, {
+      status: "error",
+      subject: "Opdatér Sager",
+      customerName: "",
+      caseId: "",
+      documentType: "",
+      category: "",
+      error: errorText,
+      notes: "Gmail-sync stoppede før trådene kunne behandles.",
+    });
+    const savedAt = await saveDashboardState(state);
+    return json({
+      ok: true,
+      savedAt,
+      synced: 0,
+      unhandled: 0,
+      archived: 0,
+      archiveErrors: [{
+        ok: false,
+        threadId: "",
+        subject: "Opdatér Sager",
+        error: errorText,
+      }],
+      archivedCases: [],
+      note: `Gmail-sync fejlede: ${errorText}`,
+    });
   }
-
-  state.emails = items;
-  const savedAt = await saveDashboardState(state);
-
-  return json({
-    ok: true,
-    savedAt,
-    synced: items.length,
-    unhandled: items.filter((item: any) => !item.handled).length,
-    archived: archivedResults.length,
-    archiveErrors,
-    archivedCases: archivedResults.map((entry) => ({
-      caseId: entry.matchedCaseId,
-      customerName: entry.customerName,
-      documentType: entry.documentType,
-      documentDate: entry.documentDate,
-      driveUrl: entry.driveUrl,
-    })),
-    note: archivedResults.length
-      ? "Gmail-tråde er hentet, relevante dokumenter er arkiveret i Drive og state er opdateret."
-      : "Gmail-tråde er hentet og gemt i central state.",
-  });
 };
 
 function signalCategoryFromResult(result: any) {
