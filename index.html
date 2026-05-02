@@ -2109,8 +2109,22 @@ async function syncCustomGpt(manual=false){
   if(ok) setSyncStatus('Custom GPT-data synkroniseret.', 'ok');
 }
 async function updatePriorities(manual=false){
-  if(!authUser){ if(manual) setSyncStatus('Du skal være logget ind for at opdatere sager.', 'error'); return; }
-  if(location.protocol === 'file:'){ if(manual) setSyncStatus('Sagsopdatering virker kun på Netlify-linket. Den lokale fil er kun preview.', 'error'); return; }
+  if(!authUser){
+    if(manual){
+      setSyncStatus('Du skal være logget ind for at opdatere sager.', 'error');
+      addLocalSyncLogEntries([{ source:'gmail_sync', status:'error', subject:'Opdatér Sager', notes:'Du skal være logget ind for at opdatere sager.' }]);
+      renderPriorities();
+    }
+    return;
+  }
+  if(location.protocol === 'file:'){
+    if(manual){
+      setSyncStatus('Sagsopdatering virker kun på Netlify-linket. Den lokale fil er kun preview.', 'error');
+      addLocalSyncLogEntries([{ source:'gmail_sync', status:'error', subject:'Opdatér Sager', notes:'Du står på den lokale file://-version. Åbn Netlify-linket for at køre Gmail- og backend-sync.' }]);
+      renderPriorities();
+    }
+    return;
+  }
   const button = document.getElementById('updatePrioritiesBtn');
   try{
     if(button){ button.disabled = true; button.textContent = 'Opdaterer...'; }
@@ -2170,6 +2184,8 @@ async function updatePriorities(manual=false){
       : `Sager opdateret. ${data.synced || 0} tråde · ${data.unhandled || 0} åbne.`;
     setSyncStatus(note, 'ok');
   }catch(err){
+    addLocalSyncLogEntries([{ source:'gmail_sync', status:'error', subject:'Opdatér Sager', notes:`Kunne ikke opdatere sager: ${err.message}` }]);
+    renderPriorities();
     setSyncStatus(`Kunne ikke opdatere sager: ${err.message}`, 'error');
   }finally{
     if(button){ button.disabled = false; button.textContent = 'Opdatér Sager'; }
