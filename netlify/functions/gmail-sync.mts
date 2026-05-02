@@ -25,6 +25,7 @@ const MAILBOX_OWNER = "christian@nstsf.dk";
 const NSTSF_QUERY = `(from:${MAILBOX_OWNER} OR from:smg@nstsf.dk OR from:nstsf.dk OR to:${MAILBOX_OWNER} OR cc:${MAILBOX_OWNER})`;
 const EXCLUDED_MAIL_QUERY = "-from:cgallstar@gmail.com -from:christian@scventures.vc -to:christian@scventures.vc -cc:christian@scventures.vc -werkhaus";
 const OWNER_QUERY = `${NSTSF_QUERY} ${EXCLUDED_MAIL_QUERY}`;
+const GADESVEJ_DRIVE_URL = "https://drive.google.com/drive/folders/1IPXK472x8-Peasfv7kKU-JrG9oUNb6-4";
 const SYNC_QUERY = `newer_than:30d -in:spam -in:trash ${OWNER_QUERY}`;
 const ARCHIVE_QUERIES = [
   `newer_than:45d -in:spam -in:trash ${OWNER_QUERY} ("Byggemødereferat" OR "Byggemodereferat" OR "byggemøde" OR "byggemode")`,
@@ -163,6 +164,50 @@ function plainCompactText(value = "") {
 async function ensureDriveFoldersForLinkedCases(state: any) {
   const ensured: any[] = [];
   const entries = Array.isArray(state?.sager) ? state.sager : [];
+  const ensureOne = async (entry: any) => {
+    ensureCaseShape(entry);
+    await ensureCaseDriveFolders(entry, textValue(entry?.sid || entry?.nr, ""), textValue(entry?.kunde, ""));
+    const caseId = formatCaseIdForDisplay(entry);
+    const customerName = textValue(entry?.kunde, "");
+    appendSyncLog(state, {
+      status: "skipped",
+      subject: "Drive-mapper",
+      customerName,
+      caseId,
+      documentType: "Mappestruktur",
+      category: "drive",
+      notes: "Standardmapper er sikret i Drive.",
+    });
+    ensured.push({
+      caseId,
+      customerName,
+      driveUrl: textValue(entry?.docs?.drive || entry?.drive, ""),
+    });
+  };
+
+  const forcedGadesvejCase = {
+    k: 2,
+    sid: "",
+    nr: "",
+    kunde: "N. V. Gadesvej 12, 1. sal",
+    adr: "N. V. Gadesvej 12, 1. sal, Fredensborg",
+    docs: { drive: GADESVEJ_DRIVE_URL },
+  };
+  try {
+    await ensureOne(forcedGadesvejCase);
+  } catch (error) {
+    appendSyncLog(state, {
+      status: "error",
+      subject: "Drive-mapper",
+      customerName: forcedGadesvejCase.kunde,
+      caseId: "",
+      documentType: "Mappestruktur",
+      category: "drive",
+      error: formatSyncError(error),
+      notes: "Kunne ikke sikre standardmapper for Gadesvej-mappen.",
+    });
+  }
+
   for (const entry of entries) {
     ensureCaseShape(entry);
     const driveUrl = textValue(entry?.docs?.drive || entry?.drive, "");
@@ -173,12 +218,7 @@ async function ensureDriveFoldersForLinkedCases(state: any) {
       driveUrl.includes("1IPXK472x8-Peasfv7kKU-JrG9oUNb6-4");
     if (!isCurrentArchiveCandidate) continue;
     try {
-      await ensureCaseDriveFolders(entry, textValue(entry?.sid || entry?.nr, ""), textValue(entry?.kunde, ""));
-      ensured.push({
-        caseId: formatCaseIdForDisplay(entry),
-        customerName: textValue(entry?.kunde, ""),
-        driveUrl,
-      });
+      await ensureOne(entry);
     } catch (error) {
       appendSyncLog(state, {
         status: "error",
