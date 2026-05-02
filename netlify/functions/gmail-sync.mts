@@ -113,12 +113,40 @@ function extractDocumentDate(subject = "", body = "", fallbackIso = "") {
 
 function inferArchiveSignal(subject = "", body = "", from = "") {
   const source = plainCompactText(`${subject}\n${body}`);
+  const rawSubject = String(subject || "").trim();
+  const invoiceMatch = rawSubject.match(/faktura\s+(\d{3,})/i);
   if (!source) return null;
   if (/byggemodereferat|byggemode referat|byggemode|byggemode/.test(source)) {
     return {
       category: "referater",
       documentType: "Byggemodereferat",
       sourceType: isInternalSender(from) ? "internal" : "external",
+      fileLabel: "",
+    };
+  }
+  if (/tilbud|overslagspris|prisgrundlag/.test(source)) {
+    return {
+      category: "tilbud",
+      documentType: "Tilbud",
+      sourceType: isInternalSender(from) ? "internal" : "external",
+      fileLabel: "",
+    };
+  }
+  if (invoiceMatch) {
+    return {
+      category: "betaling",
+      documentType: "Faktura",
+      sourceType: isInternalSender(from) ? "internal" : "external",
+      fileLabel: `Faktura ${invoiceMatch[1]}`,
+      invoiceNumber: invoiceMatch[1],
+    };
+  }
+  if (/^(re|sv|vs|fw|fwd)\s*:/i.test(rawSubject)) {
+    return {
+      category: "mails",
+      documentType: "Mailkorrespondance",
+      sourceType: isInternalSender(from) ? "internal" : "external",
+      fileLabel: "",
     };
   }
   return null;
@@ -341,6 +369,35 @@ function buildArchiveMarkdown(thread: any, item: any, matched: any, signal: any,
     .join("\n");
 }
 
+function normalizeFileStemPart(value = "") {
+  return String(value || "")
+    .replace(/[\\/:*?"<>|]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function buildArchiveFileTitle(documentDate: string, signal: any, displayCaseId: string, subject = "") {
+  const parts = [
+    normalizeFileStemPart(documentDate),
+    normalizeFileStemPart(signal?.fileLabel || signal?.documentType || "Dokument"),
+    normalizeFileStemPart(displayCaseId),
+  ].filter(Boolean);
+  if (parts.length) return parts.join(" - ");
+  return normalizeFileStemPart(subject) || "Dokument";
+}
+
+function applyArchiveSideEffects(matched: any, signal: any) {
+  if (!matched || !signal) return;
+  if (signal.category === "betaling") {
+    if (signal.invoiceNumber) matched.fak = String(signal.invoiceNumber);
+    if (!String(matched.status || "").trim()) matched.status = "Faktura sendt";
+    return;
+  }
+  if (signal.category === "tilbud") {
+    if ([3, 5].includes(Number(matched.k || 0))) matched.k = 4;
+  }
+}
+
 async function archiveQualifiedThread(thread: any, item: any, state: any, integration: any, actor: any) {
   const summaries = Array.isArray(thread?.messages) ? thread.messages.map(gmailMessageSummary) : [];
   const threadText = summaries
@@ -387,7 +444,7 @@ async function archiveQualifiedThread(thread: any, item: any, state: any, integr
     };
   }
 
-  const fileTitle = `${documentDate} - ${signal.documentType} - ${displayCaseId}`.trim();
+  const fileTitle = buildArchiveFileTitle(documentDate, signal, displayCaseId, item?.subject);
   const document = {
     title: fileTitle,
     fileName: `${fileTitle}.md`,
@@ -400,11 +457,14 @@ async function archiveQualifiedThread(thread: any, item: any, state: any, integr
   let driveFolder = textValue(matched.docs?.drive, "");
   let uploaded: any = null;
   const uploadedAttachments: any[] = [];
+  applyArchiveSideEffects(matched, signal);
   if (integration.configured) {
     const folderInfo = await ensureCaseDriveFolders(matched, textValue(matched?.sid || matched?.nr, ""), matched.kunde);
     driveFolder = textValue(folderInfo?.caseFolder?.webViewLink, driveFolder);
     matched.docs.drive = driveFolder;
-    uploaded = await uploadDriveFile(textValue(folderInfo?.folders?.referater?.id, ""), document);
+    const folderId = textValue(folderInfo?.folders?.[signal.category]?.id, "");
+    if (!folderId) throw new Error(`drive_folder_missing:${signal.category}`);
+    uploaded = await uploadDriveFile(folderId, document);
     document.url = textValue(uploaded?.webViewLink, "");
     document.fileId = textValue(uploaded?.id, "");
     document.mimeType = textValue(uploaded?.mimeType, document.mimeType);
@@ -421,7 +481,7 @@ async function archiveQualifiedThread(thread: any, item: any, state: any, integr
         date: documentDate,
         notes: `Vedhæftet PDF fra Gmail-tråd. Kilde: ${attachment.filename}`,
       };
-      const uploadedAttachment = await uploadDriveFile(textValue(folderInfo?.folders?.referater?.id, ""), attachmentDoc);
+      const uploadedAttachment = await uploadDriveFile(folderId, attachmentDoc);
       uploadedAttachments.push({
         titel: attachmentDoc.title,
         dato: documentDate,
@@ -433,11 +493,15 @@ async function archiveQualifiedThread(thread: any, item: any, state: any, integr
     }
   }
 
-  pushDocs(matched.docs.referater, [document]);
-  pushDocs(matched.docs.byggereferater, [document]);
+  pushDocs(matched.docs[signal.category] || [], [document]);
+  if (signal.category === "referater") {
+    pushDocs(matched.docs.byggereferater, [document]);
+  }
   if (uploadedAttachments.length) {
-    pushDocs(matched.docs.referater, uploadedAttachments);
-    pushDocs(matched.docs.byggereferater, uploadedAttachments);
+    pushDocs(matched.docs[signal.category] || [], uploadedAttachments);
+    if (signal.category === "referater") {
+      pushDocs(matched.docs.byggereferater, uploadedAttachments);
+    }
   }
   appendActivity(matched, actor, {
     type: "gmail_archive",
