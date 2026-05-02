@@ -21,12 +21,14 @@ import {
 } from "./_lib/google.mts";
 
 const INTERNAL_PATTERNS = [/@nstsf\.dk/i, /gemini-notes@google\.com/i];
-const SYNC_QUERY = "newer_than:30d -in:spam -in:trash";
+const MAILBOX_OWNER = "christian@nstsf.dk";
+const OWNER_QUERY = `from:${MAILBOX_OWNER}`;
+const SYNC_QUERY = `newer_than:30d -in:spam -in:trash ${OWNER_QUERY}`;
 const ARCHIVE_QUERIES = [
-  'newer_than:45d -in:spam -in:trash ("Byggemødereferat" OR "Byggemodereferat" OR "byggemøde" OR "byggemode")',
-  'newer_than:45d -in:spam -in:trash ("Tilbud vedr" OR "tilbud" OR "overslagspris")',
-  'newer_than:45d -in:spam -in:trash ("Faktura" "Nordsjællands Tømrer")',
-  'newer_than:45d -in:spam -in:trash ("Bülowsvej" OR "Bulowsvej" OR "NV Gadesvej" OR "N. V. Gadesvej")',
+  `newer_than:45d -in:spam -in:trash ${OWNER_QUERY} ("Byggemødereferat" OR "Byggemodereferat" OR "byggemøde" OR "byggemode")`,
+  `newer_than:45d -in:spam -in:trash ${OWNER_QUERY} ("Tilbud vedr" OR "tilbud" OR "overslagspris")`,
+  `newer_than:45d -in:spam -in:trash ${OWNER_QUERY} ("Faktura" "Nordsjællands Tømrer")`,
+  `newer_than:45d -in:spam -in:trash ${OWNER_QUERY} ("Bülowsvej" OR "Bulowsvej" OR "NV Gadesvej" OR "N. V. Gadesvej")`,
 ];
 const DANISH_MONTHS: Record<string, string> = {
   januar: "01",
