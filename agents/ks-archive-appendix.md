@@ -14,6 +14,7 @@
 ## Navngivning i første version
 - byggemødereferat:
   - `YYYY-MM-DD - Byggemodereferat - SagsID.md`
+  - `YYYY-MM-DD - Byggemodereferat - SagsID.pdf`
 
 ## Datokilder
 Dato udledes i denne rækkefølge:

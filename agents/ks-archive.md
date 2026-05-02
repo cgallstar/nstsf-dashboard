@@ -13,8 +13,10 @@ Sikre at NSTSF's dokumentation bliver gemt rigtigt og kan findes igen direkte fr
 - kører ved `Synk Gmail`
 - læser nye Gmail-tråde
 - genkender mails der ligner `byggemødereferat`
+- læser PDF-vedhæftninger på de relevante tråde
 - matcher mailen til en konkret sag via kunde, adresse, sagsopgave og øvrig tekst
 - arkiverer mailindholdet som markdown i `02 Referater`
+- arkiverer også vedhæftede PDF'er i `02 Referater`
 - bruger datostempel + `SagsID` i filnavnet
 - logger i dashboard-state at mailen er arkiveret
 
@@ -26,7 +28,6 @@ Sikre at NSTSF's dokumentation bliver gemt rigtigt og kan findes igen direkte fr
 ## Afgrænsning i første version
 - kun regelstyret arkivering
 - kun mails der ligner byggemødereferater
-- ingen generel attachments-parser endnu
 - ingen automatisk oprettelse af opgaver ud fra action points endnu
 
 ## Tilknyttede dokumenter

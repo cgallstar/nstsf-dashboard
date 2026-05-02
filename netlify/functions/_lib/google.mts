@@ -3,6 +3,7 @@ import { randomUUID } from "node:crypto";
 const GOOGLE_TOKEN_URL = "https://oauth2.googleapis.com/token";
 const GMAIL_DRAFTS_URL = "https://gmail.googleapis.com/gmail/v1/users/me/drafts";
 const GMAIL_THREADS_URL = "https://gmail.googleapis.com/gmail/v1/users/me/threads";
+const GMAIL_MESSAGES_URL = "https://gmail.googleapis.com/gmail/v1/users/me/messages";
 const DRIVE_FILES_URL = "https://www.googleapis.com/drive/v3/files";
 const DRIVE_UPLOAD_URL = "https://www.googleapis.com/upload/drive/v3/files";
 const GOOGLE_DRIVE_FOLDER_MIME = "application/vnd.google-apps.folder";
@@ -177,6 +178,25 @@ function collectPlainText(payload: any): string[] {
   return parts;
 }
 
+function collectAttachments(payload: any, acc: any[] = []) {
+  if (!payload) return acc;
+  const filename = text(payload?.filename, "");
+  const mimeType = text(payload?.mimeType, "");
+  const attachmentId = text(payload?.body?.attachmentId, "");
+  if (filename && attachmentId) {
+    acc.push({
+      filename,
+      mimeType,
+      attachmentId,
+      size: Number(payload?.body?.size || 0),
+      partId: text(payload?.partId, ""),
+    });
+  }
+  const parts = Array.isArray(payload?.parts) ? payload.parts : [];
+  parts.forEach((part) => collectAttachments(part, acc));
+  return acc;
+}
+
 export function gmailMessageSummary(message: any) {
   const payload = message?.payload || {};
   const headers = Array.isArray(payload.headers) ? payload.headers : [];
@@ -195,6 +215,7 @@ export function gmailMessageSummary(message: any) {
     labelIds: Array.isArray(message?.labelIds) ? message.labelIds : [],
     snippet,
     body,
+    attachments: collectAttachments(payload),
   };
 }
 
@@ -212,6 +233,12 @@ export async function getGmailThread(threadId: string) {
   const params = new URLSearchParams({ format: "full" });
   const response = await googleFetch(`${GMAIL_THREADS_URL}/${threadId}?${params.toString()}`);
   return response.json();
+}
+
+export async function getGmailAttachment(messageId: string, attachmentId: string) {
+  const response = await googleFetch(`${GMAIL_MESSAGES_URL}/${messageId}/attachments/${attachmentId}`);
+  const payload = await response.json();
+  return fromBase64(text(payload?.data, ""));
 }
 
 export function googleIntegrationStatus() {

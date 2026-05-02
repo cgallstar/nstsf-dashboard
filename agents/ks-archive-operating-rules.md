@@ -24,6 +24,7 @@ En mail må kun arkiveres automatisk når:
 - kategori: `referater`
 - filformat: markdown
 - filnavn: `YYYY-MM-DD - Byggemodereferat - SagsID.md`
+- PDF-bilag: `YYYY-MM-DD - Byggemodereferat - SagsID.pdf`
 
 ## Dedupe
 Samme mailtråd må ikke blive arkiveret to gange for:
@@ -33,5 +34,4 @@ Samme mailtråd må ikke blive arkiveret to gange for:
 
 ## Ikke i første version
 - bred AI-klassifikation af alle dokumenttyper
-- automatisk behandling af vedhæftede filer
 - automatisk udledning af action points til `Sager`
