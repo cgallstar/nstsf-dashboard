@@ -2052,6 +2052,11 @@ function normalizeEmployee(saved={}, i=0){ return { id:textValue(saved.id, `empl
 function normalizeInternalTask(saved={}){ return { id:textValue(saved.id, `internal-${Date.now()}`), title:textValue(saved.title || saved.name, 'Intern opgave'), status:textValue(saved.status, 'Åben'), dueDate:textValue(saved.dueDate, ''), owner:textValue(saved.owner, ''), notes:textValue(saved.notes, ''), source:textValue(saved.source, 'custom-gpt'), bucket:textValue(saved.bucket, ''), domain:textValue(saved.domain, 'intern'), createdAt:textValue(saved.createdAt, new Date().toISOString()) }; }
 function normalizeEmail(saved={}){ return { id:textValue(saved.id, `mail-${Date.now()}`), threadId:textValue(saved.threadId, ''), kunde:textValue(saved.kunde, ''), from:textValue(saved.from, ''), subject:textValue(saved.subject, ''), date:textValue(saved.date, ''), preview:textValue(saved.preview, ''), body:textValue(saved.body, ''), tags:Array.isArray(saved.tags) ? saved.tags.map((tag)=>String(tag)) : [], handled:!!saved.handled, type:textValue(saved.type, 'todo'), latestSenderType:textValue(saved.latestSenderType, ''), repliedAt:textValue(saved.repliedAt, ''), syncedAt:textValue(saved.syncedAt, '') }; }
 function normalizeSyncLogEntry(saved={}){ return { id:textValue(saved.id, `sync-${Date.now()}`), createdAt:textValue(saved.createdAt, new Date().toISOString()), source:textValue(saved.source, 'gmail_sync'), status:textValue(saved.status, 'info'), subject:textValue(saved.subject, 'Ukendt tråd'), customerName:textValue(saved.customerName, ''), caseId:textValue(saved.caseId, ''), documentType:textValue(saved.documentType, ''), category:textValue(saved.category, ''), fileName:textValue(saved.fileName, ''), driveUrl:textValue(saved.driveUrl, ''), error:textValue(saved.error, ''), notes:textValue(saved.notes, '') }; }
+function addLocalSyncLogEntries(entries=[]){
+  if(!Array.isArray(entries) || !entries.length) return;
+  entries.map(normalizeSyncLogEntry).forEach((entry)=>syncLog.unshift(entry));
+  syncLog.splice(80);
+}
 function stripDemoEmails(items=[]){ return items.filter((item)=>!DEMO_EMAIL_IDS.has(textValue(item?.id, ''))); }
 function collectState(){ ensureCaseIds(); const capacityHours = document.getElementById('capacityHours') ? +document.getElementById('capacityHours').value || 37 : 37; return { schema:'nstsf-dashboard-state-v1', savedFrom:location.hostname || 'local-file', savedAt:new Date().toISOString(), sager:sager, betalinger:betalinger, emails:emails, employees:employees, internalTasks:internalTasks, syncLog:syncLog, settings:{capacityHours, handledEmailIds, dismissedPriorityKeys, archivedPriorityItems} }; }
 function formatHeaderUpdated(value){
@@ -2121,6 +2126,44 @@ async function updatePriorities(manual=false){
     }
     if(!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
     await loadRemoteState(false);
+    const syncEntries = [];
+    (Array.isArray(data.archivedCases) ? data.archivedCases : []).forEach((entry)=>{
+      syncEntries.push({
+        source:'gmail_sync',
+        status:'archived',
+        subject:entry.subject || entry.documentType || 'Mailtråd',
+        customerName:entry.customerName || '',
+        caseId:entry.caseId || '',
+        documentType:entry.documentType || '',
+        category:signalCategoryFromType(entry.documentType || ''),
+        fileName:entry.fileName || '',
+        driveUrl:entry.driveUrl || '',
+        notes:entry.fileName ? `Arkiveret i Drive som ${entry.fileName}.` : 'Arkiveret i Drive.',
+      });
+    });
+    (Array.isArray(data.archiveErrors) ? data.archiveErrors : []).forEach((entry)=>{
+      syncEntries.push({
+        source:'gmail_sync',
+        status:'error',
+        subject:entry.subject || 'Mailtråd',
+        customerName:entry.customerName || '',
+        caseId:entry.matchedCaseId || entry.caseId || '',
+        documentType:entry.documentType || '',
+        category:entry.category || '',
+        error:entry.error || 'archive_failed',
+        notes:entry.error || 'Arkiveringen fejlede.',
+      });
+    });
+    if(!syncEntries.length){
+      syncEntries.push({
+        source:'gmail_sync',
+        status:'info',
+        subject:'Opdatér Sager',
+        notes:data.note || 'Ingen nye mailarkiveringer fundet i denne kørsel.',
+      });
+    }
+    addLocalSyncLogEntries(syncEntries);
+    renderPriorities();
     const archived = Number(data.archived || 0);
     const note = archived
       ? `Sager opdateret. ${data.synced || 0} tråde · ${data.unhandled || 0} åbne · ${archived} arkiveret.`
@@ -2131,6 +2174,14 @@ async function updatePriorities(manual=false){
   }finally{
     if(button){ button.disabled = false; button.textContent = 'Opdatér Sager'; }
   }
+}
+function signalCategoryFromType(type=''){
+  const lower = String(type || '').toLowerCase();
+  if(lower.includes('byggem')) return 'referater';
+  if(lower.includes('tilbud')) return 'tilbud';
+  if(lower.includes('faktura')) return 'betaling';
+  if(lower.includes('mail')) return 'mails';
+  return '';
 }
 async function syncGmail(manual=false){
   if(!authUser){ if(manual) setSyncStatus('Du skal være logget ind for at synkronisere Gmail.', 'error'); return; }
