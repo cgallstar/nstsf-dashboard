@@ -143,6 +143,15 @@ function parseJsonResponse(response: Response) {
   });
 }
 
+function googleOperationFromUrl(url: string) {
+  if (url.includes("/gmail/v1/users/me/threads?")) return "gmail_threads_list";
+  if (url.includes("/gmail/v1/users/me/threads/")) return "gmail_thread_get";
+  if (url.includes("/gmail/v1/users/me/messages/") && url.includes("/attachments/")) return "gmail_attachment_get";
+  if (url.includes("/upload/drive/v3/files")) return "drive_file_upload";
+  if (url.includes("/drive/v3/files")) return "drive_file_or_folder";
+  return "google_api";
+}
+
 async function googleFetch(url: string, init: RequestInit = {}) {
   const accessToken = await getGoogleAccessToken();
   const headers = new Headers(init.headers || {});
@@ -150,7 +159,7 @@ async function googleFetch(url: string, init: RequestInit = {}) {
   const response = await fetch(url, { ...init, headers });
   if (!response.ok) {
     const details = await parseJsonResponse(response);
-    throw new Error(`google_api_error:${response.status}:${JSON.stringify(details)}`);
+    throw new Error(`google_api_error:${googleOperationFromUrl(url)}:${response.status}:${JSON.stringify(details)}`);
   }
   return response;
 }

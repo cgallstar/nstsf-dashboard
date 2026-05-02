@@ -51,10 +51,15 @@ function appendSyncLog(state: any, payload: Record<string, unknown>) {
 function formatSyncError(error: unknown) {
   const message = textValue((error as Error)?.message, "archive_failed");
   if (message.startsWith("google_token_error:")) return "Google OAuth-token kunne ikke fornyes.";
-  if (message.startsWith("google_api_error:401:")) return "Google afviste forbindelsen. OAuth-sessionen er ugyldig eller udløbet.";
-  if (message.startsWith("google_api_error:403:")) return "Google afviste adgangen til Gmail eller Drive.";
-  if (message.startsWith("google_api_error:429:")) return "Google API-rate limit er ramt. Prøv igen senere.";
-  if (message.startsWith("google_api_error:")) return "Google API returnerede en fejl under sync.";
+  const googleHit = message.match(/^google_api_error:([^:]+):(\d+):(.*)$/);
+  if (googleHit) {
+    const operation = googleHit[1];
+    const status = googleHit[2];
+    if (status === "401") return `Google afviste ${operation}. OAuth-sessionen er ugyldig eller udløbet.`;
+    if (status === "403") return `Google afviste ${operation}. Manglende adgang, scope eller filrettighed.`;
+    if (status === "429") return `Google rate limit på ${operation}. Prøv igen senere.`;
+    return `Google API-fejl i ${operation}: HTTP ${status}.`;
+  }
   if (message === "google_not_configured") return "Google integration er ikke konfigureret.";
   if (message === "drive_root_missing") return "Drive-roden mangler for den matchede sag.";
   if (message.startsWith("drive_folder_missing:")) return "Den forventede undermappe findes ikke i Drive-strukturen.";
