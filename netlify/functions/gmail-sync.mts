@@ -21,7 +21,7 @@ import {
 } from "./_lib/google.mts";
 
 const INTERNAL_PATTERNS = [/@nstsf\.dk/i, /gemini-notes@google\.com/i];
-const SYNC_QUERY = "newer_than:45d -in:spam -in:trash";
+const SYNC_QUERY = "newer_than:30d -in:spam -in:trash";
 const DANISH_MONTHS: Record<string, string> = {
   januar: "01",
   februar: "02",
@@ -431,10 +431,11 @@ async function archiveQualifiedThread(thread: any, item: any, state: any, integr
   const threadText = summaries
     .map((message) => [message.subject, message.from, message.snippet, message.body].filter(Boolean).join("\n"))
     .join("\n\n");
+  const initialSignal = inferArchiveSignal(item?.subject, threadText || item?.body, item?.from);
+  if (!initialSignal) return null;
   const attachmentContext = await extractAttachmentContext(thread);
   const combined = [threadText, attachmentContext.text].filter(Boolean).join("\n\n");
-  const signal = inferArchiveSignal(item?.subject, combined || item?.body, item?.from);
-  if (!signal) return null;
+  const signal = inferArchiveSignal(item?.subject, combined || threadText || item?.body, item?.from) || initialSignal;
 
   const matched = matchCaseFromText(state.sager || [], combined || `${item?.subject}\n${item?.body}`);
   if (!matched) {
@@ -582,7 +583,7 @@ export default async (request: Request) => {
   const archiveErrors: any[] = [];
 
   try {
-    const threads = await listRecentGmailThreads(SYNC_QUERY, 40);
+    const threads = await listRecentGmailThreads(SYNC_QUERY, 20);
     const fullThreadResults = await Promise.allSettled(
       threads.map((thread: any) => getGmailThread(String(thread.id))),
     );
