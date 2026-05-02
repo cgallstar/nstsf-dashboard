@@ -567,6 +567,12 @@
   .priority-sidebar-helper{font-size:11px;color:var(--muted);line-height:1.45}
   .priority-mini-list{display:grid;gap:12px}
   .priority-mini-item{display:grid;gap:3px}
+  .priority-mini-item.clickable{
+    padding:10px 12px;border:1px solid transparent;border-radius:12px;cursor:pointer;transition:background .18s ease,border-color .18s ease;
+  }
+  .priority-mini-item.clickable:hover{
+    background:#faf7f1;border-color:#ece3d7;
+  }
   .priority-mini-item strong{font-size:13px;line-height:1.35}
   .priority-mini-item .meta{font-size:11px;color:var(--muted)}
   .priority-mini-item .dotline{display:flex;gap:10px;align-items:flex-start}
@@ -2690,6 +2696,7 @@ function collectPriorityUpdates(){
           title:`${getCustomerDisplay(s)} · ${textValue(s.adr, s.opg || 'Sag')}`,
           meta:`${textValue(activity.documentType, 'Dokument')} · ${displayDate(activity.documentDate || activity.createdAt)} · ${actor}`,
           body:`Arkiveret i Drive under ${textValue(activity.fileName, 'referater')}.`,
+          action:`setActiveTab('sager'); openSag(${index})`,
         });
         return;
       }
@@ -2700,6 +2707,7 @@ function collectPriorityUpdates(){
           title:`${getCustomerDisplay(s)} opdateret`,
           meta:`${formatCaseRefDisplay(s.sid || s.nr || '') || 'Sag'} · ${displayDate(activity.createdAt)} · ${actor}`,
           body:textValue(activity.summary, 'Sagen er opdateret.'),
+          action:`setActiveTab('sager'); openSag(${index})`,
         });
         return;
       }
@@ -2710,6 +2718,7 @@ function collectPriorityUpdates(){
           title:`${getCustomerDisplay(s)} · betaling markeret`,
           meta:`${formatCaseRefDisplay(s.sid || s.nr || '') || 'Sag'} · ${displayDate(activity.createdAt)} · ${actor}`,
           body:textValue(activity.summary, 'En betaling er markeret som betalt.'),
+          action:`setActiveTab('sager'); openSag(${index})`,
         });
       }
     });
@@ -2721,7 +2730,7 @@ function renderSidebarSummaries(priorities){
   const archived = document.getElementById('priorityArchivedList');
   if(updates){
     const items = collectPriorityUpdates();
-    updates.innerHTML = items.length ? items.map((item)=>`<div class="priority-mini-item"><strong>${escapeAttr(item.title)}</strong><div class="meta">${escapeAttr(item.meta)}</div><div class="meta">${escapeAttr(item.body)}</div></div>`).join('') : '<div class="priority-sidebar-empty">Ingen nyere opdateringer endnu.</div>';
+    updates.innerHTML = items.length ? items.map((item)=>`<div class="priority-mini-item clickable" onclick="${item.action || ''}"><strong>${escapeAttr(item.title)}</strong><div class="meta">${escapeAttr(item.meta)}</div><div class="meta">${escapeAttr(item.body)}</div></div>`).join('') : '<div class="priority-sidebar-empty">Ingen nyere opdateringer endnu.</div>';
   }
   if(archived){
     const items = archivedPriorityItems.slice(0, 5);
