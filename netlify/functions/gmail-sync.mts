@@ -12,7 +12,6 @@ import {
 } from "./_lib/dashboard.mts";
 import {
   ensureCaseDriveFolders,
-  getGmailAttachment,
   getGmailThread,
   gmailMessageSummary,
   googleIntegrationStatus,
@@ -362,32 +361,6 @@ function inferArchiveSignal(subject = "", body = "", from = "") {
   return null;
 }
 
-async function extractPdfText(buffer: Buffer) {
-  try {
-    const pdfjs = await import("pdfjs-dist/legacy/build/pdf.mjs");
-    const loadingTask = pdfjs.getDocument({
-      data: new Uint8Array(buffer),
-      useWorkerFetch: false,
-      isEvalSupported: false,
-      useSystemFonts: false,
-    });
-    const pdf = await loadingTask.promise;
-    const pages: string[] = [];
-    for (let pageNo = 1; pageNo <= pdf.numPages; pageNo += 1) {
-      const page = await pdf.getPage(pageNo);
-      const content = await page.getTextContent();
-      const text = (content.items || [])
-        .map((item: any) => String(item?.str || "").trim())
-        .filter(Boolean)
-        .join(" ");
-      if (text) pages.push(text);
-    }
-    return pages.join("\n\n");
-  } catch {
-    return "";
-  }
-}
-
 async function extractAttachmentContext(thread: any) {
   const summaries = Array.isArray(thread?.messages) ? thread.messages.map(gmailMessageSummary) : [];
   const documents: any[] = [];
@@ -398,21 +371,13 @@ async function extractAttachmentContext(thread: any) {
     for (const attachment of attachments) {
       const mimeType = textValue(attachment?.mimeType, "");
       const filename = textValue(attachment?.filename, "");
-      if (!filename || !attachment?.attachmentId) continue;
-      if (!/pdf/i.test(mimeType) && !/\.pdf$/i.test(filename)) continue;
-      try {
-        const buffer = await getGmailAttachment(message.id, attachment.attachmentId);
-        const pdfText = await extractPdfText(buffer);
-        documents.push({
-          filename,
-          mimeType: mimeType || "application/pdf",
-          contentBase64: buffer.toString("base64"),
-          extractedText: pdfText,
-          sourceMessageId: message.id,
-        });
-        texts.push(filename);
-        if (pdfText.trim()) texts.push(pdfText.trim());
-      } catch {}
+      if (!filename) continue;
+      documents.push({
+        filename,
+        mimeType: mimeType || "application/octet-stream",
+        sourceMessageId: message.id,
+      });
+      texts.push(filename);
     }
   }
 
@@ -573,6 +538,13 @@ function buildArchiveMarkdown(thread: any, item: any, matched: any, signal: any,
     "",
     textValue(item.preview || item.body, "Ingen preview fra mailen."),
     "",
+    "## Vedhæftninger",
+    "",
+    summaries
+      .flatMap((message) => Array.isArray(message.attachments) ? message.attachments : [])
+      .map((attachment: any) => `- ${textValue(attachment?.filename, "Vedhæftning uden navn")}`)
+      .join("\n") || "_Ingen vedhæftninger registreret._",
+    "",
     blocks,
     "",
   ]
@@ -656,8 +628,7 @@ async function archiveQualifiedThread(thread: any, item: any, state: any, integr
   const alreadyArchived = (matched.activityLog || []).some((entry: any) => {
     if (String(entry?.type) !== "gmail_archive" || String(entry?.archiveKey || "") !== archiveKey) return false;
     const hasDriveFile = Boolean(textValue(entry?.driveUrl, "") || textValue(entry?.fileId, ""));
-    const hasExpectedAttachments = signal.category !== "referater" || Number(entry?.attachmentCount || 0) > 0;
-    return hasDriveFile && hasExpectedAttachments;
+    return hasDriveFile;
   });
   if (alreadyArchived) {
     return {
@@ -684,7 +655,6 @@ async function archiveQualifiedThread(thread: any, item: any, state: any, integr
 
   let driveFolder = textValue(matched.docs?.drive, "");
   let uploaded: any = null;
-  const uploadedAttachments: any[] = [];
   applyArchiveSideEffects(matched, signal);
   if (integration.configured) {
     const folderInfo = await ensureCaseDriveFolders(matched, displayCaseId, matched.kunde);
@@ -696,40 +666,11 @@ async function archiveQualifiedThread(thread: any, item: any, state: any, integr
     document.url = textValue(uploaded?.webViewLink, "");
     document.fileId = textValue(uploaded?.id, "");
     document.mimeType = textValue(uploaded?.mimeType, document.mimeType);
-
-    let attachmentIndex = 0;
-    for (const attachment of attachmentContext.documents) {
-      attachmentIndex += 1;
-      const extension = /\.pdf$/i.test(attachment.filename) ? ".pdf" : "";
-      const attachmentDoc = {
-        title: `${fileTitle}${attachmentContext.documents.length > 1 ? ` - bilag ${attachmentIndex}` : ""}`,
-        fileName: `${fileTitle}${attachmentContext.documents.length > 1 ? ` - bilag ${attachmentIndex}` : ""}${extension || ".pdf"}`,
-        mimeType: attachment.mimeType || "application/pdf",
-        contentBase64: attachment.contentBase64,
-        date: documentDate,
-        notes: `Vedhæftet PDF fra Gmail-tråd. Kilde: ${attachment.filename}`,
-      };
-      const uploadedAttachment = await uploadDriveFile(folderId, attachmentDoc);
-      uploadedAttachments.push({
-        titel: attachmentDoc.title,
-        dato: documentDate,
-        url: textValue(uploadedAttachment?.webViewLink, ""),
-        fileId: textValue(uploadedAttachment?.id, ""),
-        mimeType: textValue(uploadedAttachment?.mimeType, attachmentDoc.mimeType),
-        notes: attachmentDoc.notes,
-      });
-    }
   }
 
   pushDocs(matched.docs[signal.category] || [], [document]);
   if (signal.category === "referater") {
     pushDocs(matched.docs.byggereferater, [document]);
-  }
-  if (uploadedAttachments.length) {
-    pushDocs(matched.docs[signal.category] || [], uploadedAttachments);
-    if (signal.category === "referater") {
-      pushDocs(matched.docs.byggereferater, uploadedAttachments);
-    }
   }
   appendActivity(matched, actor, {
     type: "gmail_archive",
