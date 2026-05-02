@@ -22,6 +22,12 @@ import {
 
 const INTERNAL_PATTERNS = [/@nstsf\.dk/i, /gemini-notes@google\.com/i];
 const SYNC_QUERY = "newer_than:30d -in:spam -in:trash";
+const ARCHIVE_QUERIES = [
+  'newer_than:45d -in:spam -in:trash ("Byggemødereferat" OR "Byggemodereferat" OR "byggemøde" OR "byggemode")',
+  'newer_than:45d -in:spam -in:trash ("Tilbud vedr" OR "tilbud" OR "overslagspris")',
+  'newer_than:45d -in:spam -in:trash ("Faktura" "Nordsjællands Tømrer")',
+  'newer_than:45d -in:spam -in:trash ("Bülowsvej" OR "Bulowsvej" OR "NV Gadesvej" OR "N. V. Gadesvej")',
+];
 const DANISH_MONTHS: Record<string, string> = {
   januar: "01",
   februar: "02",
@@ -46,6 +52,18 @@ function appendSyncLog(state: any, payload: Record<string, unknown>) {
     ...payload,
   });
   state.syncLog = state.syncLog.slice(0, 80);
+}
+
+function dedupeThreads(threads: any[]) {
+  const seen = new Set<string>();
+  const result: any[] = [];
+  for (const thread of threads) {
+    const id = textValue(thread?.id, "");
+    if (!id || seen.has(id)) continue;
+    seen.add(id);
+    result.push(thread);
+  }
+  return result;
 }
 
 function formatSyncError(error: unknown) {
@@ -588,7 +606,12 @@ export default async (request: Request) => {
   const archiveErrors: any[] = [];
 
   try {
-    const threads = await listRecentGmailThreads(SYNC_QUERY, 20);
+    const archiveThreadBatches = await Promise.all(
+      ARCHIVE_QUERIES.map((query) => listRecentGmailThreads(query, 6)),
+    );
+    const archiveThreads = dedupeThreads(archiveThreadBatches.flat()).slice(0, 12);
+    const inboxThreads = await listRecentGmailThreads(SYNC_QUERY, 8);
+    const threads = dedupeThreads([...archiveThreads, ...inboxThreads]).slice(0, 16);
     const fullThreadResults = await Promise.allSettled(
       threads.map((thread: any) => getGmailThread(String(thread.id))),
     );
