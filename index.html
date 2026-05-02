@@ -1210,8 +1210,8 @@
       </div>
       <div class="priority-topbar-right">
         <span class="priority-updated" id="priorityGeneratedAt"></span>
-        <button class="btn" onclick="syncCustomGpt(true)">Synk Custom GPT</button>
-        <button class="btn" onclick="syncGmail(true)">Synk Gmail</button>
+        <button class="btn primary" onclick="openPriorityTaskComposer()">Ny opgave</button>
+        <button class="btn" onclick="updatePriorities(true)">Opdatér Sager</button>
         <div class="priority-toggle">
           <button class="active" id="priorityBtnTodos" onclick="setPriorityView('todos')">Aktive</button>
           <button id="priorityBtnArchive" onclick="setPriorityView('archive')">Arkiv</button>
@@ -1268,7 +1268,7 @@
       </div>
       <aside class="priority-side">
         <div class="priority-sidebar-section">
-          <div class="priority-sidebar-title">Ny opgave</div>
+          <div class="priority-sidebar-title" id="priorityTaskPanelTitle">Opgave</div>
           <div class="priority-sidebar-form">
             <input id="priorityTaskTitle" type="text" placeholder="Beskriv opgaven...">
             <input id="priorityTaskDueDate" type="date">
@@ -1292,8 +1292,8 @@
           </div>
         </div>
         <div class="priority-sidebar-section">
-          <div class="priority-sidebar-title">Kommende</div>
-          <div id="priorityUpcomingList" class="priority-mini-list"></div>
+          <div class="priority-sidebar-title">Opdateringer</div>
+          <div id="priorityUpdatesList" class="priority-mini-list"></div>
         </div>
         <div class="priority-sidebar-section">
           <div class="priority-sidebar-title">Arkiverede opgaver</div>
@@ -2064,6 +2064,31 @@ async function syncCustomGpt(manual=false){
   const ok = await loadRemoteState(false);
   if(ok) setSyncStatus('Custom GPT-data synkroniseret.', 'ok');
 }
+async function updatePriorities(manual=false){
+  if(!authUser){ if(manual) setSyncStatus('Du skal være logget ind for at opdatere sager.', 'error'); return; }
+  if(location.protocol === 'file:'){ if(manual) setSyncStatus('Sagsopdatering virker kun på Netlify-linket. Den lokale fil er kun preview.', 'error'); return; }
+  try{
+    setSyncStatus('Opdaterer sager fra backend og Gmail...');
+    await loadRemoteState(false);
+    const res = await fetch(GMAIL_SYNC_API, { method:'POST', credentials:'include', headers:{'content-type':'application/json'} });
+    const data = await res.json().catch(()=>({}));
+    if(res.status === 401){
+      authUser = null;
+      updateAuthUi();
+      showAuthOverlay('Session udløbet. Log ind igen.');
+      return;
+    }
+    if(!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+    await loadRemoteState(false);
+    const archived = Number(data.archived || 0);
+    const note = archived
+      ? `Sager opdateret. ${data.synced || 0} tråde · ${data.unhandled || 0} åbne · ${archived} arkiveret.`
+      : `Sager opdateret. ${data.synced || 0} tråde · ${data.unhandled || 0} åbne.`;
+    setSyncStatus(note, 'ok');
+  }catch(err){
+    setSyncStatus(`Kunne ikke opdatere sager: ${err.message}`, 'error');
+  }
+}
 async function syncGmail(manual=false){
   if(!authUser){ if(manual) setSyncStatus('Du skal være logget ind for at synkronisere Gmail.', 'error'); return; }
   if(location.protocol === 'file:'){ if(manual) setSyncStatus('Gmail-sync virker kun på Netlify-linket. Den lokale fil er kun preview.', 'error'); return; }
@@ -2079,7 +2104,11 @@ async function syncGmail(manual=false){
     }
     if(!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
     await loadRemoteState(false);
-    setSyncStatus(`Gmail synkroniseret. ${data.synced || 0} tråde · ${data.unhandled || 0} åbne.`, 'ok');
+    const archived = Number(data.archived || 0);
+    const note = archived
+      ? `Gmail synkroniseret. ${data.synced || 0} tråde · ${data.unhandled || 0} åbne · ${archived} arkiveret.`
+      : `Gmail synkroniseret. ${data.synced || 0} tråde · ${data.unhandled || 0} åbne.`;
+    setSyncStatus(note, 'ok');
   }catch(err){
     setSyncStatus(`Kunne ikke synkronisere Gmail: ${err.message}`, 'error');
   }
@@ -2513,6 +2542,31 @@ function priorityEditButton(links='', item={}){
 function priorityBucketLabel(bucket){
   return bucket === 'now' ? 'Nu' : 'Senere';
 }
+function currentActorLabel(){
+  return authUser?.name || 'NSTSF';
+}
+function describeChangedFields(before={}, after={}){
+  const labels = [];
+  if(String(before.kunde || '') !== String(after.kunde || '')) labels.push('kundenavn');
+  if(String(before.adr || '') !== String(after.adr || '')) labels.push('adresse');
+  if(String(before.opg || '') !== String(after.opg || '')) labels.push('opgave');
+  if(String(before.u || '') !== String(after.u || '')) labels.push('udestående');
+  if(String(before.dato || '') !== String(after.dato || '')) labels.push('betalingsdato');
+  if(String(before.status || '') !== String(after.status || '')) labels.push('status');
+  if(String(before.start || '') !== String(after.start || '')) labels.push('start');
+  if(String(before.slut || '') !== String(after.slut || '')) labels.push('slut');
+  if(String(before.info || '') !== String(after.info || '')) labels.push('noter');
+  return labels;
+}
+function addCaseActivity(caseEntry, payload={}){
+  caseEntry.activityLog = Array.isArray(caseEntry.activityLog) ? caseEntry.activityLog : [];
+  caseEntry.activityLog.unshift({
+    id:`activity-${Date.now()}-${Math.random().toString(36).slice(2,8)}`,
+    createdAt:new Date().toISOString(),
+    actor:{ name: currentActorLabel(), email: authUser?.email || '', type:'session' },
+    ...payload
+  });
+}
 function findPriorityByKey(key=''){
   const all = buildPriorities(true);
   return [...all.todos, ...all.sales].find((item)=>item.key === key) || null;
@@ -2622,12 +2676,52 @@ function renderPriorityArchive(){
     <div class="priority-row-tools"><span class="priority-tag week">${item.mode === 'fuldført' ? 'Fuldført' : 'Arkiv'}</span><button class="btn" onclick="restoreArchivedPriority('${item.key}')">Genskab</button></div>
   </div>`).join('') : '<div class="priority-empty-state">Ingen arkiverede opgaver endnu.</div>';
 }
+function collectPriorityUpdates(){
+  const entries = [];
+  sager.forEach((s, index)=>{
+    const activities = Array.isArray(s.activityLog) ? s.activityLog : [];
+    activities.forEach((activity)=>{
+      if(!activity || !activity.createdAt) return;
+      const actor = textValue(activity?.actor?.name, 'System');
+      if(activity.type === 'gmail_archive'){
+        entries.push({
+          id:`${index}-${activity.id || activity.createdAt}`,
+          createdAt: activity.createdAt,
+          title:`${getCustomerDisplay(s)} · ${textValue(s.adr, s.opg || 'Sag')}`,
+          meta:`${textValue(activity.documentType, 'Dokument')} · ${displayDate(activity.documentDate || activity.createdAt)} · ${actor}`,
+          body:`Arkiveret i Drive under ${textValue(activity.fileName, 'referater')}.`,
+        });
+        return;
+      }
+      if(activity.type === 'case_update'){
+        entries.push({
+          id:`${index}-${activity.id || activity.createdAt}`,
+          createdAt: activity.createdAt,
+          title:`${getCustomerDisplay(s)} opdateret`,
+          meta:`${formatCaseRefDisplay(s.sid || s.nr || '') || 'Sag'} · ${displayDate(activity.createdAt)} · ${actor}`,
+          body:textValue(activity.summary, 'Sagen er opdateret.'),
+        });
+        return;
+      }
+      if(activity.type === 'payment_paid'){
+        entries.push({
+          id:`${index}-${activity.id || activity.createdAt}`,
+          createdAt: activity.createdAt,
+          title:`${getCustomerDisplay(s)} · betaling markeret`,
+          meta:`${formatCaseRefDisplay(s.sid || s.nr || '') || 'Sag'} · ${displayDate(activity.createdAt)} · ${actor}`,
+          body:textValue(activity.summary, 'En betaling er markeret som betalt.'),
+        });
+      }
+    });
+  });
+  return entries.sort((a,b)=>String(b.createdAt || '').localeCompare(String(a.createdAt || ''))).slice(0, 8);
+}
 function renderSidebarSummaries(priorities){
-  const upcoming = document.getElementById('priorityUpcomingList');
+  const updates = document.getElementById('priorityUpdatesList');
   const archived = document.getElementById('priorityArchivedList');
-  if(upcoming){
-    const items = [...priorities.todos, ...priorities.sales].filter((item)=>item.bucket !== 'now').slice(0, 5);
-    upcoming.innerHTML = items.length ? items.map((item)=>`<div class="priority-mini-item"><div class="dotline"><span class="dot"></span><div><strong>${escapeAttr(item.title)}</strong><div class="meta">${escapeAttr(item.meta)}</div></div></div></div>`).join('') : '<div class="priority-sidebar-empty">Ingen kommende opgaver.</div>';
+  if(updates){
+    const items = collectPriorityUpdates();
+    updates.innerHTML = items.length ? items.map((item)=>`<div class="priority-mini-item"><strong>${escapeAttr(item.title)}</strong><div class="meta">${escapeAttr(item.meta)}</div><div class="meta">${escapeAttr(item.body)}</div></div>`).join('') : '<div class="priority-sidebar-empty">Ingen nyere opdateringer endnu.</div>';
   }
   if(archived){
     const items = archivedPriorityItems.slice(0, 5);
@@ -2651,21 +2745,29 @@ function fillSidebarTaskForm(task={}){
 function resetSidebarTaskForm(){
   editingPriorityTaskId = null;
   fillSidebarTaskForm({});
-  const title = document.querySelector('.priority-sidebar-section .priority-sidebar-title');
+  const title = document.getElementById('priorityTaskPanelTitle');
   const submit = document.getElementById('priorityTaskSubmitBtn');
   const cancel = document.getElementById('priorityTaskCancelBtn');
   const helper = document.getElementById('priorityTaskHelper');
-  if(title) title.textContent = 'Ny opgave';
+  if(title) title.textContent = 'Opgave';
   if(submit) submit.textContent = 'Tilføj';
   if(cancel) cancel.style.display = 'none';
   if(helper) helper.textContent = 'Opret interne opgaver direkte herfra, eller brug Edit på en eksisterende opgave.';
+}
+function openPriorityTaskComposer(){
+  editingPriorityTaskId = null;
+  resetSidebarTaskForm();
+  const title = document.getElementById('priorityTaskPanelTitle');
+  if(title) title.textContent = 'Ny opgave';
+  const input = document.getElementById('priorityTaskTitle');
+  if(input) input.focus();
 }
 function openPriorityTaskEditor(taskId=''){
   const task = internalTasks.find((entry)=>entry.id === taskId);
   if(!task) return;
   editingPriorityTaskId = taskId;
   fillSidebarTaskForm(task);
-  const title = document.querySelector('.priority-sidebar-section .priority-sidebar-title');
+  const title = document.getElementById('priorityTaskPanelTitle');
   const submit = document.getElementById('priorityTaskSubmitBtn');
   const cancel = document.getElementById('priorityTaskCancelBtn');
   const helper = document.getElementById('priorityTaskHelper');
@@ -2900,7 +3002,7 @@ function addSag(){ const idx = sager.length; sager.push(normalizeSag({ k:3,nr:""
 let editSagIndex = null;
 function openEditSag(i){ const s = sager[i]; const caseDetail = document.getElementById('caseDetail'); const customerLayout = document.querySelector('.customers-layout'); if(!s || !caseDetail) return; const customerNumber = getCustomerNumber(s); const caseRef = getCaseRefByIndex(i); editSagIndex = i; selectedCustomerIndex = i; render(); if(customerLayout) customerLayout.classList.add('detail-open'); caseDetail.classList.add('active'); caseDetail.innerHTML = `<div class="case-shell"><div class="case-head"><div class="case-eyebrow">NSTSF kundesystem</div><div class="case-head-top"><div><h2>Rediger sag</h2><div class="sub">${s.kunde || 'Ukendt kunde'}${caseRef ? ` · Sag ${formatCaseRefDisplay(caseRef)}` : ''}</div></div><button class="btn ghost" onclick="closeSag()">Luk</button></div></div><div class="case-card"><div class="case-form"><label>Kundenr.<input value="${escapeAttr(customerNumber)}" disabled></label><label>Sagsnr.<input value="${escapeAttr(formatCaseRefDisplay(caseRef))}" disabled></label><label>Kategori<select id="edit-k">${Object.entries(KAT).map(([k,v])=>`<option value="${k}"${+k===s.k?' selected':''}>${v}</option>`).join('')}</select></label><label>Eksisterende ref.<input id="edit-nr" value="${escapeAttr(s.nr)}" placeholder="Valgfrit eksternt referencenr."></label><label>Kundenavn<input id="edit-kunde" value="${escapeAttr(s.kunde)}"></label><label class="wide">Adresse<input id="edit-adr" value="${escapeAttr(s.adr === '—' ? '' : s.adr)}"></label><label class="wide">Opgave<textarea id="edit-opg">${escapeAttr(s.opg)}</textarea></label><label>Est. beløb<input id="edit-b" value="${escapeAttr(s.b)}"></label><label>Udestående<input id="edit-u" value="${escapeAttr(s.u)}"></label><label>Betalingsdato<input id="edit-dato" type="date" value="${escapeAttr(s.dato)}"></label><label>Startdato<input id="edit-start" type="date" value="${escapeAttr(s.start)}"></label><label>Slutdato<input id="edit-slut" type="date" value="${escapeAttr(s.slut)}"></label><label>Fin. status<input id="edit-status" value="${escapeAttr(s.status)}"></label><label>Est. timer<input id="edit-timer" value="${escapeAttr(s.timer)}"></label><label>Fakturanr.<input id="edit-fak" value="${escapeAttr(s.fak)}"></label><label>Mail<input id="edit-mail" value="${escapeAttr(s.mail)}"></label><label>Telefon<input id="edit-tlf" value="${escapeAttr(s.tlf)}"></label><label class="wide">Google Drive-folder URL<input id="edit-drive" value="${escapeAttr(getSagDrive(s))}" placeholder="Indsæt link til kundens Drive-mappe"></label><label class="wide">Noter/info<textarea id="edit-info">${escapeAttr(s.info)}</textarea></label></div><div style="display:flex;gap:8px;margin-top:14px"><button class="btn primary" onclick="saveSagEdit()">Gem</button><button class="btn" onclick="renderSagDetail(${i})">Annuller</button></div></div></div>`; }
 function readEdit(id){ return document.getElementById(id).value.trim(); }
-function saveSagEdit(){ if(editSagIndex === null || !sager[editSagIndex]) return; const s = sager[editSagIndex]; s.k = +readEdit('edit-k') || 3; s.nr = readEdit('edit-nr'); s.kunde = readEdit('edit-kunde') || 'Ukendt kunde'; s.adr = readEdit('edit-adr'); s.opg = readEdit('edit-opg'); s.b = readEdit('edit-b') || '0'; s.u = readEdit('edit-u') || '0'; s.dato = readEdit('edit-dato'); s.start = readEdit('edit-start'); s.slut = readEdit('edit-slut'); s.status = readEdit('edit-status') || '—'; s.timer = readEdit('edit-timer'); s.fak = readEdit('edit-fak'); s.mail = readEdit('edit-mail'); s.tlf = readEdit('edit-tlf'); s.drive = readEdit('edit-drive'); s.info = readEdit('edit-info'); s.docs = s.docs || {byggereferater:docDemo.byggereferater, transkripter:docDemo.transkripter}; s.docs.drive = s.drive; saveState(); render(); renderPriorities(); renderCapacity(); renderSagDetail(editSagIndex); }
+function saveSagEdit(){ if(editSagIndex === null || !sager[editSagIndex]) return; const s = sager[editSagIndex]; const before = JSON.parse(JSON.stringify(s)); s.k = +readEdit('edit-k') || 3; s.nr = readEdit('edit-nr'); s.kunde = readEdit('edit-kunde') || 'Ukendt kunde'; s.adr = readEdit('edit-adr'); s.opg = readEdit('edit-opg'); s.b = readEdit('edit-b') || '0'; s.u = readEdit('edit-u') || '0'; s.dato = readEdit('edit-dato'); s.start = readEdit('edit-start'); s.slut = readEdit('edit-slut'); s.status = readEdit('edit-status') || '—'; s.timer = readEdit('edit-timer'); s.fak = readEdit('edit-fak'); s.mail = readEdit('edit-mail'); s.tlf = readEdit('edit-tlf'); s.drive = readEdit('edit-drive'); s.info = readEdit('edit-info'); s.docs = s.docs || {byggereferater:docDemo.byggereferater, transkripter:docDemo.transkripter}; s.docs.drive = s.drive; const changed = describeChangedFields(before, s); if(changed.length){ addCaseActivity(s, { type:'case_update', title:'Sag opdateret', summary:`Opdateret: ${changed.join(', ')}.` }); } saveState(); render(); renderPriorities(); renderCapacity(); renderSagDetail(editSagIndex); }
 function markCasePaymentPaid(caseIndex, historyKey=''){
   const s = sager[caseIndex];
   if(!s) return;
@@ -2927,6 +3029,11 @@ function markCasePaymentPaid(caseIndex, historyKey=''){
     s.u = '0';
     s.status = 'Faktura betalt';
   }
+  addCaseActivity(s, {
+    type:'payment_paid',
+    title:'Betaling markeret som betalt',
+    summary:`Faktura betalt er registreret på sagen${target?.dato ? ` med dato ${displayDate(target.dato)}` : ''}.`
+  });
   saveState();
   render();
   renderBetalinger();
