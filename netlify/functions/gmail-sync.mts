@@ -1,14 +1,38 @@
 import {
+  appendActivity,
   authorizeDashboardRequest,
+  ensureCaseShape,
   json,
   loadDashboardState,
+  pushDocs,
   saveDashboardState,
   textValue,
 } from "./_lib/dashboard.mts";
-import { getGmailThread, gmailMessageSummary, googleIntegrationStatus, listRecentGmailThreads } from "./_lib/google.mts";
+import {
+  ensureCaseDriveFolders,
+  getGmailThread,
+  gmailMessageSummary,
+  googleIntegrationStatus,
+  listRecentGmailThreads,
+  uploadDriveFile,
+} from "./_lib/google.mts";
 
 const INTERNAL_PATTERNS = [/@nstsf\.dk/i, /gemini-notes@google\.com/i];
 const SYNC_QUERY = "newer_than:45d -in:spam -in:trash";
+const DANISH_MONTHS: Record<string, string> = {
+  januar: "01",
+  februar: "02",
+  marts: "03",
+  april: "04",
+  maj: "05",
+  juni: "06",
+  juli: "07",
+  august: "08",
+  september: "09",
+  oktober: "10",
+  november: "11",
+  december: "12",
+};
 
 function isInternalSender(value = "") {
   return INTERNAL_PATTERNS.some((pattern) => pattern.test(String(value).toLowerCase()));
@@ -42,6 +66,61 @@ function matchCaseFromText(sager: any[], haystack: string) {
     }
   }
   return bestScore > 0 ? best : null;
+}
+
+function normalizeCaseKey(value: unknown) {
+  return String(value || "").replace(/\s+/g, "").trim().toLowerCase();
+}
+
+function formatCaseIdForDisplay(entry: any) {
+  const raw = textValue(entry?.sid || entry?.nr, "").trim();
+  if (!raw) return "";
+  const compact = raw.replace(/\s+/g, "");
+  const match = compact.match(/^(\d+)([a-z])$/i);
+  if (match) return `${match[1]} ${match[2].toUpperCase()}`;
+  return raw.toUpperCase();
+}
+
+function plainCompactText(value = "") {
+  return String(value || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-zA-Z0-9]+/g, " ")
+    .trim()
+    .toLowerCase();
+}
+
+function extractDocumentDate(subject = "", body = "", fallbackIso = "") {
+  const source = `${subject}\n${body}`;
+  const monthPattern = new RegExp(`(\\d{1,2})\\.\\s*(${Object.keys(DANISH_MONTHS).join("|")})\\s*(\\d{4})`, "i");
+  const monthHit = source.match(monthPattern);
+  if (monthHit) {
+    const day = monthHit[1].padStart(2, "0");
+    const month = DANISH_MONTHS[monthHit[2].toLowerCase()];
+    const year = monthHit[3];
+    if (month) return `${year}-${month}-${day}`;
+  }
+
+  const numericHit = source.match(/\b(\d{1,2})[./-](\d{1,2})[./-](\d{4})\b/);
+  if (numericHit) {
+    return `${numericHit[3]}-${numericHit[2].padStart(2, "0")}-${numericHit[1].padStart(2, "0")}`;
+  }
+
+  const fallback = String(fallbackIso || "").slice(0, 10);
+  return /^\d{4}-\d{2}-\d{2}$/.test(fallback) ? fallback : new Date().toISOString().slice(0, 10);
+}
+
+function inferArchiveSignal(subject = "", body = "", from = "") {
+  const source = plainCompactText(`${subject}\n${body}`);
+  if (!source) return null;
+  if (/byggemodereferat|byggemode referat|byggemode|byggemode/.test(source)) {
+    return {
+      category: "referater",
+      documentType: "Byggemodereferat",
+      sourceType: isInternalSender(from) ? "internal" : "external",
+    };
+  }
+  return null;
 }
 
 function inferCustomerName(thread: any, sager: any[]) {
@@ -163,6 +242,139 @@ function toEmailEntry(thread: any, sager: any[]) {
   };
 }
 
+function buildArchiveMarkdown(thread: any, item: any, matched: any, signal: any, documentDate: string) {
+  const summaries = Array.isArray(thread?.messages) ? thread.messages.map(gmailMessageSummary) : [];
+  const displayCaseId = formatCaseIdForDisplay(matched);
+  const address = textValue(matched?.adr, "");
+  const blocks = summaries
+    .map((message) => {
+      const messageDate = parseMessageDate(message).slice(0, 10);
+      const body = textValue(message.body || message.snippet, "").trim();
+      return [
+        "## Mail",
+        `- Fra: ${textValue(message.from, "Ukendt afsender")}`,
+        `- Dato: ${messageDate}`,
+        `- Emne: ${textValue(message.subject, item.subject || "Mail uden emne")}`,
+        "",
+        body || "_Ingen tekst udtrukket fra mailen._",
+      ].join("\n");
+    })
+    .join("\n\n---\n\n");
+
+  return [
+    `# ${signal.documentType}`,
+    "",
+    `- Dato: ${documentDate}`,
+    `- SagsID: ${displayCaseId || "Ikke fundet"}`,
+    `- Kunde: ${textValue(matched?.kunde, item.kunde || "Ukendt kunde")}`,
+    address ? `- Adresse: ${address}` : "",
+    `- Arkiveret fra mailtråd: ${textValue(item.subject, "Mail uden emne")}`,
+    "",
+    "## Kort resume",
+    "",
+    textValue(item.preview || item.body, "Ingen preview fra mailen."),
+    "",
+    blocks,
+    "",
+  ]
+    .filter(Boolean)
+    .join("\n");
+}
+
+async function archiveQualifiedThread(thread: any, item: any, state: any, integration: any, actor: any) {
+  const summaries = Array.isArray(thread?.messages) ? thread.messages.map(gmailMessageSummary) : [];
+  const combined = summaries
+    .map((message) => [message.subject, message.from, message.snippet, message.body].filter(Boolean).join("\n"))
+    .join("\n\n");
+  const signal = inferArchiveSignal(item?.subject, combined || item?.body, item?.from);
+  if (!signal) return null;
+
+  const matched = matchCaseFromText(state.sager || [], combined || `${item?.subject}\n${item?.body}`);
+  if (!matched) {
+    return {
+      ok: false,
+      threadId: textValue(item?.threadId || thread?.id, ""),
+      subject: textValue(item?.subject, ""),
+      error: "case_not_matched",
+    };
+  }
+
+  ensureCaseShape(matched);
+  const documentDate = extractDocumentDate(item?.subject, combined || item?.body, item?.date);
+  const displayCaseId = formatCaseIdForDisplay(matched) || textValue(matched?.nr, "");
+  const archiveKey = [
+    textValue(item?.threadId || thread?.id, ""),
+    signal.category,
+    signal.documentType,
+    documentDate,
+    normalizeCaseKey(displayCaseId || matched?.kunde),
+  ].join(":");
+
+  const alreadyArchived = (matched.activityLog || []).some((entry: any) => {
+    return String(entry?.type) === "gmail_archive" && String(entry?.archiveKey || "") === archiveKey;
+  });
+  if (alreadyArchived) {
+    return {
+      ok: true,
+      skipped: true,
+      archiveKey,
+      matchedCaseId: displayCaseId,
+      customerName: textValue(matched?.kunde, item?.kunde || ""),
+      documentType: signal.documentType,
+      documentDate,
+    };
+  }
+
+  const fileTitle = `${documentDate} - ${signal.documentType} - ${displayCaseId}`.trim();
+  const document = {
+    title: fileTitle,
+    fileName: `${fileTitle}.md`,
+    mimeType: "text/markdown",
+    contentText: buildArchiveMarkdown(thread, item, matched, signal, documentDate),
+    date: documentDate,
+    notes: `Automatisk arkiveret fra Gmail-sync. Tråd: ${textValue(item?.threadId || thread?.id, "")}`,
+  };
+
+  let driveFolder = textValue(matched.docs?.drive, "");
+  let uploaded: any = null;
+  if (integration.configured) {
+    const folderInfo = await ensureCaseDriveFolders(matched, textValue(matched?.sid || matched?.nr, ""), matched.kunde);
+    driveFolder = textValue(folderInfo?.caseFolder?.webViewLink, driveFolder);
+    matched.docs.drive = driveFolder;
+    uploaded = await uploadDriveFile(textValue(folderInfo?.folders?.referater?.id, ""), document);
+    document.url = textValue(uploaded?.webViewLink, "");
+    document.fileId = textValue(uploaded?.id, "");
+    document.mimeType = textValue(uploaded?.mimeType, document.mimeType);
+  }
+
+  pushDocs(matched.docs.referater, [document]);
+  pushDocs(matched.docs.byggereferater, [document]);
+  appendActivity(matched, actor, {
+    type: "gmail_archive",
+    archiveKey,
+    threadId: textValue(item?.threadId || thread?.id, ""),
+    subject: textValue(item?.subject, ""),
+    archiveCategory: signal.category,
+    documentType: signal.documentType,
+    documentDate,
+    fileName: document.fileName,
+    driveUrl: textValue(document.url, ""),
+    sourceType: signal.sourceType,
+  });
+
+  return {
+    ok: true,
+    archiveKey,
+    matchedCaseId: displayCaseId,
+    customerName: textValue(matched?.kunde, item?.kunde || ""),
+    documentType: signal.documentType,
+    documentDate,
+    driveUrl: textValue(document.url, ""),
+    fileName: document.fileName,
+    driveFolder,
+  };
+}
+
 export default async (request: Request) => {
   const auth = authorizeDashboardRequest(request);
   if (!auth.ok) return auth.response;
@@ -185,6 +397,39 @@ export default async (request: Request) => {
     .map((thread) => toEmailEntry(thread, state.sager || []))
     .filter(Boolean)
     .sort((a: any, b: any) => String(b.date).localeCompare(String(a.date))));
+  const itemByThreadId = new Map(items.map((item: any) => [textValue(item.threadId || item.id, ""), item]));
+  const archivedResults: any[] = [];
+  const archiveErrors: any[] = [];
+
+  for (const thread of fullThreads) {
+    const threadId = textValue(thread?.id, "");
+    const item = itemByThreadId.get(threadId);
+    if (!item) continue;
+    try {
+      const result = await archiveQualifiedThread(thread, item, state, integration, auth.actor);
+      if (!result) continue;
+      if (result.ok) {
+        if (!result.skipped) {
+          item.archivedAt = new Date().toISOString();
+          item.archivedCaseId = result.matchedCaseId;
+          item.archivedCustomer = result.customerName;
+          item.archivedType = result.documentType;
+          item.archivedDate = result.documentDate;
+          item.archivedUrl = result.driveUrl || "";
+          archivedResults.push(result);
+        }
+      } else {
+        archiveErrors.push(result);
+      }
+    } catch (error) {
+      archiveErrors.push({
+        ok: false,
+        threadId,
+        subject: textValue(item?.subject, ""),
+        error: textValue((error as Error)?.message, "archive_failed"),
+      });
+    }
+  }
 
   state.emails = items;
   const savedAt = await saveDashboardState(state);
@@ -194,7 +439,18 @@ export default async (request: Request) => {
     savedAt,
     synced: items.length,
     unhandled: items.filter((item: any) => !item.handled).length,
-    note: "Gmail-tråde er hentet og gemt i central state.",
+    archived: archivedResults.length,
+    archiveErrors,
+    archivedCases: archivedResults.map((entry) => ({
+      caseId: entry.matchedCaseId,
+      customerName: entry.customerName,
+      documentType: entry.documentType,
+      documentDate: entry.documentDate,
+      driveUrl: entry.driveUrl,
+    })),
+    note: archivedResults.length
+      ? "Gmail-tråde er hentet, relevante byggemødereferater er arkiveret i Drive og state er opdateret."
+      : "Gmail-tråde er hentet og gemt i central state.",
   });
 };
 
