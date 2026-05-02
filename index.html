@@ -555,6 +555,7 @@
   .priority-empty-state{font-size:12px;color:#8a8680;padding:16px 24px}
   .priority-side-empty{font-size:11px;color:#8a8680;padding:14px 18px}
   .priority-sidebar-section{padding:18px;border-bottom:.5px solid var(--line)}
+  .priority-sidebar-section.hidden{display:none}
   .priority-sidebar-title{font-size:10px;font-weight:700;color:#b0ada8;text-transform:uppercase;letter-spacing:.1em;margin-bottom:12px}
   .priority-sidebar-form{display:grid;gap:10px}
   .priority-sidebar-form input,
@@ -1273,7 +1274,7 @@
         </div>
       </div>
       <aside class="priority-side">
-        <div class="priority-sidebar-section">
+        <div class="priority-sidebar-section hidden" id="priorityTaskSection">
           <div class="priority-sidebar-title" id="priorityTaskPanelTitle">Opgave</div>
           <div class="priority-sidebar-form">
             <input id="priorityTaskTitle" type="text" placeholder="Beskriv opgaven...">
@@ -1300,10 +1301,6 @@
         <div class="priority-sidebar-section">
           <div class="priority-sidebar-title">Opdateringer</div>
           <div id="priorityUpdatesList" class="priority-mini-list"></div>
-        </div>
-        <div class="priority-sidebar-section">
-          <div class="priority-sidebar-title">Arkiverede opgaver</div>
-          <div id="priorityArchivedList" class="priority-mini-list"></div>
         </div>
       </aside>
     </div>
@@ -2727,14 +2724,9 @@ function collectPriorityUpdates(){
 }
 function renderSidebarSummaries(priorities){
   const updates = document.getElementById('priorityUpdatesList');
-  const archived = document.getElementById('priorityArchivedList');
   if(updates){
     const items = collectPriorityUpdates();
     updates.innerHTML = items.length ? items.map((item)=>`<div class="priority-mini-item clickable" onclick="${item.action || ''}"><strong>${escapeAttr(item.title)}</strong><div class="meta">${escapeAttr(item.meta)}</div><div class="meta">${escapeAttr(item.body)}</div></div>`).join('') : '<div class="priority-sidebar-empty">Ingen nyere opdateringer endnu.</div>';
-  }
-  if(archived){
-    const items = archivedPriorityItems.slice(0, 5);
-    archived.innerHTML = items.length ? items.map((item)=>`<div class="priority-mini-item"><strong>${escapeAttr(item.title)}</strong><div class="meta">${escapeAttr(item.meta || '')}</div></div>`).join('') : '<div class="priority-sidebar-empty">Ingen arkiverede opgaver.</div>';
   }
 }
 function fillSidebarTaskForm(task={}){
@@ -2754,10 +2746,12 @@ function fillSidebarTaskForm(task={}){
 function resetSidebarTaskForm(){
   editingPriorityTaskId = null;
   fillSidebarTaskForm({});
+  const section = document.getElementById('priorityTaskSection');
   const title = document.getElementById('priorityTaskPanelTitle');
   const submit = document.getElementById('priorityTaskSubmitBtn');
   const cancel = document.getElementById('priorityTaskCancelBtn');
   const helper = document.getElementById('priorityTaskHelper');
+  if(section) section.classList.add('hidden');
   if(title) title.textContent = 'Opgave';
   if(submit) submit.textContent = 'Tilføj';
   if(cancel) cancel.style.display = 'none';
@@ -2766,7 +2760,9 @@ function resetSidebarTaskForm(){
 function openPriorityTaskComposer(){
   editingPriorityTaskId = null;
   resetSidebarTaskForm();
+  const section = document.getElementById('priorityTaskSection');
   const title = document.getElementById('priorityTaskPanelTitle');
+  if(section) section.classList.remove('hidden');
   if(title) title.textContent = 'Ny opgave';
   const input = document.getElementById('priorityTaskTitle');
   if(input) input.focus();
@@ -2776,10 +2772,12 @@ function openPriorityTaskEditor(taskId=''){
   if(!task) return;
   editingPriorityTaskId = taskId;
   fillSidebarTaskForm(task);
+  const section = document.getElementById('priorityTaskSection');
   const title = document.getElementById('priorityTaskPanelTitle');
   const submit = document.getElementById('priorityTaskSubmitBtn');
   const cancel = document.getElementById('priorityTaskCancelBtn');
   const helper = document.getElementById('priorityTaskHelper');
+  if(section) section.classList.remove('hidden');
   if(title) title.textContent = 'Rediger opgave';
   if(submit) submit.textContent = 'Gem';
   if(cancel) cancel.style.display = 'inline-flex';
