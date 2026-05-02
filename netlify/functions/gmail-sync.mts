@@ -148,6 +148,8 @@ function formatCaseIdForDisplay(entry: any) {
 
 function plainCompactText(value = "") {
   return String(value || "")
+    .replace(/\bN\s*\.?\s*V\s*\.?\s*Gadesvej/gi, "NV Gadesvej")
+    .replace(/\bNW\s+Gadesvej/gi, "NV Gadesvej")
     .replace(/[æÆ]/g, "ae")
     .replace(/[øØ]/g, "o")
     .replace(/[åÅ]/g, "a")
@@ -156,6 +158,41 @@ function plainCompactText(value = "") {
     .replace(/[^a-zA-Z0-9]+/g, " ")
     .trim()
     .toLowerCase();
+}
+
+async function ensureDriveFoldersForLinkedCases(state: any) {
+  const ensured: any[] = [];
+  const entries = Array.isArray(state?.sager) ? state.sager : [];
+  for (const entry of entries) {
+    ensureCaseShape(entry);
+    const driveUrl = textValue(entry?.docs?.drive || entry?.drive, "");
+    if (!driveUrl) continue;
+    const marker = plainCompactText(`${entry?.kunde || ""} ${entry?.adr || ""} ${entry?.opg || ""} ${driveUrl}`);
+    const isCurrentArchiveCandidate =
+      marker.includes("gadesvej") ||
+      driveUrl.includes("1IPXK472x8-Peasfv7kKU-JrG9oUNb6-4");
+    if (!isCurrentArchiveCandidate) continue;
+    try {
+      await ensureCaseDriveFolders(entry, textValue(entry?.sid || entry?.nr, ""), textValue(entry?.kunde, ""));
+      ensured.push({
+        caseId: formatCaseIdForDisplay(entry),
+        customerName: textValue(entry?.kunde, ""),
+        driveUrl,
+      });
+    } catch (error) {
+      appendSyncLog(state, {
+        status: "error",
+        subject: "Drive-mapper",
+        customerName: textValue(entry?.kunde, ""),
+        caseId: formatCaseIdForDisplay(entry),
+        documentType: "Mappestruktur",
+        category: "drive",
+        error: formatSyncError(error),
+        notes: "Kunne ikke sikre standardmapper for sagen.",
+      });
+    }
+  }
+  return ensured;
 }
 
 function extractDocumentDate(subject = "", body = "", fallbackIso = "") {
@@ -629,6 +666,7 @@ export default async (request: Request) => {
   if (!state) return json({ ok: false, error: "no_state" }, 404);
   const archivedResults: any[] = [];
   const archiveErrors: any[] = [];
+  const ensuredFolders = await ensureDriveFoldersForLinkedCases(state);
 
   try {
     const archiveThreadBatches = await Promise.all(
@@ -746,6 +784,7 @@ export default async (request: Request) => {
       synced: items.length,
       unhandled: items.filter((item: any) => !item.handled).length,
       archived: archivedResults.length,
+      ensuredFolders: ensuredFolders.length,
       archiveErrors,
       archivedCases: archivedResults.map((entry) => ({
         caseId: entry.matchedCaseId,
@@ -759,7 +798,9 @@ export default async (request: Request) => {
         ? "Gmail-tråde er hentet, relevante dokumenter er arkiveret i Drive og state er opdateret."
         : archiveErrors.length
           ? "Gmail-tråde blev behandlet, men en eller flere arkiveringer fejlede."
-          : "Gmail-tråde er hentet og gemt i central state.",
+          : ensuredFolders.length
+            ? "Drive-mapper er sikret for sager med Drive-link, og Gmail-tråde er gemt i central state."
+            : "Gmail-tråde er hentet og gemt i central state.",
     });
   } catch (error) {
     const errorText = formatSyncError(error);
@@ -780,6 +821,7 @@ export default async (request: Request) => {
       synced: 0,
       unhandled: 0,
       archived: 0,
+      ensuredFolders: ensuredFolders.length,
       archiveErrors: [{
         ok: false,
         threadId: "",
