@@ -189,12 +189,20 @@ function findOrCreateGadesvejCase(state: any) {
     const marker = plainCompactText(`${entry?.kunde || ""} ${entry?.adr || ""} ${entry?.opg || ""} ${driveUrl}`);
     return driveUrl.includes("1IPXK472x8-Peasfv7kKU-JrG9oUNb6-4") || (marker.includes("nv gadesvej") && /\b12a?\b/.test(marker));
   });
-  if (existing) return existing;
+  if (existing) {
+    ensureCaseShape(existing);
+    existing.sid = "1006a";
+    existing.nr = "1006";
+    existing.docs.drive = GADESVEJ_DRIVE_URL;
+    existing.drive = GADESVEJ_DRIVE_URL;
+    if (!textValue(existing.adr, "")) existing.adr = "N. V. Gadesvej 12A, 1. sal, Fredensborg";
+    return existing;
+  }
 
   const created = ensureCaseShape({
     k: 2,
     sid: "1006a",
-    nr: "",
+    nr: "1006",
     kunde: "Mathias & Anna",
     adr: "N. V. Gadesvej 12A, 1. sal, Fredensborg",
     opg: "Byggemodereferat",
@@ -556,7 +564,7 @@ function buildArchiveMarkdown(thread: any, item: any, matched: any, signal: any,
     `# ${signal.documentType}`,
     "",
     `- Dato: ${documentDate}`,
-    `- Sagsnummer: ${displayCaseId || "Ikke fundet"}`,
+    `- SagsID: ${displayCaseId || "Ikke fundet"}`,
     `- Kunde: ${textValue(matched?.kunde, item.kunde || "Ukendt kunde")}`,
     address ? `- Adresse: ${address}` : "",
     `- Arkiveret fra mailtråd: ${textValue(item.subject, "Mail uden emne")}`,
@@ -580,10 +588,11 @@ function normalizeFileStemPart(value = "") {
 }
 
 function buildArchiveFileTitle(documentDate: string, signal: any, displayCaseId: string, subject = "") {
+  const label = signal?.fileLabel || signal?.documentType || normalizeFileStemPart(subject) || "Dokument";
   const parts = [
     normalizeFileStemPart(documentDate),
-    normalizeFileStemPart(signal?.fileLabel || signal?.documentType || "Dokument"),
     normalizeFileStemPart(displayCaseId),
+    normalizeFileStemPart(label),
   ].filter(Boolean);
   if (parts.length) return parts.join(" - ");
   return normalizeFileStemPart(subject) || "Dokument";
