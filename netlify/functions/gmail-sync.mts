@@ -1,3 +1,5 @@
+import { randomUUID } from "node:crypto";
+
 import {
   appendActivity,
   authorizeDashboardRequest,
@@ -34,6 +36,17 @@ const DANISH_MONTHS: Record<string, string> = {
   november: "11",
   december: "12",
 };
+
+function appendSyncLog(state: any, payload: Record<string, unknown>) {
+  state.syncLog = Array.isArray(state?.syncLog) ? state.syncLog : [];
+  state.syncLog.unshift({
+    id: randomUUID(),
+    createdAt: new Date().toISOString(),
+    source: "gmail_sync",
+    ...payload,
+  });
+  state.syncLog = state.syncLog.slice(0, 80);
+}
 
 function isInternalSender(value = "") {
   return INTERNAL_PATTERNS.some((pattern) => pattern.test(String(value).toLowerCase()));
@@ -414,6 +427,9 @@ async function archiveQualifiedThread(thread: any, item: any, state: any, integr
       ok: false,
       threadId: textValue(item?.threadId || thread?.id, ""),
       subject: textValue(item?.subject, ""),
+      customerName: textValue(item?.kunde, ""),
+      documentType: signal.documentType,
+      category: signal.category,
       error: "case_not_matched",
     };
   }
@@ -437,6 +453,7 @@ async function archiveQualifiedThread(thread: any, item: any, state: any, integr
       ok: true,
       skipped: true,
       archiveKey,
+      category: signal.category,
       matchedCaseId: displayCaseId,
       customerName: textValue(matched?.kunde, item?.kunde || ""),
       documentType: signal.documentType,
@@ -520,6 +537,7 @@ async function archiveQualifiedThread(thread: any, item: any, state: any, integr
   return {
     ok: true,
     archiveKey,
+    category: signal.category,
     matchedCaseId: displayCaseId,
     customerName: textValue(matched?.kunde, item?.kunde || ""),
     documentType: signal.documentType,
@@ -564,6 +582,19 @@ export default async (request: Request) => {
       const result = await archiveQualifiedThread(thread, item, state, integration, auth.actor);
       if (!result) continue;
       if (result.ok) {
+        appendSyncLog(state, {
+          status: result.skipped ? "skipped" : "archived",
+          subject: textValue(item?.subject, ""),
+          customerName: textValue(result.customerName, ""),
+          caseId: textValue(result.matchedCaseId, ""),
+          documentType: textValue(result.documentType, ""),
+          category: textValue(result.documentType ? signalCategoryFromResult(result) : "", ""),
+          fileName: textValue(result.fileName, ""),
+          driveUrl: textValue(result.driveUrl, ""),
+          notes: result.skipped
+            ? "Mailen var allerede arkiveret på sagen."
+            : `Arkiveret i Drive som ${textValue(result.fileName, "dokument")}.`,
+        });
         if (!result.skipped) {
           item.archivedAt = new Date().toISOString();
           item.archivedCaseId = result.matchedCaseId;
@@ -574,9 +605,29 @@ export default async (request: Request) => {
           archivedResults.push(result);
         }
       } else {
+        appendSyncLog(state, {
+          status: "error",
+          subject: textValue(item?.subject, ""),
+          customerName: textValue(result.customerName, ""),
+          caseId: textValue(result.matchedCaseId, ""),
+          documentType: textValue(result.documentType, ""),
+          category: textValue(result.category, ""),
+          error: textValue(result.error, "archive_failed"),
+          notes: textValue(result.error, "Arkiveringen fejlede."),
+        });
         archiveErrors.push(result);
       }
     } catch (error) {
+      appendSyncLog(state, {
+        status: "error",
+        subject: textValue(item?.subject, ""),
+        customerName: textValue(item?.kunde, ""),
+        caseId: "",
+        documentType: "",
+        category: "",
+        error: textValue((error as Error)?.message, "archive_failed"),
+        notes: "Teknisk fejl under Gmail-sync.",
+      });
       archiveErrors.push({
         ok: false,
         threadId,
@@ -604,10 +655,19 @@ export default async (request: Request) => {
       driveUrl: entry.driveUrl,
     })),
     note: archivedResults.length
-      ? "Gmail-tråde er hentet, relevante byggemødereferater er arkiveret i Drive og state er opdateret."
+      ? "Gmail-tråde er hentet, relevante dokumenter er arkiveret i Drive og state er opdateret."
       : "Gmail-tråde er hentet og gemt i central state.",
   });
 };
+
+function signalCategoryFromResult(result: any) {
+  const type = textValue(result?.documentType, "").toLowerCase();
+  if (type.includes("byggemodereferat")) return "referater";
+  if (type.includes("tilbud")) return "tilbud";
+  if (type.includes("faktura")) return "betaling";
+  if (type.includes("mail")) return "mails";
+  return "";
+}
 
 export const config = {
   path: "/api/gmail-sync",
