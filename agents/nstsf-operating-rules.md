@@ -155,6 +155,7 @@ Ejer:
 - betalingsopfølgning
 - likviditet
 - marginforståelse
+- fakturastatus og fakturamatch
 
 Læser:
 - rater
@@ -167,6 +168,7 @@ Skriver:
 - likviditetsrisici
 - økonomiopfølgning
 - betalingsstatus på kunde
+- manuel afklaring i `Opdateringer`, hvis faktura ikke kan matches sikkert
 
 ### KS- og arkiveringsagent
 Ejer:
@@ -175,6 +177,7 @@ Ejer:
 - KS
 - referater
 - dokumentlinks
+- dedupe ved Drive-arkivering
 
 Læser:
 - kundemapper
@@ -185,6 +188,7 @@ Skriver:
 - arkiverede filer
 - links på sagen
 - mappestruktur
+- `driveUrl` i `syncLog`, så opdateringskort kan åbne arkiverede filer direkte
 
 ### HR- og personaleagent
 Ejer:
@@ -286,8 +290,15 @@ Felter:
 - KS -> `03 KS / Dokumentation`
 - billeder -> `04 Billeder`
 - ekstraarbejde -> `05 Ekstraarbejde`
+- fakturaer -> `06 Faktura / Betaling`
 - kontrakter -> `07 Kontrakt / Underskrifter`
 - transcripts -> `08 Transkripter`
+
+### Dedupe-regel
+Før et dokument uploades til Drive, skal agenten tjekke om samme filnavn allerede findes i målmappe. Hvis ja, bruges eksisterende Drive-fil og linket skrives tilbage til state.
+
+### Fakturamatch
+Fakturaer må ikke matches via gæt eller PDF-tekst som primær kilde. Automatisk match kræver eksisterende fakturanr. i state, sikkert `SagsID`, sikker adresse eller dokumenthistorik på sagen. Ellers skal fakturaen blive en manuel afklaring i `Opdateringer`.
 
 ## Prioriteringsregler
 

@@ -14,7 +14,10 @@
 ## Navngivning i første version
 - byggemødereferat:
   - `YYYY-MM-DD - Byggemodereferat - SagsID.md`
-  - `YYYY-MM-DD - Byggemodereferat - SagsID.pdf`
+- fejl og mangler møde:
+  - `YYYY-MM-DD - SagsID - Fejl og mangler moede.md`
+- afslutningsmøde:
+  - `YYYY-MM-DD - SagsID - Afslutningsmoede.md`
 
 ## Datokilder
 Dato udledes i denne rækkefølge:
@@ -33,3 +36,12 @@ Arkiveringen skriver tilbage:
 - `docs.referater`
 - `docs.byggereferater`
 - `activityLog` med type `gmail_archive`
+- `syncLog` med `driveUrl`, når Drive-filen findes
+
+## Dedupe-nøgle
+Agenten skal stoppe dubletter via to kontroller:
+1. `activityLog.archiveKey` for samme tråd, sag, dokumenttype og dokumentdato
+2. Drive-opslag efter samme `fileName` i målmappe før upload
+
+## Begrænsning
+PDF-indhold er ikke en stabil kilde i denne løsning. Agenten må ikke være afhængig af PDF-tekst for at matche en sag sikkert.

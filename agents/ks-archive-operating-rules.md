@@ -4,33 +4,51 @@
 - kører ved `Synk Gmail`
 - vurderer hver ny Gmail-tråd
 
-## Første version matcher kun
+## Matcher
 - `byggemødereferat`
 - `byggemøde`
+- fejl- og mangelmøder
+- afslutningsmøder
+- Pladebutik / Blågårdsgade 14 når emnet handler om udbedring, mangler, fejl, dokumentation eller billeder
 
 ## Arkiveringsregel
 En mail må kun arkiveres automatisk når:
 - dokumenttypen kan klassificeres sikkert
 - mailen kan matches til en konkret sag
 - samme tråd ikke allerede er arkiveret for samme dato og sag
+- Drive-mappen ikke allerede indeholder samme filnavn
 
 ## Matching-prioritet
-1. adresse
-2. kundenavn
-3. eksisterende `SagsID` eller gammelt sagsnummer
-4. opgavetitel
+1. eksplicit `SagsID`
+2. adresse
+3. kundenavn + opgavetitel
+4. eksisterende Drive-link eller sagsdokumenter
 
 ## Outputregel
 - kategori: `referater`
 - filformat: markdown
 - filnavn: `YYYY-MM-DD - Byggemodereferat - SagsID.md`
-- PDF-bilag: `YYYY-MM-DD - Byggemodereferat - SagsID.pdf`
 
 ## Dedupe
 Samme mailtråd må ikke blive arkiveret to gange for:
 - samme sag
 - samme dokumenttype
 - samme dokumentdato
+
+Derudover skal agenten kontrollere Drive-mappen for samme filnavn før upload. Hvis filen allerede findes, skal eksisterende fil bruges og linkes i state i stedet for at uploade en ny kopi.
+
+## PDF-regel
+PDF-tekstlæsning må ikke bruges som primært matchgrundlag. PDF'er kan være bilag i Drive, men sikker sagstilknytning skal komme fra mailtekst, filnavn, sagsID, adresse eller eksisterende state.
+
+## Opdateringer
+Når agenten skriver til `syncLog`, skal den medtage:
+- `caseId`
+- `documentType`
+- `category`
+- `fileName`
+- `driveUrl` når en Drive-fil findes
+
+Klik på et opdateringskort skal åbne Drive-filen, hvis `driveUrl` findes. Ellers skal kortet åbne sagen, hvis `caseId` kan matches.
 
 ## Ikke i første version
 - bred AI-klassifikation af alle dokumenttyper
