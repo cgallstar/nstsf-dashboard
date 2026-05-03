@@ -31,6 +31,7 @@ const ARCHIVE_QUERIES = [
   `newer_than:45d -in:spam -in:trash ${OWNER_QUERY} ("Tilbud vedr" OR "tilbud" OR "overslagspris")`,
   `newer_than:45d -in:spam -in:trash ${OWNER_QUERY} ("Faktura" "Nordsjællands Tømrer")`,
   `newer_than:45d -in:spam -in:trash ${OWNER_QUERY} ("Bülowsvej" OR "Bulowsvej" OR "NV Gadesvej" OR "N. V. Gadesvej")`,
+  `newer_than:45d -in:spam -in:trash ${OWNER_QUERY} ("Pladebutik" OR "Blågårdsgade 14" OR "Blaagaardsgade 14" OR "Kingosvej 1B")`,
 ];
 const DANISH_MONTHS: Record<string, string> = {
   januar: "01",
@@ -217,6 +218,62 @@ function findOrCreateGadesvejCase(state: any) {
   return created;
 }
 
+function findOrCreateKnownCase(state: any, signal: any, text = "") {
+  const compact = plainCompactText(text);
+  if (isGadesvejArchiveThread(signal, text)) return findOrCreateGadesvejCase(state);
+  const entries = Array.isArray(state?.sager) ? state.sager : [];
+  const findByMarker = (patterns: RegExp[]) => entries.find((entry: any) => {
+    const marker = plainCompactText(`${entry?.kunde || ""} ${entry?.adr || ""} ${entry?.opg || ""} ${entry?.docs?.drive || entry?.drive || ""}`);
+    return patterns.some((pattern) => pattern.test(marker));
+  });
+  const createCase = (payload: any) => {
+    const created = ensureCaseShape({
+      k: payload.k || 5,
+      sid: "",
+      nr: "",
+      b: "0",
+      u: "0",
+      dato: "",
+      status: payload.status || "Oprettet fra Gmail",
+      sort: entries.length,
+      docs: {},
+      ...payload,
+    });
+    entries.push(created);
+    state.sager = entries;
+    return created;
+  };
+
+  const isPladebutikThread =
+    compact.includes("pladebutik") ||
+    ((compact.includes("blagardsgade 14") || compact.includes("blaagardsgade 14")) && compact.includes("udbedring") && compact.includes("mangler"));
+  if (isPladebutikThread) {
+    const existing = findByMarker([/pladebutik/]);
+    if (existing) return ensureCaseShape(existing);
+    return createCase({
+      k: signal?.category === "referater" ? 2 : 5,
+      kunde: "Pladebutik",
+      adr: "Blågårdsgade 14",
+      opg: "Udbedring af mangler",
+      status: "Mangler registreret",
+    });
+  }
+
+  if (compact.includes("kingosvej 1b")) {
+    const existing = findByMarker([/kingosvej 1b/]);
+    if (existing) return ensureCaseShape(existing);
+    return createCase({
+      k: 4,
+      kunde: "Kingosvej 1B",
+      adr: "Kingosvej 1B",
+      opg: "Ombygningsarbejder",
+      status: "Tilbud sendt",
+    });
+  }
+
+  return null;
+}
+
 async function ensureDriveFoldersForLinkedCases(state: any) {
   const ensured: any[] = [];
   const entries = Array.isArray(state?.sager) ? state.sager : [];
@@ -317,10 +374,18 @@ function inferArchiveSignal(subject = "", body = "", from = "") {
   const rawSubject = String(subject || "").trim();
   const invoiceMatch = rawSubject.match(/faktura\s+(\d{3,})/i);
   if (!source) return null;
-  if (/byggemodereferat|byggemode referat|byggemode/.test(subjectSource) || /byggemodereferat|byggemode referat|byggemode/.test(source)) {
+  if (/byggemodereferat|byggemode referat|byggemode|modereferat|moedereferat|referat/.test(subjectSource) || /byggemodereferat|byggemode referat|byggemode|modereferat|moedereferat|referat/.test(source)) {
     return {
       category: "referater",
-      documentType: "Byggemodereferat",
+      documentType: /byggemodereferat|byggemode|moedereferat|modereferat/.test(source) ? "Byggemodereferat" : "Referat",
+      sourceType: isInternalSender(from) ? "internal" : "external",
+      fileLabel: "",
+    };
+  }
+  if ((subjectSource.includes("kingosvej 1b") && /oversigt|ombygningsarbejder|tilbud/.test(source)) || /transparent oversigt over ombygningsarbejder/.test(source)) {
+    return {
+      category: "tilbud",
+      documentType: "Tilbud",
       sourceType: isInternalSender(from) ? "internal" : "external",
       fileLabel: "",
     };
@@ -570,15 +635,89 @@ function buildArchiveFileTitle(documentDate: string, signal: any, displayCaseId:
   return normalizeFileStemPart(subject) || "Dokument";
 }
 
-function applyArchiveSideEffects(matched: any, signal: any) {
+function parseMoneyValue(value = "") {
+  const normalized = String(value || "").replace(/\./g, "").replace(/\s/g, "").replace(",", ".");
+  const parsed = Number(normalized);
+  return Number.isFinite(parsed) ? Math.round(parsed) : 0;
+}
+
+function formatAmount(value: number) {
+  return value > 0 ? String(Math.round(value)) : "";
+}
+
+function extractEnterpriseAmount(text = "") {
+  const source = String(text || "");
+  const patterns = [
+    /(?:samlet\s+)?(?:entreprisesum|entreprise|tilbudssum|samlet\s+beløb|samlet\s+beloeb|overslagspris)[^\d]{0,80}(\d{1,3}(?:[.\s]\d{3})*(?:,\d{2})?|\d{4,})(?:\s*kr\.?)?/gi,
+    /(\d{1,3}(?:[.\s]\d{3})*(?:,\d{2})?|\d{4,})\s*kr\.?[^\n\r]{0,80}(?:samlet\s+)?(?:entreprisesum|entreprise|tilbudssum|samlet\s+beløb|samlet\s+beloeb|overslagspris)/gi,
+  ];
+  const values: number[] = [];
+  for (const pattern of patterns) {
+    let match: RegExpExecArray | null;
+    while ((match = pattern.exec(source))) {
+      const value = parseMoneyValue(match[1]);
+      if (value >= 1000) values.push(value);
+    }
+  }
+  return values.length ? Math.max(...values) : 0;
+}
+
+function extractInvoiceAmount(text = "") {
+  const source = String(text || "");
+  const patterns = [
+    /(?:total|beløb|beloeb|faktura)[^\d]{0,80}(\d{1,3}(?:[.\s]\d{3})*(?:,\d{2})?|\d{4,})(?:\s*kr\.?)?/gi,
+    /(\d{1,3}(?:[.\s]\d{3})*(?:,\d{2})?|\d{4,})\s*kr\.?/gi,
+  ];
+  const values: number[] = [];
+  for (const pattern of patterns) {
+    let match: RegExpExecArray | null;
+    while ((match = pattern.exec(source))) {
+      const value = parseMoneyValue(match[1]);
+      if (value >= 1000) values.push(value);
+    }
+  }
+  return values.length ? Math.max(...values) : 0;
+}
+
+function ensureTask(matched: any, title: string, payload: Record<string, unknown>) {
+  matched.tasks = Array.isArray(matched.tasks) ? matched.tasks : [];
+  const existing = matched.tasks.some((task: any) => normalizeCaseKey(task?.title) === normalizeCaseKey(title) && String(task?.status || "").toLowerCase() !== "fuldført");
+  if (existing) return false;
+  matched.tasks.unshift({
+    id: randomUUID(),
+    title,
+    status: "Åben",
+    createdAt: new Date().toISOString(),
+    ...payload,
+  });
+  return true;
+}
+
+function applyArchiveSideEffects(matched: any, signal: any, archiveText = "", documentDate = "") {
   if (!matched || !signal) return;
+  matched.workflow = matched.workflow && typeof matched.workflow === "object" ? matched.workflow : {};
+  const enterpriseAmount = extractEnterpriseAmount(archiveText);
+  if (enterpriseAmount) {
+    const previous = parseMoneyValue(textValue(matched.b, ""));
+    if (!previous || Math.abs(previous - enterpriseAmount) >= 1) {
+      matched.b = formatAmount(enterpriseAmount);
+      matched.workflow.enterpriseUpdatedAt = documentDate || new Date().toISOString().slice(0, 10);
+    }
+  }
   if (signal.category === "betaling") {
     if (signal.invoiceNumber) matched.fak = String(signal.invoiceNumber);
-    if (!String(matched.status || "").trim()) matched.status = "Faktura sendt";
+    matched.status = "Faktura sendt";
+    matched.workflow.invoiceNumber = textValue(signal.invoiceNumber, matched.workflow.invoiceNumber);
+    matched.workflow.invoiceSentDate = documentDate || new Date().toISOString().slice(0, 10);
+    const invoiceAmount = extractInvoiceAmount(archiveText);
+    if (invoiceAmount && !parseMoneyValue(textValue(matched.u, ""))) matched.u = formatAmount(invoiceAmount);
     return;
   }
   if (signal.category === "tilbud") {
     if ([3, 5].includes(Number(matched.k || 0))) matched.k = 4;
+    matched.status = "Tilbud sendt";
+    matched.workflow.offerDate = textValue(matched.workflow.offerDate, documentDate);
+    matched.workflow.latestOfferDate = documentDate || matched.workflow.latestOfferDate;
   }
 }
 
@@ -618,6 +757,24 @@ function ensureOfferFollowupTask(matched: any, signal: any, archiveText: string,
     notes: `${isRevised ? "Der er afgivet et revideret tilbud" : "Der er afgivet et tilbud"}. Følg op med kunden senest syv dage efter tilbudsdatoen.`,
     createdAt: new Date().toISOString(),
   });
+}
+
+function applyKnownCaseActions(matched: any, signal: any, archiveText = "", documentDate = "") {
+  const compact = plainCompactText(`${matched?.kunde || ""} ${matched?.adr || ""} ${matched?.opg || ""} ${archiveText}`);
+  if (compact.includes("kingosvej 1b")) {
+    ensureTask(matched, "Følg op på tilbud", {
+      dueDate: addDaysIso(documentDate, 7),
+      owner: "Søren",
+      notes: "Der er sendt transparent oversigt/tilbud på ombygningsarbejder. Følg op med kunden senest syv dage efter tilbudsdatoen.",
+    });
+  }
+  if ((compact.includes("pladebutik") || compact.includes("blagardsgade 14") || compact.includes("blaagardsgade 14")) && signal?.category === "referater") {
+    ensureTask(matched, "Følg op på udbedring af mangler", {
+      dueDate: addDaysIso(documentDate, 2),
+      owner: "Søren",
+      notes: "Mødereferat/mail om udbedring af mangler er arkiveret. Afklar ansvar, dato og næste handling.",
+    });
+  }
 }
 
 function backfillOfferFollowupsFromState(state: any) {
@@ -680,9 +837,7 @@ async function archiveQualifiedThread(thread: any, item: any, state: any, integr
 
   const archiveText = combined || `${item?.subject}\n${item?.body}`;
   let matched = matchCaseFromText(state.sager || [], archiveText);
-  if (isGadesvejArchiveThread(signal, archiveText)) {
-    matched = findOrCreateGadesvejCase(state);
-  }
+  matched = findOrCreateKnownCase(state, signal, archiveText) || matched;
   if (!matched) {
     return {
       ok: false,
@@ -702,7 +857,9 @@ async function archiveQualifiedThread(thread: any, item: any, state: any, integr
   }
   const documentDate = extractDocumentDate(item?.subject, combined || item?.body, item?.date);
   const displayCaseId = formatCaseIdForDisplay(matched) || textValue(matched?.nr, "");
+  applyArchiveSideEffects(matched, signal, archiveText, documentDate);
   ensureOfferFollowupTask(matched, signal, archiveText, documentDate);
+  applyKnownCaseActions(matched, signal, archiveText, documentDate);
   const archiveKey = [
     textValue(item?.threadId || thread?.id, ""),
     signal.category,
@@ -750,7 +907,6 @@ async function archiveQualifiedThread(thread: any, item: any, state: any, integr
 
   let driveFolder = textValue(matched.docs?.drive, "");
   let uploaded: any = null;
-  applyArchiveSideEffects(matched, signal);
   if (integration.configured) {
     const folderInfo = await ensureCaseDriveFolders(matched, displayCaseId, matched.kunde);
     driveFolder = textValue(folderInfo?.caseFolder?.webViewLink, driveFolder);
@@ -996,7 +1152,7 @@ export default async (request: Request) => {
 
 function signalCategoryFromResult(result: any) {
   const type = textValue(result?.documentType, "").toLowerCase();
-  if (type.includes("byggemodereferat")) return "referater";
+  if (type.includes("byggemodereferat") || type.includes("referat")) return "referater";
   if (type.includes("tilbud")) return "tilbud";
   if (type.includes("faktura")) return "betaling";
   if (type.includes("mail")) return "mails";

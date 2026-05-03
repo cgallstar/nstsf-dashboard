@@ -209,6 +209,12 @@ export function ensureCaseShape(entry: any) {
     exclusions: textValue(entry?.workflow?.exclusions, ""),
     currentStage: textValue(entry?.workflow?.currentStage, ""),
     nextStep: textValue(entry?.workflow?.nextStep, ""),
+    offerDate: textValue(entry?.workflow?.offerDate, ""),
+    latestOfferDate: textValue(entry?.workflow?.latestOfferDate, ""),
+    revisedOfferDate: textValue(entry?.workflow?.revisedOfferDate, ""),
+    invoiceNumber: textValue(entry?.workflow?.invoiceNumber, ""),
+    invoiceSentDate: textValue(entry?.workflow?.invoiceSentDate, ""),
+    enterpriseUpdatedAt: textValue(entry?.workflow?.enterpriseUpdatedAt, ""),
   };
   entry.tasks = Array.isArray(entry?.tasks) ? entry.tasks : [];
   entry.stageLog = Array.isArray(entry?.stageLog) ? entry.stageLog : [];
