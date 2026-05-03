@@ -595,6 +595,10 @@ function ensureRevisedOfferFollowupTask(matched: any, signal: any, archiveText: 
     (compact.includes("tilbud") && (compact.includes("revideret") || compact.includes("revidere") || compact.includes("revision"))) ||
     isGadesvejArchiveThread(signal, archiveText);
   if (!isRelevant) return;
+  matched.workflow = matched.workflow && typeof matched.workflow === "object" ? matched.workflow : {};
+  matched.workflow.offerDate = textValue(matched.workflow.offerDate, documentDate);
+  matched.workflow.latestOfferDate = textValue(matched.workflow.latestOfferDate, documentDate);
+  matched.workflow.nextAction = textValue(matched.workflow.nextAction, "Følg op på revideret tilbud.");
   const title = "Følg op på revideret tilbud";
   const existing = (matched.tasks || []).some((task: any) => {
     return normalizeCaseKey(task?.title) === normalizeCaseKey(title) && String(task?.status || "").toLowerCase() !== "fuldført";
