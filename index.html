@@ -1232,145 +1232,11 @@
 </section>
 
 <section id="prioriteringer" class="section">
-  <div class="priority-shell">
-    <div class="priority-topbar">
-      <div class="priority-topbar-copy">
-        <span class="priority-topbar-title">To-do's &amp; gøremål</span>
-        <div class="priority-topbar-sub">Samlet prioriteringsvisning · auto-sorteret efter signaler fra mail, sager og GPT-input.</div>
-      </div>
-      <div class="priority-topbar-right">
-        <span class="priority-updated" id="priorityGeneratedAt"></span>
-        <button class="btn primary" onclick="openPriorityTaskComposer()">Ny opgave</button>
-        <button class="btn" id="updatePrioritiesBtn" onclick="updatePriorities(true)">Opdatér Sager</button>
-        <div class="priority-toggle">
-          <button class="active" id="priorityBtnTodos" onclick="setPriorityView('todos')">Aktive</button>
-          <button id="priorityBtnArchive" onclick="setPriorityView('archive')">Arkiv</button>
-          <button id="priorityBtnInbox" onclick="setPriorityView('indbakke')">Indbakke</button>
-        </div>
-      </div>
-    </div>
-    <div class="priority-layout">
-      <div class="priority-main">
-        <div class="priority-view active" id="priorityViewTodos">
-          <div class="priority-main-head">
-            <div class="priority-main-title">Aktive sager</div>
-            <div class="priority-main-sub">Fremdrift, KS, mangler, afleveringer, godkendelser og andre konkrete handlinger.</div>
-          </div>
-          <div class="priority-divider">Nu</div>
-          <div id="priorityTodoNow"></div>
-          <div class="priority-divider">Senere</div>
-          <div id="priorityTodoToday"></div>
-        </div>
-        <div class="priority-view" id="priorityViewArchive">
-          <div class="priority-main-head">
-            <div class="priority-main-title">Arkiverede opgaver</div>
-            <div class="priority-main-sub">Færdige, slettede eller ellers parkerede opgaver og handlinger.</div>
-          </div>
-          <div id="priorityArchiveList"></div>
-        </div>
-        <div class="priority-view priority-inbox-view" id="priorityViewInbox">
-          <div class="priority-main-head">
-            <div class="priority-main-title">Indbakke</div>
-            <div class="priority-main-sub">Brug kun mailsporet når du mangler kontekst til en konkret sag eller vil se om noget er overset.</div>
-          </div>
-          <div class="priority-inbox-wrap">
-            <div class="inbox-list">
-              <div class="inbox-hd">
-                <div>
-                  <div class="title">Indbakke</div>
-                  <div class="addr">SMG / NSTSF</div>
-                </div>
-                <div style="display:flex;align-items:center;gap:8px">
-                  <button class="btn" onclick="syncGmail(true)">Synk Gmail</button>
-                  <span class="chip chip-red" id="inboxNewCount">0 nye</span>
-                </div>
-              </div>
-              <div class="inbox-tabs">
-                <button class="inbox-tab active" data-filter="alle">Alle</button>
-                <button class="inbox-tab" data-filter="uhaandteret">Uhåndteret <span class="badge" id="inboxUnhandledBadge">0</span></button>
-                <button class="inbox-tab" data-filter="haandteret">Håndteret</button>
-              </div>
-              <div id="priorityEmailList"></div>
-            </div>
-            <div id="priorityEmailView" class="inbox-view"></div>
-          </div>
-        </div>
-      </div>
-      <aside class="priority-side">
-        <div class="priority-sidebar-section hidden" id="priorityTaskSection">
-          <div class="priority-sidebar-title" id="priorityTaskPanelTitle">Opgave</div>
-          <div class="priority-sidebar-form">
-            <input id="priorityTaskTitle" type="text" placeholder="Beskriv opgaven...">
-            <input id="priorityTaskDueDate" type="date">
-            <input id="priorityTaskOwner" type="text" placeholder="Ansvarlig">
-            <select id="priorityTaskDomain">
-              <option value="arbejde">Arbejde</option>
-              <option value="hr">HR</option>
-              <option value="drift">Drift</option>
-            </select>
-            <select id="priorityTaskBucket">
-              <option value="today">Aktiv</option>
-              <option value="week">Kommende</option>
-              <option value="now">Nu</option>
-            </select>
-            <textarea id="priorityTaskNotes" placeholder="Kontekst eller note"></textarea>
-            <div class="priority-sidebar-actions">
-              <button class="btn primary" id="priorityTaskSubmitBtn" onclick="saveSidebarTask()">Tilføj</button>
-              <button class="btn ghost" id="priorityTaskCancelBtn" onclick="cancelSidebarTaskEdit()" style="display:none">Annuller</button>
-            </div>
-            <div class="priority-sidebar-helper" id="priorityTaskHelper">Opret interne opgaver direkte herfra, eller brug Edit på en eksisterende opgave.</div>
-          </div>
-        </div>
-        <div class="priority-sidebar-section">
-          <div class="priority-sidebar-title">Opdateringer</div>
-          <div id="priorityUpdatesList" class="priority-mini-list"></div>
-        </div>
-      </aside>
-    </div>
-  </div>
+  <div id="priorityBoardHost"></div>
 </section>
 
 <section id="idag" class="section">
-  <div class="priority-shell">
-    <div class="priority-topbar">
-      <div class="priority-topbar-copy">
-        <span class="priority-topbar-title">I dag</span>
-        <div class="priority-topbar-sub">Samme logik som Opgaver · kun Nu og I dag.</div>
-      </div>
-      <div class="priority-topbar-right">
-        <span class="priority-updated" id="todayGeneratedAt"></span>
-        <button class="btn primary" onclick="openPriorityTaskComposer()">Ny opgave</button>
-        <button class="btn" id="updateTodayBtn" onclick="updatePriorities(true)">Opdatér Sager</button>
-        <div class="priority-toggle">
-          <button class="active" disabled>I dag</button>
-          <button onclick="setActiveTab('prioriteringer')">Opgaver</button>
-          <button onclick="setActiveTab('prioriteringer'); setPriorityView('archive')">Arkiv</button>
-        </div>
-      </div>
-    </div>
-    <div class="priority-layout">
-      <div class="priority-main">
-        <div class="priority-main-head">
-          <div class="priority-main-title">Dagens handlinger</div>
-          <div class="priority-main-sub">Forfaldne betalinger, frister i dag, akutte mails og opgaver markeret som Nu.</div>
-        </div>
-        <div class="priority-divider">Nu</div>
-        <div id="todayPriorityNow"></div>
-        <div class="priority-divider">I dag</div>
-        <div id="todayPriorityToday"></div>
-      </div>
-      <aside class="priority-side">
-        <div class="priority-sidebar-section hidden" id="todayTaskSection">
-          <div class="priority-sidebar-title">Opgave</div>
-          <div class="priority-sidebar-helper">Brug knappen Ny opgave øverst. Formularen vises i Opgaver-panelet.</div>
-        </div>
-        <div class="priority-sidebar-section">
-          <div class="priority-sidebar-title">Opdateringer</div>
-          <div id="todayUpdatesList" class="priority-mini-list"></div>
-        </div>
-      </aside>
-    </div>
-  </div>
+  <div id="todayBoardHost"></div>
 </section>
 
 <section id="sager" class="section">
@@ -3150,7 +3016,73 @@ function setPriorityView(view){
   if(archiveView) archiveView.classList.toggle('active', archiveActive);
   if(inboxView) inboxView.classList.toggle('active', inboxActive);
 }
+function priorityBoardTemplate(config){
+  const c = {
+    hostId:'',
+    title:'Opgaver',
+    subtitle:'Samlet prioriteringsvisning.',
+    stampId:'',
+    updateBtnId:'',
+    mode:'all',
+    ...config
+  };
+  const isToday = c.mode === 'today';
+  return `<div class="priority-shell">
+    <div class="priority-topbar">
+      <div class="priority-topbar-copy">
+        <span class="priority-topbar-title">${escapeAttr(c.title)}</span>
+        <div class="priority-topbar-sub">${escapeAttr(c.subtitle)}</div>
+      </div>
+      <div class="priority-topbar-right">
+        <span class="priority-updated" id="${c.stampId}"></span>
+        <button class="btn primary" onclick="openPriorityTaskComposer()">Ny opgave</button>
+        <button class="btn" id="${c.updateBtnId}" onclick="updatePriorities(true)">Opdatér Sager</button>
+        <div class="priority-toggle">
+          ${isToday
+            ? `<button class="active" disabled>I dag</button><button onclick="setActiveTab('prioriteringer')">Opgaver</button><button onclick="setActiveTab('prioriteringer'); setPriorityView('archive')">Arkiv</button>`
+            : `<button class="active" id="priorityBtnTodos" onclick="setPriorityView('todos')">Aktive</button><button id="priorityBtnArchive" onclick="setPriorityView('archive')">Arkiv</button><button id="priorityBtnInbox" onclick="setPriorityView('indbakke')">Indbakke</button>`}
+        </div>
+      </div>
+    </div>
+    <div class="priority-layout">
+      <div class="priority-main">
+        ${isToday
+          ? `<div class="priority-main-head"><div class="priority-main-title">Dagens handlinger</div><div class="priority-main-sub">Forfaldne betalinger, frister i dag, akutte mails og opgaver markeret som Nu.</div></div><div class="priority-divider">Nu</div><div id="todayPriorityNow"></div><div class="priority-divider">I dag</div><div id="todayPriorityToday"></div>`
+          : `<div class="priority-view active" id="priorityViewTodos"><div class="priority-main-head"><div class="priority-main-title">Aktive opgaver</div><div class="priority-main-sub">Fremdrift, KS, mangler, afleveringer, godkendelser og andre konkrete handlinger.</div></div><div class="priority-divider">Nu</div><div id="priorityTodoNow"></div><div class="priority-divider">Senere</div><div id="priorityTodoToday"></div></div><div class="priority-view" id="priorityViewArchive"><div class="priority-main-head"><div class="priority-main-title">Arkiverede opgaver</div><div class="priority-main-sub">Færdige, slettede eller ellers parkerede opgaver og handlinger.</div></div><div id="priorityArchiveList"></div></div><div class="priority-view priority-inbox-view" id="priorityViewInbox"><div class="priority-main-head"><div class="priority-main-title">Indbakke</div><div class="priority-main-sub">Brug kun mailsporet når du mangler kontekst til en konkret sag eller vil se om noget er overset.</div></div><div class="priority-inbox-wrap"><div class="inbox-list"><div class="inbox-hd"><div><div class="title">Indbakke</div><div class="addr">SMG / NSTSF</div></div><div style="display:flex;align-items:center;gap:8px"><button class="btn" onclick="syncGmail(true)">Synk Gmail</button><span class="chip chip-red" id="inboxNewCount">0 nye</span></div></div><div class="inbox-tabs"><button class="inbox-tab active" data-filter="alle">Alle</button><button class="inbox-tab" data-filter="uhaandteret">Uhåndteret <span class="badge" id="inboxUnhandledBadge">0</span></button><button class="inbox-tab" data-filter="haandteret">Håndteret</button></div><div id="priorityEmailList"></div></div><div id="priorityEmailView" class="inbox-view"></div></div></div>`}
+      </div>
+      <aside class="priority-side">
+        ${isToday ? '' : `<div class="priority-sidebar-section hidden" id="priorityTaskSection"><div class="priority-sidebar-title" id="priorityTaskPanelTitle">Opgave</div><div class="priority-sidebar-form"><input id="priorityTaskTitle" type="text" placeholder="Beskriv opgaven..."><input id="priorityTaskDueDate" type="date"><input id="priorityTaskOwner" type="text" placeholder="Ansvarlig"><select id="priorityTaskDomain"><option value="arbejde">Arbejde</option><option value="hr">HR</option><option value="drift">Drift</option></select><select id="priorityTaskBucket"><option value="today">Aktiv</option><option value="week">Kommende</option><option value="now">Nu</option></select><textarea id="priorityTaskNotes" placeholder="Kontekst eller note"></textarea><div class="priority-sidebar-actions"><button class="btn primary" id="priorityTaskSubmitBtn" onclick="saveSidebarTask()">Tilføj</button><button class="btn ghost" id="priorityTaskCancelBtn" onclick="cancelSidebarTaskEdit()" style="display:none">Annuller</button></div><div class="priority-sidebar-helper" id="priorityTaskHelper">Opret interne opgaver direkte herfra, eller brug Edit på en eksisterende opgave.</div></div></div>`}
+        <div class="priority-sidebar-section"><div class="priority-sidebar-title">Opdateringer</div><div id="${isToday ? 'todayUpdatesList' : 'priorityUpdatesList'}" class="priority-mini-list"></div></div>
+      </aside>
+    </div>
+  </div>`;
+}
+function mountPriorityBoards(){
+  const priorityHost = document.getElementById('priorityBoardHost');
+  if(priorityHost && !priorityHost.dataset.mounted){
+    priorityHost.innerHTML = priorityBoardTemplate({
+      title:"To-do's & gøremål",
+      subtitle:'Samlet prioriteringsvisning · auto-sorteret efter signaler fra mail, sager og GPT-input.',
+      stampId:'priorityGeneratedAt',
+      updateBtnId:'updatePrioritiesBtn',
+      mode:'all'
+    });
+    priorityHost.dataset.mounted = 'true';
+  }
+  const todayHost = document.getElementById('todayBoardHost');
+  if(todayHost && !todayHost.dataset.mounted){
+    todayHost.innerHTML = priorityBoardTemplate({
+      title:'I dag',
+      subtitle:'Samme logik som Opgaver · kun Nu og I dag.',
+      stampId:'todayGeneratedAt',
+      updateBtnId:'updateTodayBtn',
+      mode:'today'
+    });
+    todayHost.dataset.mounted = 'true';
+  }
+}
 function renderPriorities(){
+  mountPriorityBoards();
   const priorities = buildPriorities();
   const activeItems = [...priorities.todos, ...priorities.sales].sort((a,b)=>Number(a.completed)-Number(b.completed) || b.score-a.score || a.title.localeCompare(b.title));
   renderPriorityRows('priorityTodoNow', activeItems, ['now'], 'todo');
