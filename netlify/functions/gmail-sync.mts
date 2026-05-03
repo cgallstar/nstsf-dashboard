@@ -27,6 +27,7 @@ const OWNER_QUERY = `${NSTSF_QUERY} ${EXCLUDED_MAIL_QUERY}`;
 const GADESVEJ_DRIVE_URL = "https://drive.google.com/drive/folders/1IPXK472x8-Peasfv7kKU-JrG9oUNb6-4";
 const SYNC_QUERY = `newer_than:30d -in:spam -in:trash ${OWNER_QUERY}`;
 const ARCHIVE_QUERIES = [
+  `newer_than:90d -in:spam -in:trash ${OWNER_QUERY} ("Faktura 1153" OR "faktura 1153")`,
   `newer_than:45d -in:spam -in:trash ${OWNER_QUERY} ("Byggemødereferat" OR "Byggemodereferat" OR "byggemøde" OR "byggemode")`,
   `newer_than:45d -in:spam -in:trash ${OWNER_QUERY} ("Tilbud vedr" OR "tilbud" OR "overslagspris")`,
   `newer_than:45d -in:spam -in:trash ${OWNER_QUERY} ("Faktura" "Nordsjællands Tømrer")`,
@@ -277,6 +278,60 @@ function findOrCreateKnownCase(state: any, signal: any, text = "") {
   }
 
   return null;
+}
+
+function findKnownInvoiceCase(state: any, invoiceNumber = "") {
+  const entries = Array.isArray(state?.sager) ? state.sager : [];
+  const normalizedInvoice = textValue(invoiceNumber, "");
+  if (normalizedInvoice !== "1153") return null;
+  return entries.find((entry: any) => {
+    const marker = plainCompactText(`${entry?.kunde || ""} ${entry?.adr || ""} ${entry?.opg || ""} ${entry?.sid || ""} ${entry?.nr || ""} ${entry?.fak || ""} ${entry?.docs?.drive || entry?.drive || ""}`);
+    return marker.includes("1002j") || marker.includes("guldborgvej 1");
+  }) || null;
+}
+
+function backfillKnownInvoicesFromThreads(state: any, threads: any[]) {
+  let changed = 0;
+  for (const thread of threads) {
+    const summaries = Array.isArray(thread?.messages) ? thread.messages.map(gmailMessageSummary) : [];
+    const threadText = summaries
+      .map((message) => [message.subject, message.from, message.snippet, message.body].filter(Boolean).join("\n"))
+      .join("\n\n");
+    const invoiceMatch = threadText.match(/\bfaktura\s*(?:nr\.?|nummer)?\s*[:#-]?\s*(1153)\b/i);
+    if (!invoiceMatch) continue;
+    const matched = findKnownInvoiceCase(state, invoiceMatch[1]);
+    if (!matched) continue;
+    ensureCaseShape(matched);
+    const date = extractDocumentDate(summaries[0]?.subject || "", threadText, summaries[0]?.date);
+    const before = JSON.stringify({
+      fak: matched.fak,
+      status: matched.status,
+      workflow: matched.workflow,
+      dato: matched.dato,
+    });
+    matched.fak = invoiceMatch[1];
+    matched.status = "Faktura sendt";
+    matched.workflow = matched.workflow && typeof matched.workflow === "object" ? matched.workflow : {};
+    matched.workflow.invoiceNumber = invoiceMatch[1];
+    matched.workflow.invoiceSentDate = date || matched.workflow.invoiceSentDate || new Date().toISOString().slice(0, 10);
+    if (!textValue(matched.dato, "")) matched.dato = matched.workflow.invoiceSentDate;
+    const amount = extractInvoiceAmount(threadText);
+    if (amount && !parseMoneyValue(textValue(matched.u, ""))) matched.u = formatAmount(amount);
+    if (JSON.stringify({
+      fak: matched.fak,
+      status: matched.status,
+      workflow: matched.workflow,
+      dato: matched.dato,
+    }) !== before) {
+      appendActivity(matched, { name: "Gmail-sync", email: MAILBOX_OWNER }, {
+        type: "invoice_update",
+        title: `Faktura ${invoiceMatch[1]} registreret`,
+        summary: `Faktura ${invoiceMatch[1]} er registreret på sagen via Gmail-sync.`,
+      });
+      changed += 1;
+    }
+  }
+  return changed;
 }
 
 async function ensureDriveFoldersForLinkedCases(state: any) {
@@ -989,6 +1044,18 @@ export default async (request: Request) => {
     const fullThreads = fullThreadResults
       .filter((result): result is PromiseFulfilledResult<any> => result.status === "fulfilled")
       .map((result) => result.value);
+    const knownInvoicesUpdated = backfillKnownInvoicesFromThreads(state, fullThreads);
+    if (knownInvoicesUpdated) {
+      appendSyncLog(state, {
+        status: "archived",
+        subject: "Faktura 1153",
+        customerName: "DKE / Charlotte",
+        caseId: "1002 J",
+        documentType: "Faktura",
+        category: "betaling",
+        notes: "Faktura 1153 er registreret på 1002 J · Guldborgvej 1, 4 th.",
+      });
+    }
 
     fullThreadResults.forEach((result, index) => {
       if (result.status === "fulfilled") return;
@@ -1106,6 +1173,7 @@ export default async (request: Request) => {
       unhandled: items.filter((item: any) => !item.handled).length,
       archived: archivedResults.length,
       offerFollowupsCreated,
+      knownInvoicesUpdated,
       ensuredFolders: ensuredFolders.length,
       archiveErrors,
       archivedCases: archivedResults.map((entry) => ({
