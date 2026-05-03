@@ -588,18 +588,22 @@ function addDaysIso(dateIso: string, days: number) {
   return base.toISOString().slice(0, 10);
 }
 
-function ensureRevisedOfferFollowupTask(matched: any, signal: any, archiveText: string, documentDate: string) {
-  if (!matched || signal?.category !== "referater") return;
+function ensureOfferFollowupTask(matched: any, signal: any, archiveText: string, documentDate: string) {
+  if (!matched) return;
   const compact = plainCompactText(archiveText);
   const isRelevant =
-    (compact.includes("tilbud") && (compact.includes("revideret") || compact.includes("revidere") || compact.includes("revision"))) ||
+    signal?.category === "tilbud" ||
+    compact.includes("tilbud") ||
+    compact.includes("overslagspris") ||
+    compact.includes("prisgrundlag") ||
     isGadesvejArchiveThread(signal, archiveText);
   if (!isRelevant) return;
   matched.workflow = matched.workflow && typeof matched.workflow === "object" ? matched.workflow : {};
   matched.workflow.offerDate = textValue(matched.workflow.offerDate, documentDate);
   matched.workflow.latestOfferDate = textValue(matched.workflow.latestOfferDate, documentDate);
-  matched.workflow.nextAction = textValue(matched.workflow.nextAction, "Følg op på revideret tilbud.");
-  const title = "Følg op på revideret tilbud";
+  matched.workflow.nextAction = textValue(matched.workflow.nextAction, "Følg op på tilbud.");
+  const isRevised = compact.includes("revideret") || compact.includes("revidere") || compact.includes("revision") || isGadesvejArchiveThread(signal, archiveText);
+  const title = isRevised ? "Følg op på revideret tilbud" : "Følg op på tilbud";
   const existing = (matched.tasks || []).some((task: any) => {
     return normalizeCaseKey(task?.title) === normalizeCaseKey(title) && String(task?.status || "").toLowerCase() !== "fuldført";
   });
@@ -611,7 +615,7 @@ function ensureRevisedOfferFollowupTask(matched: any, signal: any, archiveText: 
     status: "Åben",
     dueDate: addDaysIso(documentDate, 7),
     owner: "Christian",
-    notes: "Byggemødereferatet peger på et revideret tilbud. Følg op med kunden syv dage efter referatdatoen.",
+    notes: `${isRevised ? "Der er afgivet et revideret tilbud" : "Der er afgivet et tilbud"}. Følg op med kunden senest syv dage efter tilbudsdatoen.`,
     createdAt: new Date().toISOString(),
   });
 }
@@ -651,7 +655,7 @@ async function archiveQualifiedThread(thread: any, item: any, state: any, integr
   }
   const documentDate = extractDocumentDate(item?.subject, combined || item?.body, item?.date);
   const displayCaseId = formatCaseIdForDisplay(matched) || textValue(matched?.nr, "");
-  ensureRevisedOfferFollowupTask(matched, signal, archiveText, documentDate);
+  ensureOfferFollowupTask(matched, signal, archiveText, documentDate);
   const archiveKey = [
     textValue(item?.threadId || thread?.id, ""),
     signal.category,

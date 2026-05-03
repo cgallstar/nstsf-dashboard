@@ -2534,6 +2534,12 @@ function buildPriorities(includeDismissed=false){
     const latestActivity = latestCaseActivity(s);
     const concreteActivity = hasConcreteActivity(latestActivity);
     const pendingDraft = hasPendingDraft(s);
+    const openCaseTasks = (s.tasks || []).filter((task)=>String(task.status || '').toLowerCase() !== 'fuldført');
+    const nearCaseTasks = openCaseTasks.filter((task)=>{
+      const d = daysUntil(task.dueDate);
+      return !task.dueDate || (d !== null && d <= 7);
+    });
+    const nearOfferTask = nearCaseTasks.find((task)=>/tilbud/i.test(`${task.title || ''} ${task.notes || ''}`));
     const incoming = relatedEmails.filter((mail)=>!isEmailHandled(mail));
     const incomingSales = incoming.filter((mail)=>mail.type === 'sales');
     const incomingTodos = incoming.filter((mail)=>mail.type === 'todo');
@@ -2550,18 +2556,20 @@ function buildPriorities(includeDismissed=false){
       nearDuePayments.length > 0 ||
       !!(strongestSignal && (strongestSignal.hasIssue || strongestSignal.asksForDate || strongestSignal.asksForPictures));
 
-    if(incomingSales.length || pendingDraft || (latestOffer && [3,4,5].includes(+s.k))){
+    if(incomingSales.length || pendingDraft || nearOfferTask || (latestOffer && [3,4,5].includes(+s.k))){
       const bucket = resolvePriorityBucket({
-        now: pendingDraft || !!(strongestSignal && (strongestSignal.asksForApproval || strongestSignal.asksForReply)),
-        today: !!incomingSales.length || !!(latestActivity && latestActivity.type === 'gmail_draft') || !!strongestSignal?.asksForDate,
+        now: pendingDraft || (nearOfferTask && daysUntil(nearOfferTask.dueDate) !== null && daysUntil(nearOfferTask.dueDate) <= 0) || !!(strongestSignal && (strongestSignal.asksForApproval || strongestSignal.asksForReply)),
+        today: !!incomingSales.length || !!nearOfferTask || !!(latestActivity && latestActivity.type === 'gmail_draft') || !!strongestSignal?.asksForDate,
       });
       const reason = pendingDraft
         ? 'Mailudkast eller tilbud afventer godkendelse'
+        : nearOfferTask
+          ? 'Tilbud skal følges op senest syv dage efter afgivelse'
         : incomingSales.length
           ? 'Ny salgsdialog eller kundeafklaring kræver svar'
           : 'Tilbud er sendt og bør følges op';
       sales.push({
-        key: `case-sales-${i}-${strongestMail?.id || 'no-mail'}`,
+        key: `case-sales-${i}-${strongestMail?.id || nearOfferTask?.id || 'no-mail'}`,
         caseIndex: i,
         emailId: strongestMail?.id || '',
         bucket,
@@ -2573,7 +2581,7 @@ function buildPriorities(includeDismissed=false){
           pendingDraft
         }),
         reason,
-        actionText: pendingDraft ? 'Gennemgå og godkend udkastet, hvis det stadig er relevant.' : priorityActionText(strongestMail, strongestSignal, 'Følg op på tilbuddet og aftal næste skridt med kunden.'),
+        actionText: pendingDraft ? 'Gennemgå og godkend udkastet, hvis det stadig er relevant.' : nearOfferTask ? (nearOfferTask.notes || 'Følg op på tilbuddet og aftal næste skridt med kunden.') : priorityActionText(strongestMail, strongestSignal, 'Følg op på tilbuddet og aftal næste skridt med kunden.'),
         links: `${priorityLink('sag', i, 'Åbn sag')}${strongestMail ? priorityLink('mail', strongestMail.id, 'Seneste mail') : ''}`
       });
     }
