@@ -614,7 +614,7 @@ function ensureOfferFollowupTask(matched: any, signal: any, archiveText: string,
     title,
     status: "Åben",
     dueDate: addDaysIso(documentDate, 7),
-    owner: "Christian",
+    owner: "Søren",
     notes: `${isRevised ? "Der er afgivet et revideret tilbud" : "Der er afgivet et tilbud"}. Følg op med kunden senest syv dage efter tilbudsdatoen.`,
     createdAt: new Date().toISOString(),
   });
@@ -625,6 +625,13 @@ function backfillOfferFollowupsFromState(state: any) {
   let created = 0;
   for (const entry of entries) {
     ensureCaseShape(entry);
+    if (Array.isArray(entry.tasks)) {
+      for (const task of entry.tasks) {
+        if (/tilbud/i.test(`${task?.title || ""} ${task?.notes || ""}`) && /christian/i.test(String(task?.owner || ""))) {
+          task.owner = "Søren";
+        }
+      }
+    }
     const before = Array.isArray(entry.tasks) ? entry.tasks.length : 0;
     const docs = [
       ...(entry.docs?.tilbud || []),

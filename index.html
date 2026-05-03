@@ -538,6 +538,14 @@
     margin-top:12px;border:.5px solid var(--line);border-radius:14px;background:#faf7f1;padding:14px 16px;
   }
   .priority-suggestion-label{font-size:9px;font-weight:700;color:#b0ada8;text-transform:uppercase;letter-spacing:.1em;margin-bottom:6px}
+  .priority-bullets{display:grid;gap:10px;margin-top:10px}
+  .priority-bullet{display:grid;grid-template-columns:16px minmax(0,1fr) auto;gap:10px;align-items:flex-start;padding:10px 0;border-top:.5px solid rgba(0,0,0,.06)}
+  .priority-bullet:first-child{border-top:none;padding-top:0}
+  .priority-bullet-check{width:16px;height:16px;border-radius:50%;border:1px solid #b8c8bc;background:#fff;cursor:pointer;margin-top:2px}
+  .priority-bullet-title{font-size:12px;font-weight:600;color:var(--ink)}
+  .priority-bullet-meta{font-size:10px;color:var(--muted);margin-top:2px}
+  .priority-bullet-text{font-size:11px;color:var(--text);line-height:1.45;margin-top:4px}
+  .priority-bullet-tools{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
   .priority-side-head{padding:14px 18px 10px;border-bottom:.5px solid var(--line)}
   .priority-side-title{font-size:9px;font-weight:700;color:#b0ada8;text-transform:uppercase;letter-spacing:.09em}
   .priority-side-view{display:none}
@@ -588,6 +596,12 @@
   .mini-item a{color:var(--brand);text-decoration:none}
   .mini-item a:hover{text-decoration:underline}
   .mini-item .meta{font-size:11px;color:var(--muted);margin-top:2px}
+  .action-list{display:grid;gap:8px;margin:0;padding:0;list-style:none}
+  .action-list li{display:grid;grid-template-columns:18px minmax(0,1fr);gap:9px;align-items:flex-start;padding:9px 10px;border:1px solid #ece7df;border-radius:10px;background:#fff}
+  .action-check{width:18px;height:18px;border-radius:50%;border:1px solid #b8c8bc;background:#fff;color:#2f7a52;cursor:pointer;line-height:1;margin-top:1px}
+  .action-title{font-size:12px;font-weight:600;color:var(--ink)}
+  .action-meta{font-size:11px;color:var(--muted);margin-top:2px}
+  .action-notes{font-size:11px;color:var(--text);line-height:1.45;margin-top:4px}
   .payment-inline-table td,.payment-inline-table th{font-size:12px;padding:8px 9px}
   .payment-inline-table .status-cell{white-space:nowrap}
   .status-chip{
@@ -1013,6 +1027,7 @@
 <nav class="tabs">
   <button class="tab-btn active" data-tab="dashboard">Dashboard</button>
   <button class="tab-btn" data-tab="prioriteringer">Sager <span style="opacity:.6">(0)</span></button>
+  <button class="tab-btn" data-tab="idag">I dag <span style="opacity:.6">(0)</span></button>
   <button class="tab-btn" data-tab="sager">Kunder <span style="opacity:.6">(29)</span></button>
   <button class="tab-btn" data-tab="likviditet">Likviditet</button>
   <button class="tab-btn" data-tab="appendix">Appendix</button>
@@ -1305,6 +1320,28 @@
           <div id="priorityUpdatesList" class="priority-mini-list"></div>
         </div>
       </aside>
+    </div>
+  </div>
+</section>
+
+<section id="idag" class="section">
+  <div class="priority-shell">
+    <div class="priority-topbar">
+      <div class="priority-topbar-copy">
+        <span class="priority-topbar-title">I dag</span>
+        <div class="priority-topbar-sub">Kun opgaver og sager der reelt hører til dags dato.</div>
+      </div>
+      <div class="priority-topbar-right">
+        <button class="btn" id="updateTodayBtn" onclick="updatePriorities(true)">Opdatér Sager</button>
+      </div>
+    </div>
+    <div class="priority-main">
+      <div class="priority-main-head">
+        <div class="priority-main-title">Dagens handlinger</div>
+        <div class="priority-main-sub">Forfaldne betalinger, frister i dag, akutte mails og opgaver markeret som Nu.</div>
+      </div>
+      <div class="priority-divider">I dag</div>
+      <div id="todayPriorityList"></div>
     </div>
   </div>
 </section>
@@ -1884,6 +1921,10 @@ function formatCaseRefDisplay(ref=''){
   if(!raw) return '';
   return splitCaseRef(raw).number.toUpperCase();
 }
+function formatCaseRefFullDisplay(ref=''){
+  const split = splitCaseRef(ref);
+  return [split.number, split.letter].filter(Boolean).join(' ');
+}
 function formatCasePostDisplay(ref=''){
   const letter = splitCaseRef(ref).letter;
   return letter ? `Post ${letter}` : '';
@@ -1912,6 +1953,7 @@ function getCustomerPortfolioCases(accountId, currentIndex){
       address: entry.adr || 'Adresse mangler',
       category: KAT[+entry.k] || 'Sag',
       caseNumber: formatCaseRefDisplay(getCaseRefByIndex(index)) || '—',
+      caseFull: formatCaseRefFullDisplay(getCaseRefByIndex(index)) || '—',
       casePost: formatCasePostDisplay(getCaseRefByIndex(index)),
       amount: entry.b && entry.b !== '0' ? `${entry.b} kr.` : 'Estimat mangler',
     }));
@@ -1931,8 +1973,8 @@ function renderCustomerPortfolio(account, currentIndex){
     <div class="portfolio-list">
       ${items.map((item)=>`<div class="portfolio-item">
         <div>
-          <strong>${escapeAttr(item.title)}</strong>
-          <span class="meta">${escapeAttr(item.address)} · ${escapeAttr(item.category)} · Sagsnr. ${escapeAttr(item.caseNumber)}${item.casePost ? ` · ${escapeAttr(item.casePost)}` : ''}</span>
+          <strong>${escapeAttr(item.caseFull)} · ${escapeAttr(item.address)}</strong>
+          <span class="meta">${escapeAttr(item.title)} · ${escapeAttr(item.category)}</span>
           <span class="meta">${escapeAttr(item.amount)}</span>
         </div>
         ${item.isCurrent ? '<button class="icon-btn" disabled>Aktuel</button>' : `<button class="icon-btn" onclick="openSag(${item.index})">Åbn</button>`}
@@ -2357,10 +2399,12 @@ function latestOfferDate(s){
   return related.length ? related[0].date : '';
 }
 function effectiveCaseTasks(s){
-  const tasks = Array.isArray(s?.tasks) ? [...s.tasks] : [];
-  const hasOpenOfferTask = tasks.some((task)=>String(task.status || '').toLowerCase() !== 'fuldført' && /tilbud/i.test(`${task.title || ''} ${task.notes || ''}`));
+  const tasks = Array.isArray(s?.tasks)
+    ? s.tasks.map((task)=>/tilbud/i.test(`${task.title || ''} ${task.notes || ''}`) && /christian/i.test(String(task.owner || '')) ? {...task, owner:'Søren'} : task)
+    : [];
+  const hasOfferTask = tasks.some((task)=>/tilbud/i.test(`${task.title || ''} ${task.notes || ''}`));
   const offerDate = latestOfferDate(s);
-  if(hasOpenOfferTask || !offerDate || !ACTIVE_CASE_CATEGORIES.has(+s.k)) return tasks;
+  if(hasOfferTask || !offerDate || !ACTIVE_CASE_CATEGORIES.has(+s.k)) return tasks;
   const sourceText = [
     s.kunde,
     s.adr,
@@ -2376,7 +2420,7 @@ function effectiveCaseTasks(s){
     title:isRevised ? 'Følg op på revideret tilbud' : 'Følg op på tilbud',
     status:'Åben',
     dueDate:addDaysIso(offerDate, 7),
-    owner:'Christian',
+    owner:'Søren',
     notes:`${isRevised ? 'Der er afgivet et revideret tilbud' : 'Der er afgivet et tilbud'}. Følg op med kunden senest syv dage efter tilbudsdatoen.`,
     derived:true,
   });
@@ -2529,9 +2573,9 @@ function resolvePriorityBucket(flags = {}){
 function casePriorityTitle(s){
   const base = getCustomerDisplay(s);
   const address = String(s?.adr || '').trim();
-  const ref = getCaseRef(s);
+  const ref = formatCaseRefFullDisplay(getCaseRef(s));
   const title = address ? `${base} · ${address}` : base;
-  return ref ? `${formatCaseRefDisplay(ref)} · ${title}` : title;
+  return ref ? `${ref} · ${title}` : title;
 }
 function casePriorityMeta(s, options = {}){
   const parts = [];
@@ -2572,6 +2616,7 @@ function buildPriorities(includeDismissed=false){
     const incomingTodos = incoming.filter((mail)=>mail.type === 'todo');
     const strongestMail = incoming[0] || relatedEmails[0];
     const strongestSignal = strongestMail ? emailSignal(strongestMail) : null;
+    const nearOfferDays = nearOfferTask ? daysUntil(nearOfferTask.dueDate) : null;
     const gptWeight = concreteActivity ? 2 : 0;
     const mailWeight = incoming.length ? 4 : relatedEmails.length ? 2 : 0;
     const paymentWeight = urgentPayments.length ? 2 : nearDuePayments.length ? 1 : 0;
@@ -2585,8 +2630,8 @@ function buildPriorities(includeDismissed=false){
 
     if(incomingSales.length || pendingDraft || nearOfferTask || (latestOffer && [3,4,5].includes(+s.k))){
       const bucket = resolvePriorityBucket({
-        now: pendingDraft || (nearOfferTask && daysUntil(nearOfferTask.dueDate) !== null && daysUntil(nearOfferTask.dueDate) <= 0) || !!(strongestSignal && (strongestSignal.asksForApproval || strongestSignal.asksForReply)),
-        today: !!incomingSales.length || !!nearOfferTask || !!(latestActivity && latestActivity.type === 'gmail_draft') || !!strongestSignal?.asksForDate,
+        now: pendingDraft || (nearOfferDays !== null && nearOfferDays <= 0) || !!(strongestSignal && (strongestSignal.asksForApproval || strongestSignal.asksForReply)),
+        today: !!incomingSales.length || (nearOfferDays !== null && nearOfferDays <= 1) || !!(latestActivity && latestActivity.type === 'gmail_draft') || !!strongestSignal?.asksForDate,
       });
       const reason = pendingDraft
         ? 'Mailudkast eller tilbud afventer godkendelse'
@@ -2805,27 +2850,68 @@ function dismissPriority(key=''){
   saveState(true);
   renderPriorities();
 }
+function priorityGroupKey(item={}){
+  return String(item.title || item.key || '')
+    .replace(/^(\d+)\s+[a-z]\s+·/i, '$1 ·')
+    .toLowerCase()
+    .replace(/\s+/g,' ')
+    .trim();
+}
+function groupPriorityItems(items=[]){
+  const groups = [];
+  const byKey = new Map();
+  items.forEach((item)=>{
+    const key = priorityGroupKey(item);
+    if(!byKey.has(key)){
+      const group = {key, items:[]};
+      byKey.set(key, group);
+      groups.push(group);
+    }
+    byKey.get(key).items.push(item);
+  });
+  return groups;
+}
+function priorityDoneButton(item={}, klass='btn'){
+  return item.internalTaskId
+    ? `<button class="${klass}" onclick="markInternalTaskDone('${item.internalTaskId}','${item.key}')">Fuldført</button>`
+    : item.emailId
+      ? `<button class="${klass}" onclick="markPriorityDone('${item.emailId}','${item.key}')">Fuldført</button>`
+      : `<button class="${klass}" onclick="markPriorityComplete('${item.key}')">Fuldført</button>`;
+}
+function renderPriorityBullet(item){
+  return `<div class="priority-bullet">
+    <button class="priority-bullet-check" title="Marker som fuldført" aria-label="Marker som fuldført" onclick="${item.internalTaskId ? `markInternalTaskDone('${item.internalTaskId}','${item.key}')` : item.emailId ? `markPriorityDone('${item.emailId}','${item.key}')` : `markPriorityComplete('${item.key}')`}"></button>
+    <div>
+      <div class="priority-bullet-title">${escapeAttr(item.reason || item.title)}</div>
+      <div class="priority-bullet-meta">${escapeAttr(item.meta || '')}</div>
+      <div class="priority-bullet-text">${escapeAttr(item.actionText || item.reason || '')}</div>
+    </div>
+    <div class="priority-bullet-tools">${priorityActionButtons(item.links)}${priorityEditButton(item.links, item)}<button class="side-btn" onclick="dismissPriority('${item.key}')">Fjern</button></div>
+  </div>`;
+}
 function renderPriorityRows(targetId, items, buckets, type){
   const el = document.getElementById(targetId);
   if(!el) return [];
   const wanted = Array.isArray(buckets) ? buckets : [buckets];
   const primaryBucket = wanted[0] || 'now';
   const rows = items.filter((item)=>wanted.includes(item.bucket));
-  el.innerHTML = rows.length ? rows.map((item, index)=>`<div class="priority-row ${primaryBucket === 'now' ? 'now' : 'later'}">
+  const groups = groupPriorityItems(rows);
+  el.innerHTML = groups.length ? groups.map((group, index)=>{ const item = group.items[0]; const grouped = group.items.length > 1; return `<div class="priority-row ${primaryBucket === 'now' ? 'now' : 'later'}">
     <div class="priority-rank ${primaryBucket === 'now' ? 'now' : ''}">${index + 1}</div>
     <div class="priority-type"><div class="priority-dot ${type === 'sales' ? 'sales' : 'todo'}"></div></div>
     <div class="priority-body">
       <div class="priority-topline"><div class="priority-name">${escapeAttr(item.title)}</div></div>
       <div class="priority-meta">${escapeAttr(item.meta)}</div>
-      <div class="priority-reason">${escapeAttr(item.reason)}</div>
-      <div class="priority-suggestion"><div class="priority-suggestion-label">Suggestion</div><div class="priority-reason">${escapeAttr(item.actionText || item.reason)}</div></div>
+      ${grouped
+        ? `<div class="priority-bullets">${group.items.map(renderPriorityBullet).join('')}</div>`
+        : `<div class="priority-reason">${escapeAttr(item.reason)}</div><div class="priority-suggestion"><div class="priority-suggestion-label">Suggestion</div><div class="priority-reason">${escapeAttr(item.actionText || item.reason)}</div></div>`}
     </div>
     <div class="priority-row-tools">
       <button class="btn ghost" onclick="dismissPriority('${item.key}')">Slet</button>
-      ${item.internalTaskId ? `<button class="btn" onclick="markInternalTaskDone('${item.internalTaskId}','${item.key}')">Fuldført</button>` : item.emailId ? `<button class="btn" onclick="markPriorityDone('${item.emailId}','${item.key}')">Fuldført</button>` : `<button class="btn" onclick="markPriorityComplete('${item.key}')">Fuldført</button>`}
+      ${priorityDoneButton(item)}
       ${priorityEditButton(item.links, item)}
     </div>
-  </div>`).join('') : '<div class="priority-empty-state">Ingen punkter her.</div>';
+  </div>`; }).join('') : '<div class="priority-empty-state">Ingen punkter her.</div>';
   return rows;
 }
 function renderPrioritySide(targetId, items, type){
@@ -3034,6 +3120,7 @@ function renderPriorities(){
   const activeItems = [...priorities.todos, ...priorities.sales].sort((a,b)=>b.score-a.score || a.title.localeCompare(b.title));
   renderPriorityRows('priorityTodoNow', activeItems, ['now'], 'todo');
   renderPriorityRows('priorityTodoToday', activeItems, ['today','week'], 'todo');
+  renderPriorityRows('todayPriorityList', activeItems, ['now','today'], 'todo');
   renderPriorityArchive();
   renderSidebarSummaries(priorities);
   const stamp = document.getElementById('priorityGeneratedAt');
@@ -3043,8 +3130,10 @@ function renderPriorities(){
 }
 function buildPriorityCounts(){
   const priorities = buildPriorities();
+  const activeItems = [...priorities.todos, ...priorities.sales];
   return {
     todoCount: priorities.todos.length,
+    todayCount: activeItems.filter((item)=>item.bucket === 'now' || item.bucket === 'today').length,
     customerCount: sager.filter((s)=>ACTIVE_CASE_CATEGORIES.has(+s.k)).length,
   };
 }
@@ -3052,8 +3141,10 @@ function updateCaseTabCount(){
   const counts = buildPriorityCounts();
   const customerTab = document.querySelector('.tab-btn[data-tab="sager"]');
   const priorityTab = document.querySelector('.tab-btn[data-tab="prioriteringer"]');
+  const todayTab = document.querySelector('.tab-btn[data-tab="idag"]');
   if(customerTab) customerTab.innerHTML = `Kunder <span style="opacity:.6">(${counts.customerCount})</span>`;
   if(priorityTab) priorityTab.innerHTML = `Sager <span style="opacity:.6">(${counts.todoCount})</span>`;
+  if(todayTab) todayTab.innerHTML = `I dag <span style="opacity:.6">(${counts.todayCount})</span>`;
 }
 let selectedCustomerIndex = null;
 function setCustomerView(view){
@@ -3084,7 +3175,35 @@ function renderCasePayments(caseIndex, s){
 }
 function renderRelatedMailList(s){ const related = getRelatedEmails(s).slice(0,4); return related.length ? related.map((mail)=>`<div class="mini-item"><strong>${mail.subject}</strong><div class="meta">${displayDate(mail.date)} · ${mail.from}</div><div class="priority-item-links" style="margin-top:6px"><button class="icon-btn" onclick="setActiveTab('indbakke'); openEmail('${mail.id}')">Åbn mail</button></div></div>`).join('') : '<div class="doc-empty">Ingen relateret dialog fundet endnu.</div>'; }
 function renderDrafts(items=[]){ return items.length ? `<div class="mini-list">${items.map((item)=>`<div class="mini-item"><strong>${item.subject || item.type || 'Draft'}</strong><div class="meta">${item.status || 'Afventer'}${item.createdAt ? ` · ${displayDate(String(item.createdAt).slice(0,10))}` : ''}</div></div>`).join('')}</div>` : '<div class="doc-empty">Ingen drafts oprettet endnu.</div>'; }
-function renderTaskList(items=[]){ return items.length ? `<div class="mini-list">${items.map((item)=>`<div class="mini-item"><strong>${item.title || 'Opgave'}</strong><div class="meta">${item.status || 'Åben'}${item.dueDate ? ` · frist ${displayDate(item.dueDate)}` : ''}</div><div class="meta">${item.owner || 'Ingen ansvarlig'}${item.notes ? ` · ${item.notes}` : ''}</div></div>`).join('')}</div>` : '<div class="doc-empty">Ingen to-do&apos;s registreret endnu.</div>'; }
+function renderTaskList(items=[], caseIndex=null){
+  return items.length ? `<ul class="action-list">${items.map((item)=>`<li>
+    <button class="action-check" title="Marker som færdig" aria-label="Marker som færdig" onclick="markCaseTaskDone(${caseIndex === null ? -1 : caseIndex}, '${escapeAttr(item.id || '')}')">✓</button>
+    <div>
+      <div class="action-title">${escapeAttr(item.title || 'Opgave')}</div>
+      <div class="action-meta">${escapeAttr(item.status || 'Åben')}${item.dueDate ? ` · frist ${displayDate(item.dueDate)}` : ''}${item.owner ? ` · ${escapeAttr(item.owner)}` : ''}</div>
+      ${item.notes ? `<div class="action-notes">${escapeAttr(item.notes)}</div>` : ''}
+    </div>
+  </li>`).join('')}</ul>` : '<div class="doc-empty">Ingen to-do&apos;s registreret endnu.</div>';
+}
+function markCaseTaskDone(caseIndex=-1, taskId=''){
+  const s = sager[caseIndex];
+  if(!s) return;
+  s.tasks = Array.isArray(s.tasks) ? s.tasks : [];
+  let task = s.tasks.find((entry)=>String(entry.id || '') === String(taskId || ''));
+  if(!task){
+    const derived = effectiveCaseTasks(s).find((entry)=>String(entry.id || '') === String(taskId || ''));
+    if(derived){
+      task = {...derived, derived:false};
+      s.tasks.unshift(task);
+    }
+  }
+  if(task) task.status = 'Fuldført';
+  addCaseActivity(s, { type:'case_update', title:'Action point fuldført', summary:`Action point markeret som færdig: ${task?.title || 'Opgave'}.` });
+  saveState();
+  render();
+  renderPriorities();
+  renderSagDetail(caseIndex);
+}
 function documentDriveUrl(item={}){
   if(item.url) return item.url;
   if(item.fileId) return `https://drive.google.com/file/d/${encodeURIComponent(item.fileId)}/view`;
@@ -3167,7 +3286,6 @@ function renderSagDetail(i){
       </div>
     </div>
     <div class="case-sections">
-      ${renderCustomerPortfolio(account, i)}
       <div class="case-card">
         <h3>Overblik</h3>
         <table class="case-summary-table"><tbody>
@@ -3183,7 +3301,7 @@ function renderSagDetail(i){
       </div>
       <div class="case-card">
         <h3>Action points</h3>
-        ${renderTaskList(effectiveCaseTasks(s))}
+        ${renderTaskList(effectiveCaseTasks(s), i)}
       </div>
       <div class="case-card">
         <h3>Betalinger</h3>
@@ -3196,6 +3314,7 @@ function renderSagDetail(i){
           <div class="case-bullet-item"><span class="dot"></span><div><strong>Transkripter</strong><span class="meta">${transcriptTitles}</span></div></div>
         </div>
       </div>
+      ${renderCustomerPortfolio(account, i)}
     </div>
   </div>`;
 }
