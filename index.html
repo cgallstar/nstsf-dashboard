@@ -3019,13 +3019,26 @@ function changeKat(i,v){ sager[i].k = +v; saveState(); render(); renderPrioritie
 function changeStatus(i,v){ sager[i].status = v; saveState(); render(); renderPriorities(); }
 function openSag(i){ if(selectedCustomerIndex === i){ closeSag(); return; } selectedCustomerIndex = i; render(); renderSagDetail(i); }
 function renderDocs(items){ if(!items || !items.length) return '<div class="doc-empty">Ingen dokumenter registreret endnu.</div>'; return items.map(d=>`<div class="doc-item"><div><strong>${d.titel}</strong><div class="doc-meta">${d.dato || 'Dato mangler'}</div></div>${d.url ? `<a href="${d.url}" target="_blank" rel="noopener">Åbn</a>` : '<span class="dim">Mangler link</span>'}</div>`).join(''); }
+function paymentLetter(index=0){
+  let n = Number(index) || 0;
+  let value = '';
+  do{
+    value = String.fromCharCode(65 + (n % 26)) + value;
+    n = Math.floor(n / 26) - 1;
+  }while(n >= 0);
+  return value;
+}
 function renderCasePayments(caseIndex, s){
   const rows = getSagPaymentHistory(s);
-  return rows.length ? `<table class="payment-inline-table"><thead><tr><th>Milepæl</th><th>Dato</th><th class="num">Beløb</th><th>Status</th></tr></thead><tbody>${rows.map((p)=>`<tr><td>${p.milepael}</td><td>${displayDate(p.dato)}</td><td class="num">${p.beloeb} kr.</td><td class="status-cell">${String(p.status || '').toLowerCase() === 'betalt' ? `<span class="status-chip paid"><span class="check">✓</span>Faktura betalt</span>` : `<span class="status-chip open">Udestående</span><button class="icon-btn pay-action-btn" onclick="markCasePaymentPaid(${caseIndex}, '${escapeAttr(p.historyKey)}')">Marker som betalt</button>`}</td></tr>`).join('')}</tbody></table>` : '<div class="doc-empty">Ingen betalinger registreret på kunden endnu.</div>';
+  return rows.length ? `<table class="payment-inline-table"><thead><tr><th>Post</th><th>Dato</th><th class="num">Beløb</th><th>Status</th></tr></thead><tbody>${rows.map((p,index)=>`<tr><td>${paymentLetter(index)}</td><td>${displayDate(p.dato)}</td><td class="num">${p.beloeb} kr.</td><td class="status-cell">${String(p.status || '').toLowerCase() === 'betalt' ? `<span class="status-chip paid"><span class="check">✓</span>Faktura betalt</span>` : `<span class="status-chip open">Udestående</span><button class="icon-btn pay-action-btn" onclick="markCasePaymentPaid(${caseIndex}, '${escapeAttr(p.historyKey)}')">Marker som betalt</button>`}</td></tr>`).join('')}</tbody></table>` : '<div class="doc-empty">Ingen betalinger registreret på kunden endnu.</div>';
 }
 function renderRelatedMailList(s){ const related = getRelatedEmails(s).slice(0,4); return related.length ? related.map((mail)=>`<div class="mini-item"><strong>${mail.subject}</strong><div class="meta">${displayDate(mail.date)} · ${mail.from}</div><div class="priority-item-links" style="margin-top:6px"><button class="icon-btn" onclick="setActiveTab('indbakke'); openEmail('${mail.id}')">Åbn mail</button></div></div>`).join('') : '<div class="doc-empty">Ingen relateret dialog fundet endnu.</div>'; }
 function renderDrafts(items=[]){ return items.length ? `<div class="mini-list">${items.map((item)=>`<div class="mini-item"><strong>${item.subject || item.type || 'Draft'}</strong><div class="meta">${item.status || 'Afventer'}${item.createdAt ? ` · ${displayDate(String(item.createdAt).slice(0,10))}` : ''}</div></div>`).join('')}</div>` : '<div class="doc-empty">Ingen drafts oprettet endnu.</div>'; }
 function renderTaskList(items=[]){ return items.length ? `<div class="mini-list">${items.map((item)=>`<div class="mini-item"><strong>${item.title || 'Opgave'}</strong><div class="meta">${item.status || 'Åben'}${item.dueDate ? ` · frist ${displayDate(item.dueDate)}` : ''}</div><div class="meta">${item.owner || 'Ingen ansvarlig'}${item.notes ? ` · ${item.notes}` : ''}</div></div>`).join('')}</div>` : '<div class="doc-empty">Ingen to-do&apos;s registreret endnu.</div>'; }
+function renderMeetingNotes(items=[]){
+  const docs = (items || []).filter((item)=>item && item.titel);
+  return docs.length ? `<div class="mini-list">${docs.map((item)=>`<div class="mini-item"><strong>${item.url ? `<a href="${escapeAttr(item.url)}" target="_blank" rel="noopener">${escapeAttr(item.titel)}</a>` : escapeAttr(item.titel)}</strong><div class="meta">${item.dato ? displayDate(item.dato) : 'Dato mangler'}</div></div>`).join('')}</div>` : '<div class="doc-empty">Ingen referater registreret endnu.</div>';
+}
 function renderStageLog(items=[]){ return items.length ? `<div class="mini-list">${items.slice(0,5).map((item)=>`<div class="mini-item"><strong>${item.title || item.status || 'Stadeopdatering'}</strong><div class="meta">${item.date ? displayDate(item.date) : 'Dato mangler'}${item.progressPct !== undefined ? ` · ${item.progressPct}%` : ''}</div><div class="meta">${item.notes || ''}</div></div>`).join('')}</div>` : '<div class="doc-empty">Ingen stadeopgørelser registreret endnu.</div>'; }
 function renderChangeOrders(items=[]){ return items.length ? `<table class="payment-inline-table"><thead><tr><th>Ekstraarbejde</th><th>Status</th><th class="num">Pris</th></tr></thead><tbody>${items.map((item)=>`<tr><td>${item.title || 'Ekstraarbejde'}</td><td>${item.status || 'Afventer'}</td><td class="num">${item.amount ? `${item.amount} kr.` : '—'}</td></tr>`).join('')}</tbody></table>` : '<div class="doc-empty">Ingen ekstraarbejder registreret endnu.</div>'; }
 function buildAppendixEntries(){
@@ -3083,7 +3096,7 @@ function renderSagDetail(i){
   const latestDialog = latestDialogDate(s);
   const offerDate = latestOfferDate(s);
   const wf = s.workflow || {};
-  const referatTitles = (s.docs.referater.length ? s.docs.referater : s.docs.byggereferater).map((item)=>item.titel).slice(0,2).join(' · ') || 'Ingen registreret endnu';
+  const meetingNotes = s.docs.referater.length ? s.docs.referater : s.docs.byggereferater;
   const transcriptTitles = (s.docs.transkripter || []).map((item)=>item.titel).slice(0,2).join(' · ') || 'Ingen registreret endnu';
   caseDetail.classList.add('active');
   if(customerLayout) customerLayout.classList.add('detail-open');
@@ -3093,7 +3106,7 @@ function renderSagDetail(i){
       <div class="case-head-top">
         <div>
           <h2>${account ? account.title : s.kunde}</h2>
-          <div class="sub">${s.opg || 'Sag uden titel'}${caseRef ? ` · Sagsnr. ${formatCaseRefDisplay(caseRef)}` : ''}${formatCasePostDisplay(caseRef) ? ` · ${formatCasePostDisplay(caseRef)}` : ''}${s.adr ? ` · ${s.adr}` : ''}</div>
+          <div class="sub">${s.opg || 'Sag uden titel'}${caseRef ? ` · Sagsnr. ${formatCaseRefDisplay(caseRef)}` : ''}${s.adr ? ` · ${s.adr}` : ''}</div>
         </div>
         <button class="btn" onclick="closeSag()">Tilbage</button>
       </div>
@@ -3105,16 +3118,11 @@ function renderSagDetail(i){
         <table class="case-summary-table"><tbody>
           <tr><td>Kundenr.</td><td>${customerNumber || '—'}</td></tr>
           <tr><td>Sagsnr.</td><td><span class="case-ref-inline">${formatCaseRefDisplay(caseRef) || '—'}</span></td></tr>
-          ${formatCasePostDisplay(caseRef) ? `<tr><td>Faktura/post</td><td>${formatCasePostDisplay(caseRef)}</td></tr>` : ''}
           ${account ? `<tr><td>Kundekonto</td><td>${account.title}</td></tr>` : ''}
           <tr><td>Adresse</td><td>${s.adr || 'Adresse mangler'}</td></tr>
-          <tr><td>Status</td><td>${wf.summaryStatus || s.status || '—'}</td></tr>
-          <tr><td>Betalingsdato</td><td>${displayDate(s.dato)}</td></tr>
-          <tr><td>Næste handling</td><td>${wf.nextAction || 'Ikke sat endnu'}</td></tr>
           <tr><td>Seneste dialog</td><td>${latestDialog ? displayDate(latestDialog) : '—'}</td></tr>
           <tr><td>Tilbud sendt</td><td>${offerDate ? displayDate(offerDate) : '—'}</td></tr>
           <tr><td>Underskrift</td><td>${wf.signatureStatus || 'Ikke registreret'}</td></tr>
-          <tr><td>Progression</td><td>${wf.progressPct ? `${wf.progressPct}%` : 'Ikke registreret'}</td></tr>
         </tbody></table>
         <div class="case-inline-actions">${driveLink}<a class="btn" href="${DRIVE_ROOT}" target="_blank" rel="noopener">Drive root</a><button class="btn" onclick="openEditSag(${i})">Rediger</button></div>
       </div>
@@ -3125,18 +3133,8 @@ function renderSagDetail(i){
       <div class="case-card">
         <h3>Noter og mødereferater</h3>
         <div class="case-bullet-list">
-          <div class="case-bullet-item"><span class="dot"></span><div><strong>Aktuelt stade</strong><span class="meta">${wf.currentStage || 'Ikke registreret'}${wf.nextStep ? ` · ${wf.nextStep}` : ''}</span></div></div>
-          <div class="case-bullet-item"><span class="dot"></span><div><strong>Referater</strong><span class="meta">${referatTitles}</span></div></div>
+          <div class="case-bullet-item"><span class="dot"></span><div><strong>Referater</strong>${renderMeetingNotes(meetingNotes)}</div></div>
           <div class="case-bullet-item"><span class="dot"></span><div><strong>Transkripter</strong><span class="meta">${transcriptTitles}</span></div></div>
-        </div>
-      </div>
-      <div class="case-card">
-        <h3>Kilder</h3>
-        <div class="doc-list">
-          <strong>Dialog og tilbud</strong>${renderRelatedMailList(s)}
-          <strong style="margin-top:6px">Mail drafts</strong>${renderDrafts(s.mailDrafts)}
-          <strong style="margin-top:6px">KS / dokumentation</strong>${renderDocs(s.docs.ks)}
-          <strong style="margin-top:6px">Billeder</strong>${renderDocs(s.docs.billeder)}
         </div>
       </div>
       <div class="case-card">

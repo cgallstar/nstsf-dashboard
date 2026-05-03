@@ -582,6 +582,36 @@ function applyArchiveSideEffects(matched: any, signal: any) {
   }
 }
 
+function addDaysIso(dateIso: string, days: number) {
+  const base = /^\d{4}-\d{2}-\d{2}$/.test(dateIso) ? new Date(`${dateIso}T00:00:00.000Z`) : new Date();
+  base.setUTCDate(base.getUTCDate() + days);
+  return base.toISOString().slice(0, 10);
+}
+
+function ensureRevisedOfferFollowupTask(matched: any, signal: any, archiveText: string, documentDate: string) {
+  if (!matched || signal?.category !== "referater") return;
+  const compact = plainCompactText(archiveText);
+  const isRelevant =
+    (compact.includes("tilbud") && (compact.includes("revideret") || compact.includes("revidere") || compact.includes("revision"))) ||
+    isGadesvejArchiveThread(signal, archiveText);
+  if (!isRelevant) return;
+  const title = "Følg op på revideret tilbud";
+  const existing = (matched.tasks || []).some((task: any) => {
+    return normalizeCaseKey(task?.title) === normalizeCaseKey(title) && String(task?.status || "").toLowerCase() !== "fuldført";
+  });
+  if (existing) return;
+  matched.tasks = Array.isArray(matched.tasks) ? matched.tasks : [];
+  matched.tasks.unshift({
+    id: randomUUID(),
+    title,
+    status: "Åben",
+    dueDate: addDaysIso(documentDate, 7),
+    owner: "Christian",
+    notes: "Byggemødereferatet peger på et revideret tilbud. Følg op med kunden syv dage efter referatdatoen.",
+    createdAt: new Date().toISOString(),
+  });
+}
+
 async function archiveQualifiedThread(thread: any, item: any, state: any, integration: any, actor: any) {
   const summaries = Array.isArray(thread?.messages) ? thread.messages.map(gmailMessageSummary) : [];
   const threadText = summaries
@@ -617,6 +647,7 @@ async function archiveQualifiedThread(thread: any, item: any, state: any, integr
   }
   const documentDate = extractDocumentDate(item?.subject, combined || item?.body, item?.date);
   const displayCaseId = formatCaseIdForDisplay(matched) || textValue(matched?.nr, "");
+  ensureRevisedOfferFollowupTask(matched, signal, archiveText, documentDate);
   const archiveKey = [
     textValue(item?.threadId || thread?.id, ""),
     signal.category,
