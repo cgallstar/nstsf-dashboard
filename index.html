@@ -2287,7 +2287,24 @@ function getSagPaymentHistory(s){
         historyKey:`case-${s.nr || s.kunde}-${s.dato}-${parseNumber(s.u)}`,
       }]
     : [];
-  return [...explicit, ...derived].sort((a,b)=> String(b.dato || '').localeCompare(String(a.dato || '')));
+  const wf = s.workflow || {};
+  const invoiceNo = s.fak || wf.invoiceNumber || '';
+  const invoiceDate = wf.invoiceSentDate || s.dato || '';
+  const hasInvoiceRow = [...explicit, ...derived].some((b)=>String(b.fak || '') === String(invoiceNo || '') && String(invoiceNo || ''));
+  const invoiceOnly = invoiceNo && !hasInvoiceRow
+    ? [{
+        nr:s.nr || '',
+        kunde:casePaymentLabel(s),
+        milepael:s.adr || s.opg || 'Faktura sendt',
+        dato:invoiceDate,
+        beloeb:parseNumber(s.u) > 0 ? String(parseNumber(s.u)) : '0',
+        fak:String(invoiceNo),
+        status:String(s.status || '').toLowerCase().includes('betalt') ? 'betalt' : 'Faktura sendt',
+        source:'case',
+        historyKey:`invoice-${s.nr || s.sid || s.kunde}-${invoiceNo}`,
+      }]
+    : [];
+  return [...explicit, ...derived, ...invoiceOnly].sort((a,b)=> String(b.dato || '').localeCompare(String(a.dato || '')));
 }
 function isEmailHandled(mail){ return !!mail.handled || handledEmailIds.includes(mail.id); }
 function getRelatedEmails(s){ return emails.filter((mail)=> (s.nr && `${mail.subject} ${mail.body}`.includes(s.nr)) || matchCustomer(mail.kunde, s.kunde) || matchCustomer(mail.subject, s.kunde) || matchCustomer(mail.body, s.kunde)).sort((a,b)=> String(b.date).localeCompare(String(a.date))); }

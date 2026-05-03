@@ -223,7 +223,7 @@ function findOrCreateKnownCase(state: any, signal: any, text = "") {
   if (isGadesvejArchiveThread(signal, text)) return findOrCreateGadesvejCase(state);
   const entries = Array.isArray(state?.sager) ? state.sager : [];
   const findByMarker = (patterns: RegExp[]) => entries.find((entry: any) => {
-    const marker = plainCompactText(`${entry?.kunde || ""} ${entry?.adr || ""} ${entry?.opg || ""} ${entry?.docs?.drive || entry?.drive || ""}`);
+    const marker = plainCompactText(`${entry?.kunde || ""} ${entry?.adr || ""} ${entry?.opg || ""} ${entry?.sid || ""} ${entry?.nr || ""} ${entry?.fak || ""} ${entry?.docs?.drive || entry?.drive || ""}`);
     return patterns.some((pattern) => pattern.test(marker));
   });
   const createCase = (payload: any) => {
@@ -269,6 +269,11 @@ function findOrCreateKnownCase(state: any, signal: any, text = "") {
       opg: "Ombygningsarbejder",
       status: "Tilbud sendt",
     });
+  }
+
+  if (signal?.category === "betaling" && textValue(signal?.invoiceNumber, "") === "1153") {
+    const existing = findByMarker([/1002\s*j/, /guldborgvej\s*1/]);
+    if (existing) return ensureCaseShape(existing);
   }
 
   return null;
