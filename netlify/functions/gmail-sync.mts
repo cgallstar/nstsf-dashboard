@@ -624,11 +624,21 @@ async function archiveQualifiedThread(thread: any, item: any, state: any, integr
     documentDate,
     normalizeCaseKey(displayCaseId || matched?.kunde),
   ].join(":");
+  const fileTitle = buildArchiveFileTitle(documentDate, signal, displayCaseId, item?.subject);
+  const fileName = `${fileTitle}.md`;
+  const currentThreadId = textValue(item?.threadId || thread?.id, "");
+  const normalizedDocumentType = normalizeCaseKey(signal.documentType);
 
   const alreadyArchived = (matched.activityLog || []).some((entry: any) => {
-    if (String(entry?.type) !== "gmail_archive" || String(entry?.archiveKey || "") !== archiveKey) return false;
+    if (String(entry?.type) !== "gmail_archive") return false;
     const hasDriveFile = Boolean(textValue(entry?.driveUrl, "") || textValue(entry?.fileId, ""));
-    return hasDriveFile;
+    if (!hasDriveFile) return false;
+    if (String(entry?.archiveKey || "") === archiveKey) return true;
+    const sameThread = textValue(entry?.threadId, "") === currentThreadId;
+    const sameType = normalizeCaseKey(entry?.documentType) === normalizedDocumentType;
+    const sameDate = textValue(entry?.documentDate, "") === documentDate;
+    const sameFile = textValue(entry?.fileName, "") === fileName;
+    return sameFile || (sameThread && sameType && sameDate);
   });
   if (alreadyArchived) {
     return {
@@ -643,10 +653,9 @@ async function archiveQualifiedThread(thread: any, item: any, state: any, integr
     };
   }
 
-  const fileTitle = buildArchiveFileTitle(documentDate, signal, displayCaseId, item?.subject);
   const document = {
     title: fileTitle,
-    fileName: `${fileTitle}.md`,
+    fileName,
     mimeType: "text/markdown",
     contentText: buildArchiveMarkdown(thread, item, matched, signal, documentDate),
     date: documentDate,
