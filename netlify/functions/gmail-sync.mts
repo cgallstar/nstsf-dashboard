@@ -711,6 +711,7 @@ function applyArchiveSideEffects(matched: any, signal: any, archiveText = "", do
     matched.workflow.invoiceSentDate = documentDate || new Date().toISOString().slice(0, 10);
     const invoiceAmount = extractInvoiceAmount(archiveText);
     if (invoiceAmount && !parseMoneyValue(textValue(matched.u, ""))) matched.u = formatAmount(invoiceAmount);
+    if (!textValue(matched.dato, "")) matched.dato = documentDate || new Date().toISOString().slice(0, 10);
     return;
   }
   if (signal.category === "tilbud") {

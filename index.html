@@ -1818,6 +1818,11 @@ function formatCaseRefFullDisplay(ref=''){
   const split = splitCaseRef(ref);
   return [split.number, split.letter].filter(Boolean).join(' ');
 }
+function caseIdentityLabel(s, index=sager.indexOf(s)){
+  const ref = index >= 0 ? formatCaseRefFullDisplay(getCaseRefByIndex(index)) : formatCaseRefFullDisplay(getCaseRef(s));
+  const address = String(s?.adr || '').trim();
+  return [ref, address].filter(Boolean).join(' · ') || ref || address || 'Sag';
+}
 function formatCasePostDisplay(ref=''){
   const letter = splitCaseRef(ref).letter;
   return letter ? `Post ${letter}` : '';
@@ -1847,6 +1852,7 @@ function getCustomerPortfolioCases(accountId, currentIndex){
       category: KAT[+entry.k] || 'Sag',
       caseNumber: formatCaseRefDisplay(getCaseRefByIndex(index)) || '—',
       caseFull: formatCaseRefFullDisplay(getCaseRefByIndex(index)) || '—',
+      identity: caseIdentityLabel(entry, index),
       casePost: formatCasePostDisplay(getCaseRefByIndex(index)),
       amount: entry.b && entry.b !== '0' ? `${entry.b} kr.` : 'Estimat mangler',
     }));
@@ -1866,7 +1872,7 @@ function renderCustomerPortfolio(account, currentIndex){
     <div class="portfolio-list">
       ${items.map((item)=>`<div class="portfolio-item">
         <div>
-          <strong>${escapeAttr(item.caseFull)} · ${escapeAttr(item.address)}</strong>
+          <strong>${escapeAttr(item.identity)}</strong>
           <span class="meta">${escapeAttr(item.title)} · ${escapeAttr(item.category)}</span>
           <span class="meta">${escapeAttr(item.amount)}</span>
         </div>
@@ -2225,7 +2231,10 @@ function escapeAttr(str=''){ return String(str).replace(/&/g,'&amp;').replace(/"
 function matchCustomer(text='', customer=''){ const a = String(text || '').toLowerCase(); const b = String(customer || '').toLowerCase(); return !!b && a.includes(b); }
 function casePaymentLabel(s){
   const account = getCustomerAccount(s);
-  return account ? account.shortTitle : (s.kunde || 'Ukendt kunde');
+  const idx = sager.indexOf(s);
+  const identity = caseIdentityLabel(s, idx);
+  const base = account ? account.shortTitle : (s.kunde || 'Ukendt kunde');
+  return identity ? `${identity} · ${base}` : base;
 }
 function hasExplicitPaymentMatch(s){
   return betalinger.some((b)=>{
@@ -3131,7 +3140,7 @@ function setCustomerView(view){
   closeSag();
   render();
 }
-function render(){ const tbody = document.getElementById('sagerBody'); const q = (document.getElementById('sagerSoeg').value || '').toLowerCase(); const katF = document.getElementById('filterKat').value; const allowed = customerView === 'archived' ? ARCHIVED_CASE_CATEGORIES : ACTIVE_CASE_CATEGORIES; const rows = sager.filter(s=>{ if(!allowed.has(+s.k)) return false; if(katF && String(s.k)!==katF) return false; if(q){ const idx = sager.indexOf(s); const derivedRef = getCaseRefByIndex(idx); const customerNumber = getCustomerNumber(s); const hay = `${derivedRef} ${customerNumber} ${s.nr} ${s.kunde} ${s.adr} ${s.opg}`.toLowerCase(); if(!hay.includes(q)) return false; } return true; }).sort((a,b)=>a.k-b.k || a.sort-b.sort); tbody.innerHTML = rows.map(s=>{ const idx = sager.indexOf(s); const account = getCustomerAccount(s); const kundeCell = getCustomerDisplay(s); const subline = account ? (s.adr || 'Ejendom ikke angivet') : (s.kunde || 'Kunde mangler'); const derivedRef = getCaseRefByIndex(idx) || '—'; const formattedRef = formatCaseRefDisplay(derivedRef) || '—'; const activeRow = selectedCustomerIndex === idx ? ' style="background:#fcfbf8"' : ''; return `<tr data-kat="${s.k}"${activeRow}><td><select class="kategori kat-${s.k}" onchange="changeKat(${idx}, this.value)">${Object.entries(KAT).map(([k,v])=>`<option value="${k}"${+k===s.k?' selected':''}>${v}</option>`).join('')}</select></td><td><span class="case-ref-text">${formattedRef}</span></td><td title="${escapeAttr(`${s.kunde} ${s.adr || ''}`)}"><button class="kunde-link" onclick="openSag(${idx})"><strong>${escapeAttr(kundeCell)}</strong></button><div class="kunde-address">${escapeAttr(subline)}</div></td><td class="wrap" title="${escapeAttr(s.opg)}"><div class="opg-main">${s.opg || '—'}</div><div class="opg-sub">${s.b && s.b !== '0' ? `Est. entreprise ${s.b} kr.` : 'Est. entreprise mangler'}</div></td><td class="num">${s.u && s.u !== '0' ? '<span class="chip chip-amber">' + formatCurrency(parseNumber(s.u)).replace(' kr.','') + ' kr.</span>' : '—'}</td><td class="dim date-cell">${displayDate(s.start)}</td><td class="dim date-cell">${displayDate(s.slut)}</td><td class="num"><button class="icon-btn" title="Rediger" aria-label="Rediger" onclick="openEditSag(${idx})">✎</button></td></tr>`; }).join(''); document.getElementById('count').textContent = customerView === 'archived' ? `${rows.length} arkiverede kunder` : `${rows.length} aktive/potentielle kunder`; updateCaseTabCount(); renderAppendix(); renderFinancials(); renderBetalinger(); }
+function render(){ const tbody = document.getElementById('sagerBody'); const q = (document.getElementById('sagerSoeg').value || '').toLowerCase(); const katF = document.getElementById('filterKat').value; const allowed = customerView === 'archived' ? ARCHIVED_CASE_CATEGORIES : ACTIVE_CASE_CATEGORIES; const rows = sager.filter(s=>{ if(!allowed.has(+s.k)) return false; if(katF && String(s.k)!==katF) return false; if(q){ const idx = sager.indexOf(s); const derivedRef = getCaseRefByIndex(idx); const customerNumber = getCustomerNumber(s); const hay = `${derivedRef} ${customerNumber} ${formatCaseRefFullDisplay(derivedRef)} ${s.nr} ${s.kunde} ${s.adr} ${s.opg} ${s.fak}`.toLowerCase(); if(!hay.includes(q)) return false; } return true; }).sort((a,b)=>a.k-b.k || a.sort-b.sort); tbody.innerHTML = rows.map(s=>{ const idx = sager.indexOf(s); const account = getCustomerAccount(s); const kundeCell = getCustomerDisplay(s); const identity = caseIdentityLabel(s, idx); const subline = account ? `${kundeCell}${s.fak ? ` · Faktura ${s.fak}` : ''}` : `${s.kunde || 'Kunde mangler'}${s.fak ? ` · Faktura ${s.fak}` : ''}`; const derivedRef = getCaseRefByIndex(idx) || '—'; const formattedRef = formatCaseRefFullDisplay(derivedRef) || formatCaseRefDisplay(derivedRef) || '—'; const activeRow = selectedCustomerIndex === idx ? ' style="background:#fcfbf8"' : ''; return `<tr data-kat="${s.k}"${activeRow}><td><select class="kategori kat-${s.k}" onchange="changeKat(${idx}, this.value)">${Object.entries(KAT).map(([k,v])=>`<option value="${k}"${+k===s.k?' selected':''}>${v}</option>`).join('')}</select></td><td><span class="case-ref-text">${formattedRef}</span></td><td title="${escapeAttr(`${s.kunde} ${s.adr || ''} ${s.fak || ''}`)}"><button class="kunde-link" onclick="openSag(${idx})"><strong>${escapeAttr(identity || kundeCell)}</strong></button><div class="kunde-address">${escapeAttr(subline)}</div></td><td class="wrap" title="${escapeAttr(s.opg)}"><div class="opg-main">${s.opg || '—'}</div><div class="opg-sub">${s.b && s.b !== '0' ? `Est. entreprise ${s.b} kr.` : 'Est. entreprise mangler'}</div></td><td class="num">${s.u && s.u !== '0' ? '<span class="chip chip-amber">' + formatCurrency(parseNumber(s.u)).replace(' kr.','') + ' kr.</span>' : '—'}</td><td class="dim date-cell">${displayDate(s.start)}</td><td class="dim date-cell">${displayDate(s.slut)}</td><td class="num"><button class="icon-btn" title="Rediger" aria-label="Rediger" onclick="openEditSag(${idx})">✎</button></td></tr>`; }).join(''); document.getElementById('count').textContent = customerView === 'archived' ? `${rows.length} arkiverede kunder` : `${rows.length} aktive/potentielle kunder`; updateCaseTabCount(); renderAppendix(); renderFinancials(); renderBetalinger(); }
 function changeKat(i,v){ sager[i].k = +v; saveState(); render(); renderPriorities(); }
 function changeStatus(i,v){ sager[i].status = v; saveState(); render(); renderPriorities(); }
 function openSag(i){ if(selectedCustomerIndex === i){ closeSag(); return; } selectedCustomerIndex = i; render(); renderSagDetail(i); }
@@ -3147,7 +3156,9 @@ function paymentLetter(index=0){
 }
 function renderCasePayments(caseIndex, s){
   const rows = getSagPaymentHistory(s);
-  return rows.length ? `<table class="payment-inline-table"><thead><tr><th>Post</th><th>Dato</th><th class="num">Beløb</th><th>Status</th></tr></thead><tbody>${rows.map((p,index)=>`<tr><td>${paymentLetter(index)}</td><td>${displayDate(p.dato)}</td><td class="num">${p.beloeb} kr.</td><td class="status-cell">${String(p.status || '').toLowerCase() === 'betalt' ? `<span class="status-chip paid"><span class="check">✓</span>Faktura betalt</span>` : `<span class="status-chip open">Udestående</span><button class="icon-btn pay-action-btn" onclick="markCasePaymentPaid(${caseIndex}, '${escapeAttr(p.historyKey)}')">Marker som betalt</button>`}</td></tr>`).join('')}</tbody></table>` : '<div class="doc-empty">Ingen betalinger registreret på kunden endnu.</div>';
+  const invoiceDocs = [...(s.docs?.betaling || []), ...(s.docs?.mails || [])].filter((item)=>/faktura/i.test(`${item?.titel || ''} ${item?.title || ''} ${item?.notes || ''}`));
+  const docsByInvoice = new Map(invoiceDocs.map((item)=>{ const label = `${item.titel || item.title || ''} ${item.notes || ''}`; const hit = label.match(/faktura\s+(\d+)/i); return [hit ? hit[1] : '', item]; }));
+  return rows.length ? `<table class="payment-inline-table"><thead><tr><th>Post</th><th>Dato</th><th>Faktura</th><th class="num">Beløb</th><th>Status</th></tr></thead><tbody>${rows.map((p,index)=>{ const invoiceNo = p.fak || s.fak || ''; const doc = docsByInvoice.get(invoiceNo) || (invoiceDocs.length === 1 ? invoiceDocs[0] : null); const url = doc ? documentDriveUrl(doc) : ''; return `<tr><td>${paymentLetter(index)}</td><td>${displayDate(p.dato)}</td><td>${invoiceNo ? (url ? `<a href="${escapeAttr(url)}" target="_blank" rel="noopener">Faktura ${escapeAttr(invoiceNo)}</a>` : `Faktura ${escapeAttr(invoiceNo)}`) : '—'}</td><td class="num">${p.beloeb} kr.</td><td class="status-cell">${String(p.status || '').toLowerCase() === 'betalt' ? `<span class="status-chip paid"><span class="check">✓</span>Faktura betalt</span>` : `<span class="status-chip open">${String(p.status || '').toLowerCase().includes('sendt') ? 'Faktura sendt' : 'Udestående'}</span><button class="icon-btn pay-action-btn" onclick="markCasePaymentPaid(${caseIndex}, '${escapeAttr(p.historyKey)}')">Marker som betalt</button>`}</td></tr>`; }).join('')}</tbody></table>` : '<div class="doc-empty">Ingen betalinger registreret på kunden endnu.</div>';
 }
 function renderRelatedMailList(s){ const related = getRelatedEmails(s).slice(0,4); return related.length ? related.map((mail)=>`<div class="mini-item"><strong>${mail.subject}</strong><div class="meta">${displayDate(mail.date)} · ${mail.from}</div><div class="priority-item-links" style="margin-top:6px"><button class="icon-btn" onclick="setActiveTab('indbakke'); openEmail('${mail.id}')">Åbn mail</button></div></div>`).join('') : '<div class="doc-empty">Ingen relateret dialog fundet endnu.</div>'; }
 function renderDrafts(items=[]){ return items.length ? `<div class="mini-list">${items.map((item)=>`<div class="mini-item"><strong>${item.subject || item.type || 'Draft'}</strong><div class="meta">${item.status || 'Afventer'}${item.createdAt ? ` · ${displayDate(String(item.createdAt).slice(0,10))}` : ''}</div></div>`).join('')}</div>` : '<div class="doc-empty">Ingen drafts oprettet endnu.</div>'; }
@@ -3266,7 +3277,7 @@ function renderSagDetail(i){
         <h3>Overblik</h3>
         <table class="case-summary-table"><tbody>
           <tr><td>Kundenr.</td><td>${customerNumber || '—'}</td></tr>
-          <tr><td>Sagsnr.</td><td><span class="case-ref-inline">${formatCaseRefDisplay(caseRef) || '—'}</span></td></tr>
+          <tr><td>SagsID</td><td><span class="case-ref-inline">${formatCaseRefFullDisplay(caseRef) || formatCaseRefDisplay(caseRef) || '—'}</span></td></tr>
           ${account ? `<tr><td>Kundekonto</td><td>${account.title}</td></tr>` : ''}
           <tr><td>Adresse</td><td>${s.adr || 'Adresse mangler'}</td></tr>
           <tr><td>Entreprisesum</td><td>${parseNumber(s.b) > 0 ? formatCurrency(parseNumber(s.b)) : '—'}</td></tr>
