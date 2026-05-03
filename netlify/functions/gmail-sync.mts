@@ -13,7 +13,6 @@ import {
 import {
   ensureCaseDriveFolders,
   findDriveFileByName,
-  getGmailAttachment,
   getGmailThread,
   gmailMessageSummary,
   googleIntegrationStatus,
@@ -323,17 +322,38 @@ function applyInvoiceToCase(matched: any, invoiceNumber: string, date = "", amou
   return docsChanged || after !== before;
 }
 
-function scoreInvoiceCase(entry: any, invoiceText: string) {
+function invoiceNumbersForCase(entry: any) {
+  const directValues = [
+    entry?.fak,
+    entry?.workflow?.invoiceNumber,
+  ].map((value) => textValue(value, "")).filter((value) => /^\d{3,}$/.test(value.trim()));
+  const documentValues = [
+    ...(Array.isArray(entry?.docs?.betaling) ? entry.docs.betaling.flatMap((doc: any) => [doc?.titel, doc?.title, doc?.notes]) : []),
+    ...(Array.isArray(entry?.docs?.mails) ? entry.docs.mails.flatMap((doc: any) => [doc?.titel, doc?.title, doc?.notes]) : []),
+  ];
+  const documentInvoices = documentValues
+    .map((value) => textValue(value, ""))
+    .flatMap((value) => [...value.matchAll(/\bfaktura\s*(?:nr\.?|nummer)?\s*[:#-]?\s*(\d{3,})\b/gi)].map((match) => match[1]))
+    .filter(Boolean);
+  return [...new Set([...directValues, ...documentInvoices])];
+}
+
+function scoreInvoiceCase(entry: any, invoiceText: string, invoiceNumber = "") {
   const source = plainCompactText(invoiceText);
   if (!source) return { score: 0, reasons: [] as string[] };
   const reasons: string[] = [];
   let score = 0;
+  const existingInvoices = invoiceNumbersForCase(entry);
   const address = plainCompactText(entry?.adr || "");
   const customer = plainCompactText(entry?.kunde || "");
   const task = plainCompactText(entry?.opg || "");
   const sid = normalizeCaseKey(entry?.sid || "");
   const nr = normalizeCaseKey(entry?.nr || "");
   const primary = primaryCaseNumber(entry);
+  if (invoiceNumber && existingInvoices.includes(invoiceNumber)) {
+    score += 20;
+    reasons.push("eksisterende fakturanr.");
+  }
   if (address && address.length >= 6 && source.includes(address)) {
     score += 10;
     reasons.push("adresse");
@@ -361,17 +381,17 @@ function scoreInvoiceCase(entry: any, invoiceText: string) {
   return { score, reasons };
 }
 
-function matchInvoiceToCase(state: any, invoiceText: string) {
+function matchInvoiceToCase(state: any, invoiceText: string, invoiceNumber = "") {
   const entries = Array.isArray(state?.sager) ? state.sager : [];
   const ranked = entries
-    .map((entry: any) => ({ entry, ...scoreInvoiceCase(entry, invoiceText) }))
+    .map((entry: any) => ({ entry, ...scoreInvoiceCase(entry, invoiceText, invoiceNumber) }))
     .filter((result: any) => result.score > 0)
     .sort((a: any, b: any) => b.score - a.score);
   const best = ranked[0];
   const second = ranked[1];
   if (!best) return { matched: null, score: 0, reasons: [], ambiguous: false };
   const ambiguous = Boolean(second && second.score >= best.score - 2);
-  const hasStrongReason = best.reasons.includes("adresse") || best.reasons.includes("sagsID");
+  const hasStrongReason = best.reasons.includes("eksisterende fakturanr.") || best.reasons.includes("adresse") || best.reasons.includes("sagsID");
   if (best.score < 8 || !hasStrongReason || ambiguous) {
     return { matched: null, score: best.score, reasons: best.reasons, ambiguous };
   }
@@ -387,7 +407,7 @@ function registerInvoicesFromThreads(state: any, threads: any[]) {
       .join("\n\n");
     const invoiceMatch = threadText.match(/\bfaktura\s*(?:nr\.?|nummer)?\s*[:#-]?\s*(\d{3,})\b/i);
     if (!invoiceMatch) continue;
-    const match = matchInvoiceToCase(state, threadText);
+    const match = matchInvoiceToCase(state, threadText, invoiceMatch[1]);
     if (!match.matched) {
       appendSyncLog(state, {
         status: "error",
@@ -397,7 +417,7 @@ function registerInvoicesFromThreads(state: any, threads: any[]) {
         documentType: "Faktura",
         category: "betaling",
         error: match.ambiguous ? "invoice_match_ambiguous" : "invoice_match_low_confidence",
-        notes: `Faktura ${invoiceMatch[1]} kunne ikke matches sikkert. Bedste score: ${match.score || 0}${match.reasons?.length ? ` (${match.reasons.join(", ")})` : ""}.`,
+        notes: `Faktura ${invoiceMatch[1]} kræver manuel match. Den blev ikke arkiveret, fordi mailtekst/filnavn ikke matcher en sag sikkert. Bedste score: ${match.score || 0}${match.reasons?.length ? ` (${match.reasons.join(", ")})` : ""}.`,
       });
       continue;
     }
@@ -597,21 +617,6 @@ async function extractAttachmentContext(thread: any) {
         sourceMessageId: message.id,
       });
       texts.push(filename);
-      if (attachment?.attachmentId && Number(attachment?.size || 0) <= 5_000_000) {
-        try {
-          const content = await getGmailAttachment(message.id, attachment.attachmentId);
-          const isPdf = mimeType === "application/pdf" || /\.pdf$/i.test(filename);
-          if (isPdf) {
-            const pdfText = await extractPdfText(content);
-            if (pdfText) texts.push(pdfText);
-          } else if (/^text\//i.test(mimeType) || /\.(txt|csv)$/i.test(filename)) {
-            const text = content.toString("utf8").trim();
-            if (text) texts.push(text.slice(0, 20_000));
-          }
-        } catch (error) {
-          texts.push(`Attachment kunne ikke læses: ${filename} (${formatSyncError(error)})`);
-        }
-      }
     }
   }
 
@@ -619,27 +624,6 @@ async function extractAttachmentContext(thread: any) {
     text: texts.join("\n\n"),
     documents,
   };
-}
-
-async function extractPdfText(content: Buffer) {
-  try {
-    const pdfjs = await import("pdfjs-dist/legacy/build/pdf.mjs");
-    const loadingTask = pdfjs.getDocument({ data: new Uint8Array(content), disableWorker: true });
-    const pdf = await loadingTask.promise;
-    const pages: string[] = [];
-    const maxPages = Math.min(Number(pdf.numPages || 0), 8);
-    for (let pageNo = 1; pageNo <= maxPages; pageNo += 1) {
-      const page = await pdf.getPage(pageNo);
-      const textContent = await page.getTextContent();
-      const pageText = Array.isArray(textContent?.items)
-        ? textContent.items.map((item: any) => textValue(item?.str, "")).filter(Boolean).join(" ")
-        : "";
-      if (pageText.trim()) pages.push(pageText.trim());
-    }
-    return pages.join("\n").slice(0, 40_000);
-  } catch {
-    return "";
-  }
 }
 
 function inferCustomerName(thread: any, sager: any[]) {
@@ -1039,7 +1023,7 @@ async function archiveQualifiedThread(thread: any, item: any, state: any, integr
   let matched = null;
   if (signal.category === "betaling") {
     const invoiceMatch = archiveText.match(/\bfaktura\s*(?:nr\.?|nummer)?\s*[:#-]?\s*(\d{3,})\b/i);
-    const invoiceCaseMatch = matchInvoiceToCase(state, archiveText);
+    const invoiceCaseMatch = matchInvoiceToCase(state, archiveText, invoiceMatch?.[1] || "");
     if (!invoiceCaseMatch.matched) {
       return {
         ok: false,

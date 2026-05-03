@@ -3,7 +3,6 @@
   "private": true,
   "type": "module",
   "dependencies": {
-    "@netlify/blobs": "^9.1.0",
-    "pdfjs-dist": "^5.6.205"
+    "@netlify/blobs": "^9.1.0"
   }
 }
