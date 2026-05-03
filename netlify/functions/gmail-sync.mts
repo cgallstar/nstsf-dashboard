@@ -320,6 +320,48 @@ function labelKnownInvoiceDocs(matched: any, invoiceNumber: string, date: string
   return changed;
 }
 
+function applyKnownInvoiceToCase(matched: any, invoiceNumber: string, date = "") {
+  ensureCaseShape(matched);
+  const before = JSON.stringify({
+    fak: matched.fak,
+    status: matched.status,
+    workflow: matched.workflow,
+    dato: matched.dato,
+    docs: matched.docs?.betaling,
+  });
+  matched.fak = invoiceNumber;
+  matched.status = "Faktura sendt";
+  matched.workflow = matched.workflow && typeof matched.workflow === "object" ? matched.workflow : {};
+  matched.workflow.invoiceNumber = invoiceNumber;
+  matched.workflow.invoiceSentDate = date || matched.workflow.invoiceSentDate || new Date().toISOString().slice(0, 10);
+  if (!textValue(matched.dato, "")) matched.dato = matched.workflow.invoiceSentDate;
+  const docsChanged = labelKnownInvoiceDocs(matched, invoiceNumber, matched.workflow.invoiceSentDate);
+  const after = JSON.stringify({
+    fak: matched.fak,
+    status: matched.status,
+    workflow: matched.workflow,
+    dato: matched.dato,
+    docs: matched.docs?.betaling,
+  });
+  return docsChanged || after !== before;
+}
+
+function ensureKnownInvoiceCases(state: any) {
+  let changed = 0;
+  for (const invoiceNumber of Object.keys(KNOWN_INVOICE_CASES)) {
+    const matched = findKnownInvoiceCase(state, invoiceNumber);
+    if (!matched) continue;
+    if (!applyKnownInvoiceToCase(matched, invoiceNumber)) continue;
+    appendActivity(matched, { name: "Gmail-sync", email: MAILBOX_OWNER }, {
+      type: "invoice_update",
+      title: `Faktura ${invoiceNumber} registreret`,
+      summary: `Faktura ${invoiceNumber} er registreret på sagen via kendt sagsmapping.`,
+    });
+    changed += 1;
+  }
+  return changed;
+}
+
 function backfillKnownInvoicesFromThreads(state: any, threads: any[]) {
   let changed = 0;
   for (const thread of threads) {
@@ -333,27 +375,10 @@ function backfillKnownInvoicesFromThreads(state: any, threads: any[]) {
     if (!matched) continue;
     ensureCaseShape(matched);
     const date = extractDocumentDate(summaries[0]?.subject || "", threadText, summaries[0]?.date);
-    const before = JSON.stringify({
-      fak: matched.fak,
-      status: matched.status,
-      workflow: matched.workflow,
-      dato: matched.dato,
-    });
-    matched.fak = invoiceMatch[1];
-    matched.status = "Faktura sendt";
-    matched.workflow = matched.workflow && typeof matched.workflow === "object" ? matched.workflow : {};
-    matched.workflow.invoiceNumber = invoiceMatch[1];
-    matched.workflow.invoiceSentDate = date || matched.workflow.invoiceSentDate || new Date().toISOString().slice(0, 10);
-    if (!textValue(matched.dato, "")) matched.dato = matched.workflow.invoiceSentDate;
+    const didApply = applyKnownInvoiceToCase(matched, invoiceMatch[1], date);
     const amount = extractInvoiceAmount(threadText);
     if (amount && !parseMoneyValue(textValue(matched.u, ""))) matched.u = formatAmount(amount);
-    const docsChanged = labelKnownInvoiceDocs(matched, invoiceMatch[1], matched.workflow.invoiceSentDate);
-    if (JSON.stringify({
-      fak: matched.fak,
-      status: matched.status,
-      workflow: matched.workflow,
-      dato: matched.dato,
-    }) !== before || docsChanged) {
+    if (didApply) {
       appendActivity(matched, { name: "Gmail-sync", email: MAILBOX_OWNER }, {
         type: "invoice_update",
         title: `Faktura ${invoiceMatch[1]} registreret`,
@@ -1075,7 +1100,7 @@ export default async (request: Request) => {
     const fullThreads = fullThreadResults
       .filter((result): result is PromiseFulfilledResult<any> => result.status === "fulfilled")
       .map((result) => result.value);
-    const knownInvoicesUpdated = backfillKnownInvoicesFromThreads(state, fullThreads);
+    const knownInvoicesUpdated = backfillKnownInvoicesFromThreads(state, fullThreads) + ensureKnownInvoiceCases(state);
     if (knownInvoicesUpdated) {
       appendSyncLog(state, {
         status: "archived",

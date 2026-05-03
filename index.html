@@ -1959,8 +1959,42 @@ function cloneDocs(docs={}, drive=''){
 function normalizeSagsId(value=''){
   return String(value || '').replace(/\s+/g,'').trim().toLowerCase();
 }
+const KNOWN_CASE_INVOICES = [
+  { invoice:'1152', caseId:'1002g', address:'lykkeholms alle 33' },
+  { invoice:'1153', caseId:'1002j', address:'guldborgvej 1' },
+];
+function compactDanishText(value=''){
+  return String(value || '')
+    .replace(/[æÆ]/g, 'ae')
+    .replace(/[øØ]/g, 'o')
+    .replace(/[åÅ]/g, 'a')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-zA-Z0-9]+/g, ' ')
+    .trim()
+    .toLowerCase();
+}
+function knownInvoiceForSag(entry={}){
+  const ref = normalizeSagsId(`${entry.sid || ''} ${entry.nr || ''}`);
+  const marker = compactDanishText(`${entry.kunde || ''} ${entry.adr || ''} ${entry.opg || ''}`);
+  return KNOWN_CASE_INVOICES.find((item)=>ref.includes(item.caseId) || marker.includes(item.address)) || null;
+}
+function labelKnownInvoiceDocsClient(docs, invoice, date=''){
+  if(!docs || !invoice) return;
+  docs.betaling = Array.isArray(docs.betaling) ? docs.betaling : [];
+  docs.betaling.forEach((doc)=>{
+    const title = textValue(doc?.titel || doc?.title, '');
+    const notes = textValue(doc?.notes, '');
+    const hasInvoice = new RegExp(`\\b${invoice}\\b`).test(`${title} ${notes}`);
+    const isGenericInvoice = /^faktura$/i.test(title.trim()) || /^unavngiven faktura$/i.test(title.trim()) || (title.toLowerCase().includes('faktura') && !/\d{3,}/.test(title));
+    if(!hasInvoice && !isGenericInvoice) return;
+    doc.titel = `Faktura ${invoice}`;
+    doc.title = `Faktura ${invoice}`;
+    if(!textValue(doc.dato, '')) doc.dato = date;
+  });
+}
 function normalizeSag(saved={}, i=0){
-  return {
+  const normalized = {
     ...saved,
     k:+saved.k || 5,
     sid:textValue(saved.sid, ''),
@@ -2004,6 +2038,15 @@ function normalizeSag(saved={}, i=0){
     mailDrafts: Array.isArray(saved?.mailDrafts) ? saved.mailDrafts : [],
     activityLog: Array.isArray(saved?.activityLog) ? saved.activityLog : [],
   };
+  const knownInvoice = knownInvoiceForSag(normalized);
+  if(knownInvoice){
+    normalized.fak = normalized.fak || knownInvoice.invoice;
+    normalized.status = normalized.status && normalized.status !== '—' ? normalized.status : 'Faktura sendt';
+    normalized.workflow.invoiceNumber = normalized.workflow.invoiceNumber || knownInvoice.invoice;
+    normalized.workflow.invoiceSentDate = normalized.workflow.invoiceSentDate || normalized.dato || '';
+    labelKnownInvoiceDocsClient(normalized.docs, knownInvoice.invoice, normalized.workflow.invoiceSentDate);
+  }
+  return normalized;
 }
 function normalizeBetaling(saved={}){ return { ...saved, nr:textValue(saved.nr, ''), kunde:textValue(saved.kunde, 'Ukendt kunde'), milepael:textValue(saved.milepael, 'Udestående betaling'), dato:textValue(saved.dato, ''), beloeb:textValue(saved.beloeb, '0'), fak:textValue(saved.fak, ''), status:textValue(saved.status, 'udestaaende') }; }
 function normalizeEmployee(saved={}, i=0){ return { id:textValue(saved.id, `employee-${i + 1}`), name:textValue(saved.name, `Medarbejder ${i + 1}`), hours:Number(saved.hours) || 37, type:textValue(saved.type, 'employee'), overrides: saved && typeof saved.overrides === 'object' && !Array.isArray(saved.overrides) ? saved.overrides : {} }; }
