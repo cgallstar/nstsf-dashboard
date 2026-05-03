@@ -506,6 +506,8 @@
   .priority-row.later .priority-reason{color:#8f8b84}
   .priority-row.later .priority-meta{color:#b0ada8}
   .priority-row.later .priority-suggestion{background:#fcfaf6;border-color:#efebe4}
+  .priority-row.completed{opacity:.62}
+  .priority-row.completed .priority-name{text-decoration:line-through;text-decoration-thickness:1px}
   .priority-rank{font-size:18px;font-weight:500;color:#b8b5b0;min-width:22px;line-height:1.4;font-family:var(--mono);flex-shrink:0}
   .priority-rank.now{color:var(--ink)}
   .priority-body{flex:1;min-width:0}
@@ -542,6 +544,10 @@
   .priority-bullet{display:grid;grid-template-columns:16px minmax(0,1fr) auto;gap:10px;align-items:flex-start;padding:10px 0;border-top:.5px solid rgba(0,0,0,.06)}
   .priority-bullet:first-child{border-top:none;padding-top:0}
   .priority-bullet-check{width:16px;height:16px;border-radius:50%;border:1px solid #b8c8bc;background:#fff;cursor:pointer;margin-top:2px}
+  .priority-bullet.completed{opacity:.58}
+  .priority-bullet.completed .priority-bullet-check{background:#2f7a52;border-color:#2f7a52}
+  .priority-bullet.completed .priority-bullet-check::after{content:'✓';display:block;color:#fff;font-size:11px;line-height:14px;text-align:center}
+  .priority-bullet.completed .priority-bullet-title{text-decoration:line-through;text-decoration-thickness:1px}
   .priority-bullet-title{font-size:12px;font-weight:600;color:var(--ink)}
   .priority-bullet-meta{font-size:10px;color:var(--muted);margin-top:2px}
   .priority-bullet-text{font-size:11px;color:var(--text);line-height:1.45;margin-top:4px}
@@ -1026,8 +1032,8 @@
 
 <nav class="tabs">
   <button class="tab-btn active" data-tab="dashboard">Dashboard</button>
-  <button class="tab-btn" data-tab="prioriteringer">Sager <span style="opacity:.6">(0)</span></button>
   <button class="tab-btn" data-tab="idag">I dag <span style="opacity:.6">(0)</span></button>
+  <button class="tab-btn" data-tab="prioriteringer">Opgaver <span style="opacity:.6">(0)</span></button>
   <button class="tab-btn" data-tab="sager">Kunder <span style="opacity:.6">(29)</span></button>
   <button class="tab-btn" data-tab="likviditet">Likviditet</button>
   <button class="tab-btn" data-tab="appendix">Appendix</button>
@@ -1329,19 +1335,40 @@
     <div class="priority-topbar">
       <div class="priority-topbar-copy">
         <span class="priority-topbar-title">I dag</span>
-        <div class="priority-topbar-sub">Kun opgaver og sager der reelt hører til dags dato.</div>
+        <div class="priority-topbar-sub">Samme logik som Opgaver · kun Nu og I dag.</div>
       </div>
       <div class="priority-topbar-right">
+        <span class="priority-updated" id="todayGeneratedAt"></span>
+        <button class="btn primary" onclick="openPriorityTaskComposer()">Ny opgave</button>
         <button class="btn" id="updateTodayBtn" onclick="updatePriorities(true)">Opdatér Sager</button>
+        <div class="priority-toggle">
+          <button class="active" disabled>I dag</button>
+          <button onclick="setActiveTab('prioriteringer')">Opgaver</button>
+          <button onclick="setActiveTab('prioriteringer'); setPriorityView('archive')">Arkiv</button>
+        </div>
       </div>
     </div>
-    <div class="priority-main">
-      <div class="priority-main-head">
-        <div class="priority-main-title">Dagens handlinger</div>
-        <div class="priority-main-sub">Forfaldne betalinger, frister i dag, akutte mails og opgaver markeret som Nu.</div>
+    <div class="priority-layout">
+      <div class="priority-main">
+        <div class="priority-main-head">
+          <div class="priority-main-title">Dagens handlinger</div>
+          <div class="priority-main-sub">Forfaldne betalinger, frister i dag, akutte mails og opgaver markeret som Nu.</div>
+        </div>
+        <div class="priority-divider">Nu</div>
+        <div id="todayPriorityNow"></div>
+        <div class="priority-divider">I dag</div>
+        <div id="todayPriorityToday"></div>
       </div>
-      <div class="priority-divider">I dag</div>
-      <div id="todayPriorityList"></div>
+      <aside class="priority-side">
+        <div class="priority-sidebar-section hidden" id="todayTaskSection">
+          <div class="priority-sidebar-title">Opgave</div>
+          <div class="priority-sidebar-helper">Brug knappen Ny opgave øverst. Formularen vises i Opgaver-panelet.</div>
+        </div>
+        <div class="priority-sidebar-section">
+          <div class="priority-sidebar-title">Opdateringer</div>
+          <div id="todayUpdatesList" class="priority-mini-list"></div>
+        </div>
+      </aside>
     </div>
   </div>
 </section>
@@ -2745,7 +2772,10 @@ function buildPriorities(includeDismissed=false){
       links: '',
     });
   });
-  const sortItems = (items)=>items.filter((item)=>includeDismissed ? true : !dismissedPriorityKeys.includes(item.key)).sort((a,b)=>b.score-a.score || a.title.localeCompare(b.title));
+  const sortItems = (items)=>items
+    .filter((item)=>includeDismissed ? true : !dismissedPriorityKeys.includes(item.key))
+    .map((item)=>({...item, completed: completedPriorityKeys().has(item.key)}))
+    .sort((a,b)=>Number(a.completed)-Number(b.completed) || b.score-a.score || a.title.localeCompare(b.title));
   return { sales: sortItems(sales), todos: sortItems(todos) };
 }
 function priorityActionButtons(links='', mode='main'){
@@ -2809,6 +2839,9 @@ function archivePriorityItem(item, mode='arkiv'){
   });
   archivedPriorityItems = archivedPriorityItems.slice(0, 50);
 }
+function completedPriorityKeys(){
+  return new Set(archivedPriorityItems.filter((entry)=>entry.mode === 'fuldført').map((entry)=>entry.key));
+}
 function restoreArchivedPriority(key=''){
   if(!key) return;
   archivedPriorityItems = archivedPriorityItems.filter((item)=>item.key !== key);
@@ -2820,7 +2853,6 @@ function restoreArchivedPriority(key=''){
 }
 function markPriorityComplete(key=''){
   archivePriorityItem(findPriorityByKey(key), 'fuldført');
-  if(key && !dismissedPriorityKeys.includes(key)) dismissedPriorityKeys.push(key);
   saveState(true);
   renderPriorities();
   renderInbox();
@@ -2829,7 +2861,6 @@ function markPriorityComplete(key=''){
 function markPriorityDone(emailId='', key=''){
   archivePriorityItem(findPriorityByKey(key), 'fuldført');
   if(emailId && !handledEmailIds.includes(emailId)) handledEmailIds.push(emailId);
-  if(key && !dismissedPriorityKeys.includes(key)) dismissedPriorityKeys.push(key);
   saveState(true);
   renderPriorities();
   renderInbox();
@@ -2839,7 +2870,6 @@ function markInternalTaskDone(taskId='', key=''){
   archivePriorityItem(findPriorityByKey(key), 'fuldført');
   const task = internalTasks.find((entry)=>entry.id === taskId);
   if(task) task.status = 'Fuldført';
-  if(key && !dismissedPriorityKeys.includes(key)) dismissedPriorityKeys.push(key);
   saveState(true);
   renderPriorities();
   renderAppendix();
@@ -2872,6 +2902,7 @@ function groupPriorityItems(items=[]){
   return groups;
 }
 function priorityDoneButton(item={}, klass='btn'){
+  if(item.completed) return `<span class="priority-tag week">Fuldført</span>`;
   return item.internalTaskId
     ? `<button class="${klass}" onclick="markInternalTaskDone('${item.internalTaskId}','${item.key}')">Fuldført</button>`
     : item.emailId
@@ -2879,8 +2910,8 @@ function priorityDoneButton(item={}, klass='btn'){
       : `<button class="${klass}" onclick="markPriorityComplete('${item.key}')">Fuldført</button>`;
 }
 function renderPriorityBullet(item){
-  return `<div class="priority-bullet">
-    <button class="priority-bullet-check" title="Marker som fuldført" aria-label="Marker som fuldført" onclick="${item.internalTaskId ? `markInternalTaskDone('${item.internalTaskId}','${item.key}')` : item.emailId ? `markPriorityDone('${item.emailId}','${item.key}')` : `markPriorityComplete('${item.key}')`}"></button>
+  return `<div class="priority-bullet ${item.completed ? 'completed' : ''}">
+    <button class="priority-bullet-check" title="${item.completed ? 'Fuldført' : 'Marker som fuldført'}" aria-label="${item.completed ? 'Fuldført' : 'Marker som fuldført'}" ${item.completed ? 'disabled' : `onclick="${item.internalTaskId ? `markInternalTaskDone('${item.internalTaskId}','${item.key}')` : item.emailId ? `markPriorityDone('${item.emailId}','${item.key}')` : `markPriorityComplete('${item.key}')`}"`}></button>
     <div>
       <div class="priority-bullet-title">${escapeAttr(item.reason || item.title)}</div>
       <div class="priority-bullet-meta">${escapeAttr(item.meta || '')}</div>
@@ -2896,7 +2927,7 @@ function renderPriorityRows(targetId, items, buckets, type){
   const primaryBucket = wanted[0] || 'now';
   const rows = items.filter((item)=>wanted.includes(item.bucket));
   const groups = groupPriorityItems(rows);
-  el.innerHTML = groups.length ? groups.map((group, index)=>{ const item = group.items[0]; const grouped = group.items.length > 1; return `<div class="priority-row ${primaryBucket === 'now' ? 'now' : 'later'}">
+  el.innerHTML = groups.length ? groups.map((group, index)=>{ const item = group.items[0]; const grouped = group.items.length > 1; return `<div class="priority-row ${primaryBucket === 'now' ? 'now' : 'later'} ${item.completed ? 'completed' : ''}">
     <div class="priority-rank ${primaryBucket === 'now' ? 'now' : ''}">${index + 1}</div>
     <div class="priority-type"><div class="priority-dot ${type === 'sales' ? 'sales' : 'todo'}"></div></div>
     <div class="priority-body">
@@ -2907,7 +2938,7 @@ function renderPriorityRows(targetId, items, buckets, type){
         : `<div class="priority-reason">${escapeAttr(item.reason)}</div><div class="priority-suggestion"><div class="priority-suggestion-label">Suggestion</div><div class="priority-reason">${escapeAttr(item.actionText || item.reason)}</div></div>`}
     </div>
     <div class="priority-row-tools">
-      <button class="btn ghost" onclick="dismissPriority('${item.key}')">Slet</button>
+      ${item.completed ? '' : `<button class="btn ghost" onclick="dismissPriority('${item.key}')">Slet</button>`}
       ${priorityDoneButton(item)}
       ${priorityEditButton(item.links, item)}
     </div>
@@ -2926,6 +2957,12 @@ function renderPrioritySide(targetId, items, type){
       <div class="priority-side-actions">${priorityActionButtons(item.links, 'side')}${item.internalTaskId ? `<button class="side-btn" onclick="markInternalTaskDone('${item.internalTaskId}','${item.key}')">Fuldført</button>` : item.emailId ? `<button class="side-btn" onclick="markPriorityDone('${item.emailId}','${item.key}')">Fuldført</button>` : `<button class="side-btn" onclick="markPriorityComplete('${item.key}')">Fuldført</button>`}<button class="side-btn" onclick="dismissPriority('${item.key}')">Fjern</button></div>
     </div>
   </div>`).join('') : '<div class="priority-side-empty">Intet ventende her.</div>';
+}
+function renderUpdatesInto(targetId){
+  const updates = document.getElementById(targetId);
+  if(!updates) return;
+  const items = collectPriorityUpdates();
+  updates.innerHTML = items.length ? items.map((item)=>`<div class="priority-mini-item clickable" onclick="${item.action || ''}"><strong>${escapeAttr(item.title)}</strong><div class="meta">${escapeAttr(item.meta)}</div><div class="meta">${escapeAttr(item.body)}</div></div>`).join('') : '<div class="priority-sidebar-empty">Ingen nyere opdateringer endnu.</div>';
 }
 function renderPriorityArchive(){
   const el = document.getElementById('priorityArchiveList');
@@ -2998,11 +3035,8 @@ function collectPriorityUpdates(){
   return entries.sort((a,b)=>String(b.createdAt || '').localeCompare(String(a.createdAt || ''))).slice(0, 8);
 }
 function renderSidebarSummaries(priorities){
-  const updates = document.getElementById('priorityUpdatesList');
-  if(updates){
-    const items = collectPriorityUpdates();
-    updates.innerHTML = items.length ? items.map((item)=>`<div class="priority-mini-item clickable" onclick="${item.action || ''}"><strong>${escapeAttr(item.title)}</strong><div class="meta">${escapeAttr(item.meta)}</div><div class="meta">${escapeAttr(item.body)}</div></div>`).join('') : '<div class="priority-sidebar-empty">Ingen nyere opdateringer endnu.</div>';
-  }
+  renderUpdatesInto('priorityUpdatesList');
+  renderUpdatesInto('todayUpdatesList');
 }
 function fillSidebarTaskForm(task={}){
   const title = document.getElementById('priorityTaskTitle');
@@ -3035,6 +3069,7 @@ function resetSidebarTaskForm(){
 function openPriorityTaskComposer(){
   editingPriorityTaskId = null;
   resetSidebarTaskForm();
+  if(currentTab === 'idag') setActiveTab('prioriteringer');
   const section = document.getElementById('priorityTaskSection');
   const title = document.getElementById('priorityTaskPanelTitle');
   if(section) section.classList.remove('hidden');
@@ -3117,14 +3152,17 @@ function setPriorityView(view){
 }
 function renderPriorities(){
   const priorities = buildPriorities();
-  const activeItems = [...priorities.todos, ...priorities.sales].sort((a,b)=>b.score-a.score || a.title.localeCompare(b.title));
+  const activeItems = [...priorities.todos, ...priorities.sales].sort((a,b)=>Number(a.completed)-Number(b.completed) || b.score-a.score || a.title.localeCompare(b.title));
   renderPriorityRows('priorityTodoNow', activeItems, ['now'], 'todo');
   renderPriorityRows('priorityTodoToday', activeItems, ['today','week'], 'todo');
-  renderPriorityRows('todayPriorityList', activeItems, ['now','today'], 'todo');
+  renderPriorityRows('todayPriorityNow', activeItems, ['now'], 'todo');
+  renderPriorityRows('todayPriorityToday', activeItems, ['today'], 'todo');
   renderPriorityArchive();
   renderSidebarSummaries(priorities);
   const stamp = document.getElementById('priorityGeneratedAt');
   if(stamp) stamp.textContent = `Opdateret ${new Date().toLocaleString('da-DK')}`;
+  const todayStamp = document.getElementById('todayGeneratedAt');
+  if(todayStamp) todayStamp.textContent = `Opdateret ${new Date().toLocaleString('da-DK')}`;
   renderPriorityInbox();
   setPriorityView(priorityView);
 }
@@ -3132,7 +3170,7 @@ function buildPriorityCounts(){
   const priorities = buildPriorities();
   const activeItems = [...priorities.todos, ...priorities.sales];
   return {
-    todoCount: priorities.todos.length,
+    taskCount: activeItems.length,
     todayCount: activeItems.filter((item)=>item.bucket === 'now' || item.bucket === 'today').length,
     customerCount: sager.filter((s)=>ACTIVE_CASE_CATEGORIES.has(+s.k)).length,
   };
@@ -3143,7 +3181,7 @@ function updateCaseTabCount(){
   const priorityTab = document.querySelector('.tab-btn[data-tab="prioriteringer"]');
   const todayTab = document.querySelector('.tab-btn[data-tab="idag"]');
   if(customerTab) customerTab.innerHTML = `Kunder <span style="opacity:.6">(${counts.customerCount})</span>`;
-  if(priorityTab) priorityTab.innerHTML = `Sager <span style="opacity:.6">(${counts.todoCount})</span>`;
+  if(priorityTab) priorityTab.innerHTML = `Opgaver <span style="opacity:.6">(${counts.taskCount})</span>`;
   if(todayTab) todayTab.innerHTML = `I dag <span style="opacity:.6">(${counts.todayCount})</span>`;
 }
 let selectedCustomerIndex = null;
