@@ -343,6 +343,24 @@ async function listDriveFolderByName(parentId: string, name: string) {
   return Array.isArray(payload.files) && payload.files[0] ? payload.files[0] : null;
 }
 
+export async function findDriveFileByName(parentId: string, name: string) {
+  const query = [
+    `name='${String(name).replace(/'/g, "\\'")}'`,
+    "trashed=false",
+    `'${parentId}' in parents`,
+  ].join(" and ");
+  const params = new URLSearchParams({
+    q: query,
+    fields: "files(id,name,webViewLink,mimeType)",
+    pageSize: "1",
+    supportsAllDrives: "true",
+    includeItemsFromAllDrives: "true",
+  });
+  const response = await googleFetch(`${DRIVE_FILES_URL}?${params.toString()}`);
+  const payload = await response.json();
+  return Array.isArray(payload.files) && payload.files[0] ? payload.files[0] : null;
+}
+
 export async function ensureDriveFolder(name: string, parentId: string) {
   const existing = await listDriveFolderByName(parentId, name);
   if (existing) return existing;

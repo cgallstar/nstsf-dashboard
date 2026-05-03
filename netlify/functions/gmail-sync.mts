@@ -12,6 +12,7 @@ import {
 } from "./_lib/dashboard.mts";
 import {
   ensureCaseDriveFolders,
+  findDriveFileByName,
   getGmailAttachment,
   getGmailThread,
   gmailMessageSummary,
@@ -1103,6 +1104,15 @@ async function archiveQualifiedThread(thread: any, item: any, state: any, integr
     return sameFile || (sameThread && sameType && sameDate);
   });
   if (alreadyArchived) {
+    const existingEntry = (matched.activityLog || []).find((entry: any) => {
+      if (String(entry?.type) !== "gmail_archive") return false;
+      if (String(entry?.archiveKey || "") === archiveKey) return true;
+      const sameThread = textValue(entry?.threadId, "") === currentThreadId;
+      const sameType = normalizeCaseKey(entry?.documentType) === normalizedDocumentType;
+      const sameDate = textValue(entry?.documentDate, "") === documentDate;
+      const sameFile = textValue(entry?.fileName, "") === fileName;
+      return sameFile || (sameThread && sameType && sameDate);
+    }) || {};
     return {
       ok: true,
       skipped: true,
@@ -1112,6 +1122,8 @@ async function archiveQualifiedThread(thread: any, item: any, state: any, integr
       customerName: textValue(matched?.kunde, item?.kunde || ""),
       documentType: signal.documentType,
       documentDate,
+      driveUrl: textValue(existingEntry?.driveUrl, ""),
+      fileName,
     };
   }
 
@@ -1132,7 +1144,8 @@ async function archiveQualifiedThread(thread: any, item: any, state: any, integr
     matched.docs.drive = driveFolder;
     const folderId = textValue(folderInfo?.folders?.[signal.category]?.id, "");
     if (!folderId) throw new Error(`drive_folder_missing:${signal.category}`);
-    uploaded = await uploadDriveFile(folderId, document);
+    uploaded = await findDriveFileByName(folderId, fileName);
+    if (!uploaded) uploaded = await uploadDriveFile(folderId, document);
     document.url = textValue(uploaded?.webViewLink, "");
     document.fileId = textValue(uploaded?.id, "");
     document.mimeType = textValue(uploaded?.mimeType, document.mimeType);

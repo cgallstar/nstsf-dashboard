@@ -406,6 +406,7 @@
     display:grid;grid-template-columns:1fr auto;gap:10px;
   }
   .appendix-item h3{margin:0 0 6px;font-size:14px;color:var(--ink)}
+  .appendix-item.clickable,.priority-mini-item.clickable{cursor:pointer}
   .appendix-meta{font-size:12px;color:var(--muted)}
   .appendix-body{font-size:13px;color:#304153;line-height:1.45;margin-top:8px}
   .appendix-tags{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
@@ -2860,7 +2861,7 @@ function renderUpdatesInto(targetId){
   const updates = document.getElementById(targetId);
   if(!updates) return;
   const items = collectPriorityUpdates();
-  updates.innerHTML = items.length ? items.map((item)=>`<div class="priority-mini-item clickable" onclick="${item.action || ''}"><strong>${escapeAttr(item.title)}</strong><div class="meta">${escapeAttr(item.meta)}</div><div class="meta">${escapeAttr(item.body)}</div></div>`).join('') : '<div class="priority-sidebar-empty">Ingen nyere opdateringer endnu.</div>';
+  updates.innerHTML = items.length ? items.map((item)=>`<div class="priority-mini-item${item.action ? ' clickable' : ''}"${item.action ? ` onclick="${escapeAttr(item.action)}"` : ''}><strong>${escapeAttr(item.title)}</strong><div class="meta">${escapeAttr(item.meta)}</div><div class="meta">${escapeAttr(item.body)}</div></div>`).join('') : '<div class="priority-sidebar-empty">Ingen nyere opdateringer endnu.</div>';
 }
 function renderPriorityArchive(){
   const el = document.getElementById('priorityArchiveList');
@@ -2891,6 +2892,7 @@ function collectPriorityUpdates(){
           ? 'Fejl'
           : 'Opdatering';
     const targetLabel = item.caseId || item.customerName || 'Ukendt sag';
+    const driveUrl = textValue(item.driveUrl, '');
     entries.push({
       id:`sync-${item.id || item.createdAt}`,
       createdAt:item.createdAt,
@@ -2899,7 +2901,9 @@ function collectPriorityUpdates(){
       body:item.status === 'error'
         ? (item.error || item.notes || 'Arkivering mislykkedes.')
         : (item.notes || item.fileName || 'Synk registreret.'),
-      action:hasCase ? `setActiveTab('sager'); openSag(${caseIndex})` : '',
+      action:driveUrl
+        ? `window.open('${escapeAttr(driveUrl)}','_blank','noopener')`
+        : hasCase ? `setActiveTab('sager'); openSag(${caseIndex})` : '',
     });
   });
   sager.forEach((s, index)=>{
