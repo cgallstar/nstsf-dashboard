@@ -2861,7 +2861,19 @@ function renderUpdatesInto(targetId){
   const updates = document.getElementById(targetId);
   if(!updates) return;
   const items = collectPriorityUpdates();
-  updates.innerHTML = items.length ? items.map((item)=>`<div class="priority-mini-item${item.action ? ' clickable' : ''}"${item.action ? ` onclick="${escapeAttr(item.action)}"` : ''}><strong>${escapeAttr(item.title)}</strong><div class="meta">${escapeAttr(item.meta)}</div><div class="meta">${escapeAttr(item.body)}</div></div>`).join('') : '<div class="priority-sidebar-empty">Ingen nyere opdateringer endnu.</div>';
+  updates.innerHTML = items.length ? items.map((item)=>`<div class="priority-mini-item${item.targetType ? ' clickable' : ''}"${item.targetType ? ` data-update-id="${escapeAttr(item.id)}"` : ''}><strong>${escapeAttr(item.title)}</strong><div class="meta">${escapeAttr(item.meta)}</div><div class="meta">${escapeAttr(item.body)}</div></div>`).join('') : '<div class="priority-sidebar-empty">Ingen nyere opdateringer endnu.</div>';
+}
+function openPriorityUpdate(updateId){
+  const item = collectPriorityUpdates().find((entry)=>entry.id === updateId);
+  if(!item) return;
+  if(item.targetType === 'drive' && item.driveUrl){
+    window.open(item.driveUrl, '_blank', 'noopener');
+    return;
+  }
+  if(item.targetType === 'case' && typeof item.caseIndex === 'number' && item.caseIndex >= 0){
+    setActiveTab('sager');
+    openSag(item.caseIndex);
+  }
 }
 function renderPriorityArchive(){
   const el = document.getElementById('priorityArchiveList');
@@ -2901,9 +2913,9 @@ function collectPriorityUpdates(){
       body:item.status === 'error'
         ? (item.error || item.notes || 'Arkivering mislykkedes.')
         : (item.notes || item.fileName || 'Synk registreret.'),
-      action:driveUrl
-        ? `window.open('${escapeAttr(driveUrl)}','_blank','noopener')`
-        : hasCase ? `setActiveTab('sager'); openSag(${caseIndex})` : '',
+      targetType:driveUrl ? 'drive' : hasCase ? 'case' : '',
+      driveUrl,
+      caseIndex:hasCase ? caseIndex : -1,
     });
   });
   sager.forEach((s, index)=>{
@@ -2918,7 +2930,8 @@ function collectPriorityUpdates(){
           title:`${getCustomerDisplay(s)} opdateret`,
           meta:`${formatCaseRefDisplay(s.sid || s.nr || '') || 'Sag'} · ${displayDate(activity.createdAt)} · ${actor}`,
           body:textValue(activity.summary, 'Sagen er opdateret.'),
-          action:`setActiveTab('sager'); openSag(${index})`,
+          targetType:'case',
+          caseIndex:index,
         });
         return;
       }
@@ -2929,7 +2942,8 @@ function collectPriorityUpdates(){
           title:`${getCustomerDisplay(s)} · betaling markeret`,
           meta:`${formatCaseRefDisplay(s.sid || s.nr || '') || 'Sag'} · ${displayDate(activity.createdAt)} · ${actor}`,
           body:textValue(activity.summary, 'En betaling er markeret som betalt.'),
-          action:`setActiveTab('sager'); openSag(${index})`,
+          targetType:'case',
+          caseIndex:index,
         });
       }
     });
@@ -3624,6 +3638,11 @@ document.getElementById('sagerSoeg').addEventListener('input',render);
 document.getElementById('filterKat').addEventListener('change',render);
 document.getElementById('capacityHours').addEventListener('input', ()=>{ renderCapacity(); saveState(); });
 document.getElementById('konv').addEventListener('input', renderFinancials);
+document.addEventListener('click', (event)=>{
+  const target = event.target.closest('[data-update-id]');
+  if(!target) return;
+  openPriorityUpdate(target.dataset.updateId || '');
+});
 render();
 renderBetalinger();
 renderFinancials();
