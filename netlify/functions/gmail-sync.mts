@@ -30,6 +30,7 @@ const ARCHIVE_QUERIES = [
   `newer_than:90d -in:spam -in:trash ${OWNER_QUERY} ("Faktura 1152" OR "faktura 1152")`,
   `newer_than:90d -in:spam -in:trash ${OWNER_QUERY} ("Faktura 1153" OR "faktura 1153")`,
   `newer_than:45d -in:spam -in:trash ${OWNER_QUERY} ("Byggemødereferat" OR "Byggemodereferat" OR "byggemøde" OR "byggemode")`,
+  `newer_than:90d -in:spam -in:trash ${OWNER_QUERY} ("Udbedring af mangler" OR "afslutningsmøde" OR "afslutningsmode") ("Pladebutik" OR "Blågårdsgade 14" OR "Blaagaardsgade 14")`,
   `newer_than:45d -in:spam -in:trash ${OWNER_QUERY} ("Tilbud vedr" OR "tilbud" OR "overslagspris")`,
   `newer_than:45d -in:spam -in:trash ${OWNER_QUERY} ("Faktura" "Nordsjællands Tømrer")`,
   `newer_than:45d -in:spam -in:trash ${OWNER_QUERY} ("Bülowsvej" OR "Bulowsvej" OR "NV Gadesvej" OR "N. V. Gadesvej")`,
@@ -254,14 +255,14 @@ function findOrCreateKnownCase(state: any, signal: any, text = "") {
     compact.includes("pladebutik") ||
     ((compact.includes("blagardsgade 14") || compact.includes("blaagardsgade 14")) && compact.includes("udbedring") && compact.includes("mangler"));
   if (isPladebutikThread) {
-    const existing = findByMarker([/pladebutik/]);
+    const existing = findByMarker([/pladebutik/, /blagardsgade\s*14/, /blaagardsgade\s*14/]);
     if (existing) return ensureCaseShape(existing);
     return createCase({
-      k: signal?.category === "referater" ? 2 : 5,
+      k: signal?.category === "referater" ? 1 : 5,
       kunde: "Pladebutik",
       adr: "Blågårdsgade 14",
       opg: "Udbedring af mangler",
-      status: "Mangler registreret",
+      status: signal?.category === "referater" ? "Referat arkiveret" : "Mangler registreret",
     });
   }
 
@@ -490,6 +491,17 @@ function inferArchiveSignal(subject = "", body = "", from = "") {
   const rawSubject = String(subject || "").trim();
   const invoiceMatch = rawSubject.match(/faktura\s+(\d{3,})/i);
   if (!source) return null;
+  const isPladebutikMangelMeeting =
+    (source.includes("pladebutik") || source.includes("blagardsgade 14") || source.includes("blaagardsgade 14")) &&
+    (/udbedring|mangel|mangler|fejl|afslutning|afslutningsmode|billeder|dokumentation/.test(source));
+  if (isPladebutikMangelMeeting) {
+    return {
+      category: "referater",
+      documentType: source.includes("afslutningsmode") ? "Afslutningsmoede" : "Byggemodereferat",
+      sourceType: isInternalSender(from) ? "internal" : "external",
+      fileLabel: source.includes("afslutningsmode") ? "Afslutningsmoede" : "Fejl og mangler moede",
+    };
+  }
   if (/byggemodereferat|byggemode referat|byggemode|modereferat|moedereferat|referat/.test(subjectSource) || /byggemodereferat|byggemode referat|byggemode|modereferat|moedereferat|referat/.test(source)) {
     return {
       category: "referater",
@@ -829,6 +841,15 @@ function applyArchiveSideEffects(matched: any, signal: any, archiveText = "", do
     if (invoiceAmount && !parseMoneyValue(textValue(matched.u, ""))) matched.u = formatAmount(invoiceAmount);
     if (!textValue(matched.dato, "")) matched.dato = documentDate || new Date().toISOString().slice(0, 10);
     return;
+  }
+  if (signal.category === "referater") {
+    const compact = plainCompactText(`${matched?.kunde || ""} ${matched?.adr || ""} ${matched?.opg || ""} ${archiveText}`);
+    if (compact.includes("pladebutik") || compact.includes("blagardsgade 14") || compact.includes("blaagardsgade 14")) {
+      matched.status = "Referat arkiveret";
+      if ([2, 3, 4, 5].includes(Number(matched.k || 0))) matched.k = 1;
+      matched.workflow.currentStage = textValue(matched.workflow.currentStage, "Fejl og mangler");
+      matched.workflow.latestMeetingDate = documentDate || matched.workflow.latestMeetingDate || new Date().toISOString().slice(0, 10);
+    }
   }
   if (signal.category === "tilbud") {
     if ([3, 5].includes(Number(matched.k || 0))) matched.k = 4;
