@@ -2270,6 +2270,7 @@ function parseDateValue(value){
   return Number.isNaN(date.getTime()) ? null : date;
 }
 function displayDate(value){ const d = parseDateValue(value); if(!d) return value || '—'; return d.toLocaleDateString('da-DK', {day:'2-digit', month:'short', year:'numeric'}); }
+function addDaysIso(value, days){ const d = parseDateValue(value); if(!d) return ''; d.setDate(d.getDate() + days); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; }
 function parseNumber(value){ const n = Number(String(value || '').replace(/\./g,'').replace(',','.').replace(/[^\d.-]/g,'')); return Number.isFinite(n) ? n : 0; }
 function formatCurrency(value, options = {}){
   const amount = Math.round(Number(value) || 0);
@@ -2354,6 +2355,32 @@ function latestOfferDate(s){
   if(offerTask) return String(offerTask.createdAt || offerTask.dueDate || '').slice(0,10);
   const related = getRelatedEmails(s).filter((mail)=>mail.tags.includes('tilbud'));
   return related.length ? related[0].date : '';
+}
+function effectiveCaseTasks(s){
+  const tasks = Array.isArray(s?.tasks) ? [...s.tasks] : [];
+  const hasOpenOfferTask = tasks.some((task)=>String(task.status || '').toLowerCase() !== 'fuldført' && /tilbud/i.test(`${task.title || ''} ${task.notes || ''}`));
+  const offerDate = latestOfferDate(s);
+  if(hasOpenOfferTask || !offerDate || !ACTIVE_CASE_CATEGORIES.has(+s.k)) return tasks;
+  const sourceText = [
+    s.kunde,
+    s.adr,
+    s.opg,
+    s.workflow?.nextAction,
+    ...(s.docs?.tilbud || []).flatMap((doc)=>[doc?.titel, doc?.notes]),
+    ...(s.docs?.referater || []).flatMap((doc)=>[doc?.titel, doc?.notes]),
+    ...(s.docs?.byggereferater || []).flatMap((doc)=>[doc?.titel, doc?.notes]),
+  ].filter(Boolean).join(' ');
+  const isRevised = /revideret|revidere|revision|byggemødereferat|byggemodereferat/i.test(sourceText);
+  tasks.unshift({
+    id:`derived-offer-${getCaseRef(s) || s.nr || s.kunde || offerDate}`,
+    title:isRevised ? 'Følg op på revideret tilbud' : 'Følg op på tilbud',
+    status:'Åben',
+    dueDate:addDaysIso(offerDate, 7),
+    owner:'Christian',
+    notes:`${isRevised ? 'Der er afgivet et revideret tilbud' : 'Der er afgivet et tilbud'}. Følg op med kunden senest syv dage efter tilbudsdatoen.`,
+    derived:true,
+  });
+  return tasks;
 }
 function daysUntil(dateValue){ const date = parseDateValue(dateValue); if(!date) return null; const today = new Date(); today.setHours(0,0,0,0); date.setHours(0,0,0,0); return Math.round((date - today) / 86400000); }
 function sumPaymentsWithinDays(rows, days){
@@ -2534,7 +2561,7 @@ function buildPriorities(includeDismissed=false){
     const latestActivity = latestCaseActivity(s);
     const concreteActivity = hasConcreteActivity(latestActivity);
     const pendingDraft = hasPendingDraft(s);
-    const openCaseTasks = (s.tasks || []).filter((task)=>String(task.status || '').toLowerCase() !== 'fuldført');
+    const openCaseTasks = effectiveCaseTasks(s).filter((task)=>String(task.status || '').toLowerCase() !== 'fuldført');
     const nearCaseTasks = openCaseTasks.filter((task)=>{
       const d = daysUntil(task.dueDate);
       return !task.dueDate || (d !== null && d <= 7);
@@ -3093,7 +3120,7 @@ function renderAppendix(){
   if(!stream || !summary || !actions) return;
   const entries = buildAppendixEntries();
   const tasks = [
-    ...sager.flatMap((s, index)=>(s.tasks || []).map((task)=>({task, customer:s.kunde, index, internal:false}))),
+    ...sager.flatMap((s, index)=>effectiveCaseTasks(s).map((task)=>({task, customer:s.kunde, index, internal:false}))),
     ...internalTasks.filter((task)=>String(task.status || '').toLowerCase() !== 'fuldført').map((task)=>({task, customer:'NSTSF', index:null, internal:true}))
   ].sort((a,b)=>String(a.task?.dueDate || '').localeCompare(String(b.task?.dueDate || '')));
   const transcripts = entries.filter((entry)=>entry.type === 'Transkript').length;
@@ -3156,7 +3183,7 @@ function renderSagDetail(i){
       </div>
       <div class="case-card">
         <h3>Action points</h3>
-        ${renderTaskList(s.tasks)}
+        ${renderTaskList(effectiveCaseTasks(s))}
       </div>
       <div class="case-card">
         <h3>Betalinger</h3>

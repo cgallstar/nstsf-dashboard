@@ -620,6 +620,46 @@ function ensureOfferFollowupTask(matched: any, signal: any, archiveText: string,
   });
 }
 
+function backfillOfferFollowupsFromState(state: any) {
+  const entries = Array.isArray(state?.sager) ? state.sager : [];
+  let created = 0;
+  for (const entry of entries) {
+    ensureCaseShape(entry);
+    const before = Array.isArray(entry.tasks) ? entry.tasks.length : 0;
+    const docs = [
+      ...(entry.docs?.tilbud || []),
+      ...(entry.docs?.referater || []),
+      ...(entry.docs?.byggereferater || []),
+      ...(entry.docs?.mails || []),
+    ];
+    const activities = Array.isArray(entry.activityLog) ? entry.activityLog : [];
+    const haystack = [
+      entry.kunde,
+      entry.adr,
+      entry.opg,
+      entry.docs?.drive,
+      ...docs.flatMap((doc: any) => [doc?.titel, doc?.title, doc?.notes, doc?.dato, doc?.date]),
+      ...activities.flatMap((activity: any) => [activity?.subject, activity?.documentType, activity?.fileName, activity?.documentDate, activity?.notes]),
+    ].filter(Boolean).join("\n");
+    const compact = plainCompactText(haystack);
+    const hasOfferSignal =
+      compact.includes("tilbud") ||
+      compact.includes("overslagspris") ||
+      compact.includes("prisgrundlag") ||
+      (compact.includes("byggemodereferat") && compact.includes("nv gadesvej"));
+    if (!hasOfferSignal) continue;
+    const dated = [
+      ...docs.map((doc: any) => textValue(doc?.dato || doc?.date, "")),
+      ...activities.map((activity: any) => textValue(activity?.documentDate || activity?.createdAt, "").slice(0, 10)),
+    ].filter((date) => /^\d{4}-\d{2}-\d{2}$/.test(date));
+    const documentDate = dated.sort().reverse()[0] || new Date().toISOString().slice(0, 10);
+    ensureOfferFollowupTask(entry, { category: compact.includes("byggemodereferat") ? "referater" : "tilbud" }, haystack, documentDate);
+    const after = Array.isArray(entry.tasks) ? entry.tasks.length : 0;
+    if (after > before) created += after - before;
+  }
+  return created;
+}
+
 async function archiveQualifiedThread(thread: any, item: any, state: any, integration: any, actor: any) {
   const summaries = Array.isArray(thread?.messages) ? thread.messages.map(gmailMessageSummary) : [];
   const threadText = summaries
@@ -874,6 +914,19 @@ export default async (request: Request) => {
       }
     }
 
+    const offerFollowupsCreated = backfillOfferFollowupsFromState(state);
+    if (offerFollowupsCreated) {
+      appendSyncLog(state, {
+        status: "archived",
+        subject: "Tilbudsopfølgning",
+        customerName: "",
+        caseId: "",
+        documentType: "Action point",
+        category: "sager",
+        notes: `${offerFollowupsCreated} action point${offerFollowupsCreated === 1 ? "" : "s"} for tilbud er sikret på kundesager.`,
+      });
+    }
+
     state.emails = items;
     const savedAt = await saveDashboardState(state);
 
@@ -883,6 +936,7 @@ export default async (request: Request) => {
       synced: items.length,
       unhandled: items.filter((item: any) => !item.handled).length,
       archived: archivedResults.length,
+      offerFollowupsCreated,
       ensuredFolders: ensuredFolders.length,
       archiveErrors,
       archivedCases: archivedResults.map((entry) => ({
