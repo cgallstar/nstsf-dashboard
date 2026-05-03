@@ -12,6 +12,7 @@ import {
 } from "./_lib/dashboard.mts";
 import {
   ensureCaseDriveFolders,
+  getGmailAttachment,
   getGmailThread,
   gmailMessageSummary,
   googleIntegrationStatus,
@@ -27,8 +28,7 @@ const OWNER_QUERY = `${NSTSF_QUERY} ${EXCLUDED_MAIL_QUERY}`;
 const GADESVEJ_DRIVE_URL = "https://drive.google.com/drive/folders/1IPXK472x8-Peasfv7kKU-JrG9oUNb6-4";
 const SYNC_QUERY = `newer_than:30d -in:spam -in:trash ${OWNER_QUERY}`;
 const ARCHIVE_QUERIES = [
-  `newer_than:90d -in:spam -in:trash ${OWNER_QUERY} ("Faktura 1152" OR "faktura 1152")`,
-  `newer_than:90d -in:spam -in:trash ${OWNER_QUERY} ("Faktura 1153" OR "faktura 1153")`,
+  `newer_than:90d -in:spam -in:trash ${OWNER_QUERY} ("Faktura" OR "faktura")`,
   `newer_than:45d -in:spam -in:trash ${OWNER_QUERY} ("Byggemødereferat" OR "Byggemodereferat" OR "byggemøde" OR "byggemode")`,
   `newer_than:90d -in:spam -in:trash ${OWNER_QUERY} ("Udbedring af mangler" OR "afslutningsmøde" OR "afslutningsmode") ("Pladebutik" OR "Blågårdsgade 14" OR "Blaagaardsgade 14")`,
   `newer_than:45d -in:spam -in:trash ${OWNER_QUERY} ("Tilbud vedr" OR "tilbud" OR "overslagspris")`,
@@ -50,11 +50,6 @@ const DANISH_MONTHS: Record<string, string> = {
   november: "11",
   december: "12",
 };
-const KNOWN_INVOICE_CASES: Record<string, { caseId: string; address: string; customer: string }> = {
-  "1152": { caseId: "1002 G", address: "Lykkeholms Allé 33", customer: "DKE / Charlotte" },
-  "1153": { caseId: "1002 J", address: "Guldborgvej 1, 4 th", customer: "DKE / Charlotte" },
-};
-
 function appendSyncLog(state: any, payload: Record<string, unknown>) {
   state.syncLog = Array.isArray(state?.syncLog) ? state.syncLog : [];
   state.syncLog.unshift({
@@ -278,31 +273,10 @@ function findOrCreateKnownCase(state: any, signal: any, text = "") {
     });
   }
 
-  const knownInvoice = KNOWN_INVOICE_CASES[textValue(signal?.invoiceNumber, "")];
-  if (signal?.category === "betaling" && knownInvoice) {
-    const compactCaseId = normalizeCaseKey(knownInvoice.caseId);
-    const compactAddress = plainCompactText(knownInvoice.address);
-    const existing = findByMarker([new RegExp(compactCaseId), new RegExp(compactAddress.replace(/\s+/g, "\\s*"))]);
-    if (existing) return ensureCaseShape(existing);
-  }
-
   return null;
 }
 
-function findKnownInvoiceCase(state: any, invoiceNumber = "") {
-  const entries = Array.isArray(state?.sager) ? state.sager : [];
-  const normalizedInvoice = textValue(invoiceNumber, "");
-  const known = KNOWN_INVOICE_CASES[normalizedInvoice];
-  if (!known) return null;
-  const compactCaseId = normalizeCaseKey(known.caseId);
-  const compactAddress = plainCompactText(known.address);
-  return entries.find((entry: any) => {
-    const marker = plainCompactText(`${entry?.kunde || ""} ${entry?.adr || ""} ${entry?.opg || ""} ${entry?.sid || ""} ${entry?.nr || ""} ${entry?.fak || ""} ${entry?.docs?.drive || entry?.drive || ""}`);
-    return normalizeCaseKey(`${entry?.sid || ""} ${entry?.nr || ""}`).includes(compactCaseId) || marker.includes(compactAddress);
-  }) || null;
-}
-
-function labelKnownInvoiceDocs(matched: any, invoiceNumber: string, date: string) {
+function labelInvoiceDocs(matched: any, invoiceNumber: string, date: string) {
   matched.docs = matched.docs && typeof matched.docs === "object" ? matched.docs : {};
   matched.docs.betaling = Array.isArray(matched.docs.betaling) ? matched.docs.betaling : [];
   const expectedTitle = `Faktura ${invoiceNumber}`;
@@ -321,7 +295,7 @@ function labelKnownInvoiceDocs(matched: any, invoiceNumber: string, date: string
   return changed;
 }
 
-function applyKnownInvoiceToCase(matched: any, invoiceNumber: string, date = "") {
+function applyInvoiceToCase(matched: any, invoiceNumber: string, date = "", amount = 0) {
   ensureCaseShape(matched);
   const before = JSON.stringify({
     fak: matched.fak,
@@ -336,7 +310,8 @@ function applyKnownInvoiceToCase(matched: any, invoiceNumber: string, date = "")
   matched.workflow.invoiceNumber = invoiceNumber;
   matched.workflow.invoiceSentDate = date || matched.workflow.invoiceSentDate || new Date().toISOString().slice(0, 10);
   if (!textValue(matched.dato, "")) matched.dato = matched.workflow.invoiceSentDate;
-  const docsChanged = labelKnownInvoiceDocs(matched, invoiceNumber, matched.workflow.invoiceSentDate);
+  if (amount && !parseMoneyValue(textValue(matched.u, ""))) matched.u = formatAmount(amount);
+  const docsChanged = labelInvoiceDocs(matched, invoiceNumber, matched.workflow.invoiceSentDate);
   const after = JSON.stringify({
     fak: matched.fak,
     status: matched.status,
@@ -347,43 +322,93 @@ function applyKnownInvoiceToCase(matched: any, invoiceNumber: string, date = "")
   return docsChanged || after !== before;
 }
 
-function ensureKnownInvoiceCases(state: any) {
-  let changed = 0;
-  for (const invoiceNumber of Object.keys(KNOWN_INVOICE_CASES)) {
-    const matched = findKnownInvoiceCase(state, invoiceNumber);
-    if (!matched) continue;
-    if (!applyKnownInvoiceToCase(matched, invoiceNumber)) continue;
-    appendActivity(matched, { name: "Gmail-sync", email: MAILBOX_OWNER }, {
-      type: "invoice_update",
-      title: `Faktura ${invoiceNumber} registreret`,
-      summary: `Faktura ${invoiceNumber} er registreret på sagen via kendt sagsmapping.`,
-    });
-    changed += 1;
+function scoreInvoiceCase(entry: any, invoiceText: string) {
+  const source = plainCompactText(invoiceText);
+  if (!source) return { score: 0, reasons: [] as string[] };
+  const reasons: string[] = [];
+  let score = 0;
+  const address = plainCompactText(entry?.adr || "");
+  const customer = plainCompactText(entry?.kunde || "");
+  const task = plainCompactText(entry?.opg || "");
+  const sid = normalizeCaseKey(entry?.sid || "");
+  const nr = normalizeCaseKey(entry?.nr || "");
+  const primary = primaryCaseNumber(entry);
+  if (address && address.length >= 6 && source.includes(address)) {
+    score += 10;
+    reasons.push("adresse");
   }
-  return changed;
+  if (sid && sid.length >= 4 && normalizeCaseKey(invoiceText).includes(sid)) {
+    score += 8;
+    reasons.push("sagsID");
+  }
+  if (nr && nr.length >= 4 && normalizeCaseKey(invoiceText).includes(nr)) {
+    score += 5;
+    reasons.push("sagsnr");
+  }
+  if (primary && primary.length >= 4 && normalizeCaseKey(invoiceText).includes(primary)) {
+    score += 3;
+    reasons.push("kundenr");
+  }
+  if (customer && customer.length >= 5 && source.includes(customer)) {
+    score += 4;
+    reasons.push("kunde");
+  }
+  if (task && task.length >= 10 && source.includes(task)) {
+    score += 2;
+    reasons.push("opgave");
+  }
+  return { score, reasons };
 }
 
-function backfillKnownInvoicesFromThreads(state: any, threads: any[]) {
+function matchInvoiceToCase(state: any, invoiceText: string) {
+  const entries = Array.isArray(state?.sager) ? state.sager : [];
+  const ranked = entries
+    .map((entry: any) => ({ entry, ...scoreInvoiceCase(entry, invoiceText) }))
+    .filter((result: any) => result.score > 0)
+    .sort((a: any, b: any) => b.score - a.score);
+  const best = ranked[0];
+  const second = ranked[1];
+  if (!best) return { matched: null, score: 0, reasons: [], ambiguous: false };
+  const ambiguous = Boolean(second && second.score >= best.score - 2);
+  const hasStrongReason = best.reasons.includes("adresse") || best.reasons.includes("sagsID");
+  if (best.score < 8 || !hasStrongReason || ambiguous) {
+    return { matched: null, score: best.score, reasons: best.reasons, ambiguous };
+  }
+  return { matched: best.entry, score: best.score, reasons: best.reasons, ambiguous: false };
+}
+
+function registerInvoicesFromThreads(state: any, threads: any[]) {
   let changed = 0;
   for (const thread of threads) {
     const summaries = Array.isArray(thread?.messages) ? thread.messages.map(gmailMessageSummary) : [];
     const threadText = summaries
       .map((message) => [message.subject, message.from, message.snippet, message.body].filter(Boolean).join("\n"))
       .join("\n\n");
-    const invoiceMatch = threadText.match(/\bfaktura\s*(?:nr\.?|nummer)?\s*[:#-]?\s*(1152|1153)\b/i);
+    const invoiceMatch = threadText.match(/\bfaktura\s*(?:nr\.?|nummer)?\s*[:#-]?\s*(\d{3,})\b/i);
     if (!invoiceMatch) continue;
-    const matched = findKnownInvoiceCase(state, invoiceMatch[1]);
-    if (!matched) continue;
-    ensureCaseShape(matched);
+    const match = matchInvoiceToCase(state, threadText);
+    if (!match.matched) {
+      appendSyncLog(state, {
+        status: "error",
+        subject: summaries[0]?.subject || `Faktura ${invoiceMatch[1]}`,
+        customerName: "",
+        caseId: "",
+        documentType: "Faktura",
+        category: "betaling",
+        error: match.ambiguous ? "invoice_match_ambiguous" : "invoice_match_low_confidence",
+        notes: `Faktura ${invoiceMatch[1]} kunne ikke matches sikkert. Bedste score: ${match.score || 0}${match.reasons?.length ? ` (${match.reasons.join(", ")})` : ""}.`,
+      });
+      continue;
+    }
+    const matched = match.matched;
     const date = extractDocumentDate(summaries[0]?.subject || "", threadText, summaries[0]?.date);
-    const didApply = applyKnownInvoiceToCase(matched, invoiceMatch[1], date);
     const amount = extractInvoiceAmount(threadText);
-    if (amount && !parseMoneyValue(textValue(matched.u, ""))) matched.u = formatAmount(amount);
+    const didApply = applyInvoiceToCase(matched, invoiceMatch[1], date, amount);
     if (didApply) {
       appendActivity(matched, { name: "Gmail-sync", email: MAILBOX_OWNER }, {
         type: "invoice_update",
         title: `Faktura ${invoiceMatch[1]} registreret`,
-        summary: `Faktura ${invoiceMatch[1]} er registreret på sagen via Gmail-sync.`,
+        summary: `Faktura ${invoiceMatch[1]} er registreret på sagen via Gmail-sync (${match.reasons.join(", ")}).`,
       });
       changed += 1;
     }
@@ -571,6 +596,21 @@ async function extractAttachmentContext(thread: any) {
         sourceMessageId: message.id,
       });
       texts.push(filename);
+      if (attachment?.attachmentId && Number(attachment?.size || 0) <= 5_000_000) {
+        try {
+          const content = await getGmailAttachment(message.id, attachment.attachmentId);
+          const isPdf = mimeType === "application/pdf" || /\.pdf$/i.test(filename);
+          if (isPdf) {
+            const pdfText = await extractPdfText(content);
+            if (pdfText) texts.push(pdfText);
+          } else if (/^text\//i.test(mimeType) || /\.(txt|csv)$/i.test(filename)) {
+            const text = content.toString("utf8").trim();
+            if (text) texts.push(text.slice(0, 20_000));
+          }
+        } catch (error) {
+          texts.push(`Attachment kunne ikke læses: ${filename} (${formatSyncError(error)})`);
+        }
+      }
     }
   }
 
@@ -578,6 +618,27 @@ async function extractAttachmentContext(thread: any) {
     text: texts.join("\n\n"),
     documents,
   };
+}
+
+async function extractPdfText(content: Buffer) {
+  try {
+    const pdfjs = await import("pdfjs-dist/legacy/build/pdf.mjs");
+    const loadingTask = pdfjs.getDocument({ data: new Uint8Array(content), disableWorker: true });
+    const pdf = await loadingTask.promise;
+    const pages: string[] = [];
+    const maxPages = Math.min(Number(pdf.numPages || 0), 8);
+    for (let pageNo = 1; pageNo <= maxPages; pageNo += 1) {
+      const page = await pdf.getPage(pageNo);
+      const textContent = await page.getTextContent();
+      const pageText = Array.isArray(textContent?.items)
+        ? textContent.items.map((item: any) => textValue(item?.str, "")).filter(Boolean).join(" ")
+        : "";
+      if (pageText.trim()) pages.push(pageText.trim());
+    }
+    return pages.join("\n").slice(0, 40_000);
+  } catch {
+    return "";
+  }
 }
 
 function inferCustomerName(thread: any, sager: any[]) {
@@ -974,7 +1035,27 @@ async function archiveQualifiedThread(thread: any, item: any, state: any, integr
   const signal = inferArchiveSignal(item?.subject, combined || threadText || item?.body, item?.from) || initialSignal;
 
   const archiveText = combined || `${item?.subject}\n${item?.body}`;
-  let matched = matchCaseFromText(state.sager || [], archiveText);
+  let matched = null;
+  if (signal.category === "betaling") {
+    const invoiceMatch = archiveText.match(/\bfaktura\s*(?:nr\.?|nummer)?\s*[:#-]?\s*(\d{3,})\b/i);
+    const invoiceCaseMatch = matchInvoiceToCase(state, archiveText);
+    if (!invoiceCaseMatch.matched) {
+      return {
+        ok: false,
+        threadId: textValue(item?.threadId || thread?.id, ""),
+        subject: textValue(item?.subject, ""),
+        customerName: textValue(item?.kunde, ""),
+        documentType: signal.documentType,
+        category: signal.category,
+        error: invoiceCaseMatch.ambiguous ? "invoice_match_ambiguous" : "invoice_match_low_confidence",
+        matchedCaseId: "",
+        invoiceNumber: invoiceMatch?.[1] || "",
+      };
+    }
+    matched = invoiceCaseMatch.matched;
+  } else {
+    matched = matchCaseFromText(state.sager || [], archiveText);
+  }
   matched = findOrCreateKnownCase(state, signal, archiveText) || matched;
   if (!matched) {
     return {
@@ -1121,16 +1202,16 @@ export default async (request: Request) => {
     const fullThreads = fullThreadResults
       .filter((result): result is PromiseFulfilledResult<any> => result.status === "fulfilled")
       .map((result) => result.value);
-    const knownInvoicesUpdated = backfillKnownInvoicesFromThreads(state, fullThreads) + ensureKnownInvoiceCases(state);
-    if (knownInvoicesUpdated) {
+    const invoicesUpdated = registerInvoicesFromThreads(state, fullThreads);
+    if (invoicesUpdated) {
       appendSyncLog(state, {
         status: "archived",
-        subject: "Kendte fakturaer",
-        customerName: "DKE / Charlotte",
-        caseId: "1002 G / 1002 J",
+        subject: "Fakturaer",
+        customerName: "",
+        caseId: "",
         documentType: "Faktura",
         category: "betaling",
-        notes: `${knownInvoicesUpdated} kendt faktura er registreret på den matchede DKE/Charlotte-sag.`,
+        notes: `${invoicesUpdated} faktura er registreret på en sag via sikker Gmail/PDF-match.`,
       });
     }
 
@@ -1250,7 +1331,7 @@ export default async (request: Request) => {
       unhandled: items.filter((item: any) => !item.handled).length,
       archived: archivedResults.length,
       offerFollowupsCreated,
-      knownInvoicesUpdated,
+      invoicesUpdated,
       ensuredFolders: ensuredFolders.length,
       archiveErrors,
       archivedCases: archivedResults.map((entry) => ({
