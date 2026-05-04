@@ -40,6 +40,8 @@ Samme mailtråd må ikke blive arkiveret to gange for:
 
 Derudover skal agenten kontrollere Drive-mappen for samme filnavn før upload. Hvis filen allerede findes, skal eksisterende fil bruges og linkes i state i stedet for at uploade en ny kopi.
 
+Hvis Drive allerede indeholder filen, må agenten ikke skrive en ny `Arkiveret`-opdatering. Den skal behandles som `skipped`/allerede arkiveret og ikke støje i `Opdateringer`.
+
 ## PDF-regel
 PDF-tekstlæsning må ikke bruges som primært matchgrundlag. PDF'er kan være bilag i Drive, men sikker sagstilknytning skal komme fra mailtekst, filnavn, sagsID, adresse eller eksisterende state.
 

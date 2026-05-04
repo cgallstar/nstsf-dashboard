@@ -52,6 +52,21 @@ const DANISH_MONTHS: Record<string, string> = {
 };
 function appendSyncLog(state: any, payload: Record<string, unknown>) {
   state.syncLog = Array.isArray(state?.syncLog) ? state.syncLog : [];
+  const archiveKey = textValue(payload.archiveKey, "");
+  const fileName = textValue(payload.fileName, "");
+  const caseId = textValue(payload.caseId, "");
+  const subject = textValue(payload.subject, "");
+  if (archiveKey) {
+    state.syncLog = state.syncLog.filter((entry: any) => textValue(entry?.archiveKey, "") !== archiveKey);
+  } else if (fileName && caseId) {
+    state.syncLog = state.syncLog.filter((entry: any) => {
+      return !(textValue(entry?.fileName, "") === fileName && textValue(entry?.caseId, "") === caseId);
+    });
+  } else if (subject && payload.status === "error") {
+    state.syncLog = state.syncLog.filter((entry: any) => {
+      return !(textValue(entry?.subject, "") === subject && textValue(entry?.status, "") === "error");
+    });
+  }
   state.syncLog.unshift({
     id: randomUUID(),
     createdAt: new Date().toISOString(),
@@ -1129,8 +1144,6 @@ async function archiveQualifiedThread(thread: any, item: any, state: any, integr
 
   const alreadyArchived = (matched.activityLog || []).some((entry: any) => {
     if (String(entry?.type) !== "gmail_archive") return false;
-    const hasDriveFile = Boolean(textValue(entry?.driveUrl, "") || textValue(entry?.fileId, ""));
-    if (!hasDriveFile) return false;
     if (String(entry?.archiveKey || "") === archiveKey) return true;
     const sameThread = textValue(entry?.threadId, "") === currentThreadId;
     const sameType = normalizeCaseKey(entry?.documentType) === normalizedDocumentType;
@@ -1173,6 +1186,7 @@ async function archiveQualifiedThread(thread: any, item: any, state: any, integr
 
   let driveFolder = textValue(matched.docs?.drive, "");
   let uploaded: any = null;
+  let foundExistingDriveFile = false;
   if (integration.configured) {
     const folderInfo = await ensureCaseDriveFolders(matched, displayCaseId, matched.kunde);
     driveFolder = textValue(folderInfo?.caseFolder?.webViewLink, driveFolder);
@@ -1180,10 +1194,27 @@ async function archiveQualifiedThread(thread: any, item: any, state: any, integr
     const folderId = textValue(folderInfo?.folders?.[signal.category]?.id, "");
     if (!folderId) throw new Error(`drive_folder_missing:${signal.category}`);
     uploaded = await findDriveFileByName(folderId, fileName);
+    foundExistingDriveFile = Boolean(uploaded);
     if (!uploaded) uploaded = await uploadDriveFile(folderId, document);
     document.url = textValue(uploaded?.webViewLink, "");
     document.fileId = textValue(uploaded?.id, "");
     document.mimeType = textValue(uploaded?.mimeType, document.mimeType);
+  }
+
+  if (foundExistingDriveFile) {
+    return {
+      ok: true,
+      skipped: true,
+      archiveKey,
+      category: signal.category,
+      matchedCaseId: displayCaseId,
+      customerName: textValue(matched?.kunde, item?.kunde || ""),
+      documentType: signal.documentType,
+      documentDate,
+      driveUrl: textValue(document.url, ""),
+      fileName,
+      driveFolder,
+    };
   }
 
   pushDocs(matched.docs[signal.category] || [], [document]);
@@ -1259,7 +1290,7 @@ export default async (request: Request) => {
         caseId: "",
         documentType: "Faktura",
         category: "betaling",
-        notes: `${invoicesUpdated} faktura er registreret på en sag via sikker Gmail/PDF-match.`,
+        notes: `${invoicesUpdated} faktura er registreret på en sag via sikker Gmail/state-match.`,
       });
     }
 
@@ -1299,20 +1330,20 @@ export default async (request: Request) => {
         const result = await archiveQualifiedThread(thread, item, state, integration, auth.actor);
         if (!result) continue;
         if (result.ok) {
-          appendSyncLog(state, {
-            status: result.skipped ? "skipped" : "archived",
-            subject: textValue(item?.subject, ""),
-            customerName: textValue(result.customerName, ""),
-            caseId: textValue(result.matchedCaseId, ""),
-            documentType: textValue(result.documentType, ""),
-            category: textValue(result.documentType ? signalCategoryFromResult(result) : "", ""),
-            fileName: textValue(result.fileName, ""),
-            driveUrl: textValue(result.driveUrl, ""),
-            notes: result.skipped
-              ? "Mailen var allerede arkiveret på sagen."
-              : `Arkiveret i Drive som ${textValue(result.fileName, "dokument")}.`,
-          });
           if (!result.skipped) {
+            appendSyncLog(state, {
+              status: "archived",
+              archiveKey: textValue(result.archiveKey, ""),
+              subject: textValue(item?.subject, ""),
+              customerName: textValue(result.customerName, ""),
+              caseId: textValue(result.matchedCaseId, ""),
+              documentType: textValue(result.documentType, ""),
+              documentDate: textValue(result.documentDate, ""),
+              category: textValue(result.documentType ? signalCategoryFromResult(result) : "", ""),
+              fileName: textValue(result.fileName, ""),
+              driveUrl: textValue(result.driveUrl, ""),
+              notes: `Arkiveret i Drive som ${textValue(result.fileName, "dokument")}.`,
+            });
             item.archivedAt = new Date().toISOString();
             item.archivedCaseId = result.matchedCaseId;
             item.archivedCustomer = result.customerName;
