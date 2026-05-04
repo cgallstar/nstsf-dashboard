@@ -3478,8 +3478,22 @@ function documentDriveUrl(item={}){
   if(item.fileId) return `https://drive.google.com/file/d/${encodeURIComponent(item.fileId)}/view`;
   return '';
 }
+function docViewKey(item={}){
+  const url = documentDriveUrl(item);
+  if(url) return `url:${url}`;
+  return `${textValue(item.titel || item.title, '').toLowerCase().replace(/\s+/g,' ').trim()}|${textValue(item.dato || item.date, '')}`;
+}
+function dedupeDocsForView(items=[]){
+  const seen = new Set();
+  return (items || []).filter((item)=>{
+    const key = docViewKey(item);
+    if(seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
 function renderMeetingNotes(items=[]){
-  const docs = (items || []).filter((item)=>item && item.titel);
+  const docs = dedupeDocsForView(items).filter((item)=>item && item.titel);
   return docs.length ? `<div class="mini-list">${docs.map((item)=>{ const url = documentDriveUrl(item); return `<div class="mini-item"><strong>${url ? `<a href="${escapeAttr(url)}" target="_blank" rel="noopener">${escapeAttr(item.titel)}</a>` : escapeAttr(item.titel)}</strong><div class="meta">${item.dato ? displayDate(item.dato) : 'Dato mangler'}${url ? ` · <a href="${escapeAttr(url)}" target="_blank" rel="noopener">Åbn i Drive</a>` : ''}</div></div>`; }).join('')}</div>` : '<div class="doc-empty">Ingen referater registreret endnu.</div>';
 }
 function renderStageLog(items=[]){ return items.length ? `<div class="mini-list">${items.slice(0,5).map((item)=>`<div class="mini-item"><strong>${item.title || item.status || 'Stadeopdatering'}</strong><div class="meta">${item.date ? displayDate(item.date) : 'Dato mangler'}${item.progressPct !== undefined ? ` · ${item.progressPct}%` : ''}</div><div class="meta">${item.notes || ''}</div></div>`).join('')}</div>` : '<div class="doc-empty">Ingen stadeopgørelser registreret endnu.</div>'; }

@@ -402,6 +402,7 @@ function findOrCreateKnownCase(state: any, signal: any, text = "") {
       kunde: "Signe & Tam",
       adr: "N. V. Gadesvej 10, 1. sal",
       opg: "Istandsættelse af 1. sal",
+      b: "600000",
       status: signal?.category === "tilbud" ? "Tilbud sendt" : "Oprettet fra Gmail",
     });
   }
@@ -1040,6 +1041,11 @@ function formatAmount(value: number) {
 
 function extractEnterpriseAmount(text = "") {
   const source = String(text || "");
+  const budgetRange = source.match(/budget[^\d]{0,40}(\d{1,3})\s*[-–]\s*(\d{1,3})\s*k\b/i);
+  if (budgetRange) {
+    const high = Number(budgetRange[2]);
+    if (Number.isFinite(high) && high > 0) return high * 1000;
+  }
   const patterns = [
     /(?:samlet\s+)?(?:entreprisesum|entreprise|tilbudssum|samlet\s+beløb|samlet\s+beloeb|overslagspris)[^\d]{0,80}(\d{1,3}(?:[.\s]\d{3})*(?:,\d{2})?|\d{4,})(?:\s*kr\.?)?/gi,
     /(\d{1,3}(?:[.\s]\d{3})*(?:,\d{2})?|\d{4,})\s*kr\.?[^\n\r]{0,80}(?:samlet\s+)?(?:entreprisesum|entreprise|tilbudssum|samlet\s+beløb|samlet\s+beloeb|overslagspris)/gi,
@@ -1177,8 +1183,9 @@ function ensureOfferFollowupTask(matched: any, signal: any, archiveText: string,
   matched.workflow.offerDate = textValue(matched.workflow.offerDate, documentDate);
   matched.workflow.latestOfferDate = textValue(matched.workflow.latestOfferDate, documentDate);
   matched.workflow.nextAction = textValue(matched.workflow.nextAction, "Følg op på tilbud.");
+  const isNvGadesvej10 = isNvGadesvej10Thread(archiveText);
   const isRevised = compact.includes("revideret") || compact.includes("revidere") || compact.includes("revision") || isGadesvejArchiveThread(signal, archiveText);
-  const title = isRevised ? "Følg op på revideret tilbud" : "Følg op på tilbud";
+  const title = isNvGadesvej10 ? "Svar på input til tilbud" : isRevised ? "Følg op på revideret tilbud" : "Følg op på tilbud";
   const existing = (matched.tasks || []).some((task: any) => {
     return normalizeCaseKey(task?.title) === normalizeCaseKey(title) && String(task?.status || "").toLowerCase() !== "fuldført";
   });
@@ -1188,9 +1195,11 @@ function ensureOfferFollowupTask(matched: any, signal: any, archiveText: string,
     id: randomUUID(),
     title,
     status: "Åben",
-    dueDate: addDaysIso(documentDate, 7),
+    dueDate: isNvGadesvej10 ? "" : addDaysIso(documentDate, 7),
     owner: "Søren",
-    notes: `${isRevised ? "Der er afgivet et revideret tilbud" : "Der er afgivet et tilbud"}. Følg op med kunden senest syv dage efter tilbudsdatoen.`,
+    notes: isNvGadesvej10
+      ? "Kunden har givet input til tilbud vedr. istandsættelse af 1. sal på NV Gadesvej 10. Budget er angivet til 500-600K. Svar kunden og opdater tilbudsgrundlaget."
+      : `${isRevised ? "Der er afgivet et revideret tilbud" : "Der er afgivet et tilbud"}. Følg op med kunden senest syv dage efter tilbudsdatoen.`,
     createdAt: new Date().toISOString(),
   });
 }

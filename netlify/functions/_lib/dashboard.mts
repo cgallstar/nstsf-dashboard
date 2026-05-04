@@ -146,6 +146,30 @@ export function normalizeDoc(doc: any) {
   };
 }
 
+function docDedupeKey(doc: any) {
+  const normalized = normalizeDoc(doc);
+  if (normalized.fileId) return `file:${normalized.fileId}`;
+  if (normalized.url) return `url:${normalized.url}`;
+  return [
+    normalized.titel.toLowerCase().replace(/\s+/g, " ").trim(),
+    normalized.dato,
+    normalized.mimeType,
+  ].join("|");
+}
+
+function dedupeDocs(items: any[]) {
+  const seen = new Set<string>();
+  const result: any[] = [];
+  for (const item of items) {
+    const normalized = normalizeDoc(item);
+    const key = docDedupeKey(normalized);
+    if (seen.has(key)) continue;
+    seen.add(key);
+    result.push(normalized);
+  }
+  return result;
+}
+
 export function normalizeTask(task: any) {
   return {
     id: textValue(task?.id, randomUUID()),
@@ -224,16 +248,16 @@ export function ensureCaseShape(entry: any) {
   entry.activityLog = Array.isArray(entry?.activityLog) ? entry.activityLog : [];
   entry.docs = {
     drive: textValue(entry?.docs?.drive || entry?.drive, ""),
-    byggereferater: Array.isArray(entry?.docs?.byggereferater) ? entry.docs.byggereferater : [],
-    transkripter: Array.isArray(entry?.docs?.transkripter) ? entry.docs.transkripter : [],
-    tilbud: Array.isArray(entry?.docs?.tilbud) ? entry.docs.tilbud : [],
-    referater: Array.isArray(entry?.docs?.referater) ? entry.docs.referater : [],
-    ks: Array.isArray(entry?.docs?.ks) ? entry.docs.ks : [],
-    billeder: Array.isArray(entry?.docs?.billeder) ? entry.docs.billeder : [],
-    ekstraarbejde: Array.isArray(entry?.docs?.ekstraarbejde) ? entry.docs.ekstraarbejde : [],
-    betaling: Array.isArray(entry?.docs?.betaling) ? entry.docs.betaling : [],
-    kontrakter: Array.isArray(entry?.docs?.kontrakter) ? entry.docs.kontrakter : [],
-    mails: Array.isArray(entry?.docs?.mails) ? entry.docs.mails : [],
+    byggereferater: dedupeDocs(Array.isArray(entry?.docs?.byggereferater) ? entry.docs.byggereferater : []),
+    transkripter: dedupeDocs(Array.isArray(entry?.docs?.transkripter) ? entry.docs.transkripter : []),
+    tilbud: dedupeDocs(Array.isArray(entry?.docs?.tilbud) ? entry.docs.tilbud : []),
+    referater: dedupeDocs(Array.isArray(entry?.docs?.referater) ? entry.docs.referater : []),
+    ks: dedupeDocs(Array.isArray(entry?.docs?.ks) ? entry.docs.ks : []),
+    billeder: dedupeDocs(Array.isArray(entry?.docs?.billeder) ? entry.docs.billeder : []),
+    ekstraarbejde: dedupeDocs(Array.isArray(entry?.docs?.ekstraarbejde) ? entry.docs.ekstraarbejde : []),
+    betaling: dedupeDocs(Array.isArray(entry?.docs?.betaling) ? entry.docs.betaling : []),
+    kontrakter: dedupeDocs(Array.isArray(entry?.docs?.kontrakter) ? entry.docs.kontrakter : []),
+    mails: dedupeDocs(Array.isArray(entry?.docs?.mails) ? entry.docs.mails : []),
   };
   return entry;
 }
@@ -261,7 +285,13 @@ export function matchCase(sager: any[], caseNumber: string, customerName: string
 }
 
 export function pushDocs(target: any[], items: any[]) {
-  items.map(normalizeDoc).forEach((item) => target.unshift(item));
+  const seen = new Set(target.map(docDedupeKey));
+  items.map(normalizeDoc).reverse().forEach((item) => {
+    const key = docDedupeKey(item);
+    if (seen.has(key)) return;
+    seen.add(key);
+    target.unshift(item);
+  });
 }
 
 export function appendActivity(caseEntry: any, actor: any, payload: Record<string, unknown>) {
