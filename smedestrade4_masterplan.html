@@ -1,0 +1,1990 @@
+<!DOCTYPE html>
+<html lang="da">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Smedestræde 4 - Masterplan</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap');
+
+  :root {
+    --navy: #1E3A5F;
+    --navy-light: #2a4f82;
+    --off-white: #F5F2EC;
+    --cream: #EDE9E0;
+    --red: #C0392B;
+    --orange: #D35400;
+    --green: #1E6B4A;
+    --blue-mid: #2980B9;
+    --text: #1a1a1a;
+    --muted: #888;
+    --border: #D0CBBC;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'IBM Plex Sans', sans-serif;
+    background: var(--off-white);
+    color: var(--text);
+    font-size: 13px;
+    line-height: 1.5;
+  }
+
+  .header {
+    background: var(--navy);
+    color: white;
+    padding: 32px 40px 24px;
+    border-bottom: 4px solid #C0392B;
+  }
+
+  .header-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 8px;
+  }
+
+  .header h1 {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 22px;
+    font-weight: 600;
+    letter-spacing: -0.5px;
+  }
+
+  .header .meta {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    color: #aac4e8;
+    text-align: right;
+    line-height: 1.8;
+  }
+
+  .header .subtitle {
+    font-size: 12px;
+    color: #aac4e8;
+    font-family: 'IBM Plex Mono', monospace;
+    margin-top: 4px;
+  }
+
+  .alert-bar {
+    background: var(--red);
+    color: white;
+    padding: 10px 40px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    display: flex;
+    gap: 40px;
+  }
+
+  .alert-bar span::before { content: "⚠ "; }
+
+  .main {
+    padding: 32px 40px;
+    max-width: 1200px;
+  }
+
+  .section-title {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--navy);
+    border-bottom: 2px solid var(--navy);
+    padding-bottom: 6px;
+    margin-bottom: 16px;
+    margin-top: 36px;
+  }
+
+  /* PHASE TIMELINE */
+  .phases {
+    display: grid;
+    gap: 2px;
+  }
+
+  .phase {
+    background: white;
+    border-left: 5px solid var(--navy);
+    padding: 0;
+    overflow: hidden;
+  }
+
+  .phase.critical { border-left-color: var(--red); }
+  .phase.running { border-left-color: var(--green); }
+  .phase.parallel { border-left-color: var(--blue-mid); }
+
+  .phase-header {
+    display: grid;
+    grid-template-columns: 180px 1fr auto;
+    align-items: center;
+    padding: 12px 16px;
+    cursor: pointer;
+    background: white;
+    border-bottom: 1px solid var(--border);
+    gap: 16px;
+  }
+
+  .phase-header:hover { background: var(--cream); }
+
+  .phase-id {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--muted);
+    letter-spacing: 1px;
+  }
+
+  .phase-name {
+    font-weight: 600;
+    font-size: 13px;
+    color: var(--navy);
+  }
+
+  .phase-date {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+    white-space: nowrap;
+  }
+
+  .phase-body {
+    display: none;
+    padding: 16px 20px 20px;
+    background: #FAFAF7;
+    border-top: 1px solid var(--border);
+  }
+
+  .phase-body.open { display: block; }
+
+  .phase-body.open { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+
+  .col-label {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--muted);
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    margin-bottom: 10px;
+  }
+
+  .task-list {
+    list-style: none;
+  }
+
+  .task-list li {
+    display: flex;
+    gap: 8px;
+    padding: 5px 0;
+    border-bottom: 1px solid var(--border);
+    font-size: 12px;
+    align-items: flex-start;
+  }
+
+  .task-list li:last-child { border-bottom: none; }
+
+  .task-list li::before {
+    content: "—";
+    color: var(--muted);
+    font-family: 'IBM Plex Mono', monospace;
+    flex-shrink: 0;
+  }
+
+  .tag {
+    display: inline-block;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 9px;
+    font-weight: 600;
+    padding: 2px 6px;
+    border-radius: 2px;
+    letter-spacing: 0.5px;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  .tag-tommer { background: #D6EAF8; color: #1a5276; }
+  .tag-murer { background: #D5F5E3; color: #1a5c35; }
+  .tag-maler { background: #FEF9E7; color: #7d6608; border: 1px solid #d4ac0d; }
+  .tag-vvs { background: #FDEDEC; color: #922B21; }
+  .tag-el { background: #F4ECF7; color: #6c3483; }
+  .tag-asbest { background: #1E3A5F; color: white; }
+  .tag-bygherre { background: #F0F3F4; color: #555; border: 1px solid #ccc; }
+  .tag-stillas { background: #FDEBD0; color: #784212; }
+
+  .blocker {
+    background: #FDEDEC;
+    border: 1px solid #f1948a;
+    border-radius: 3px;
+    padding: 8px 12px;
+    font-size: 11px;
+    color: var(--red);
+    font-family: 'IBM Plex Mono', monospace;
+    margin-top: 8px;
+  }
+
+  .blocker::before { content: "BLOCKER: "; font-weight: 700; }
+
+  /* MATERIALS TABLE */
+  .mat-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+  }
+
+  .mat-table th {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: white;
+    background: var(--navy);
+    padding: 8px 12px;
+    text-align: left;
+  }
+
+  .mat-table td {
+    padding: 7px 12px;
+    border-bottom: 1px solid var(--border);
+    vertical-align: top;
+  }
+
+  .mat-table tr:nth-child(even) td { background: var(--cream); }
+  .mat-table tr:hover td { background: #e8e4d8; }
+
+  .mat-table .week {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    color: var(--muted);
+    white-space: nowrap;
+  }
+
+  .mat-table .item { font-weight: 500; }
+  .mat-table .spec { color: #555; font-size: 11px; }
+  .mat-table .qty { font-family: 'IBM Plex Mono', monospace; color: var(--navy); font-weight: 600; }
+
+  /* CHECKLIST */
+  .checklist-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 2px;
+  }
+
+  .check-group {
+    background: white;
+    padding: 16px;
+  }
+
+  .check-group-title {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--navy);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    border-bottom: 2px solid var(--navy);
+    padding-bottom: 6px;
+    margin-bottom: 12px;
+  }
+
+  .check-item {
+    display: flex;
+    gap: 8px;
+    padding: 4px 0;
+    font-size: 11px;
+    border-bottom: 1px solid var(--border);
+    align-items: flex-start;
+  }
+
+  .check-item:last-child { border-bottom: none; }
+
+  .check-box {
+    width: 14px;
+    height: 14px;
+    border: 1.5px solid var(--navy);
+    flex-shrink: 0;
+    margin-top: 1px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    color: var(--navy);
+  }
+
+  .check-box.checked {
+    background: var(--navy);
+    color: white;
+  }
+
+  .check-box.checked::after { content: "✓"; }
+
+  /* GANTT */
+  .gantt {
+    background: white;
+    padding: 20px;
+    overflow-x: auto;
+  }
+
+  .gantt-row {
+    display: flex;
+    align-items: center;
+    border-bottom: 1px solid var(--border);
+    min-height: 32px;
+  }
+
+  .gantt-row:last-child { border-bottom: none; }
+
+  .gantt-label {
+    width: 220px;
+    flex-shrink: 0;
+    font-size: 11px;
+    padding: 4px 8px 4px 0;
+    font-weight: 500;
+  }
+
+  .gantt-label .sub {
+    font-size: 10px;
+    color: var(--muted);
+    font-family: 'IBM Plex Mono', monospace;
+  }
+
+  .gantt-weeks {
+    display: flex;
+    flex: 1;
+  }
+
+  .gantt-week {
+    flex: 1;
+    min-width: 32px;
+    height: 24px;
+    position: relative;
+  }
+
+  .gantt-bar {
+    height: 18px;
+    border-radius: 2px;
+    margin: 3px 1px;
+    position: relative;
+  }
+
+  .bar-navy { background: var(--navy); }
+  .bar-red { background: var(--red); }
+  .bar-green { background: var(--green); }
+  .bar-blue { background: var(--blue-mid); }
+  .bar-orange { background: var(--orange); }
+  .bar-muted { background: #aaa; }
+
+  .gantt-header {
+    display: flex;
+    border-bottom: 2px solid var(--navy);
+    margin-bottom: 4px;
+  }
+
+  .gantt-header-label {
+    width: 220px;
+    flex-shrink: 0;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--navy);
+    padding-bottom: 6px;
+  }
+
+  .gantt-header-weeks {
+    display: flex;
+    flex: 1;
+  }
+
+  .gantt-week-label {
+    flex: 1;
+    min-width: 32px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 9px;
+    color: var(--muted);
+    text-align: center;
+    padding-bottom: 4px;
+  }
+
+  .gantt-week-label.highlight {
+    color: var(--navy);
+    font-weight: 700;
+  }
+
+  .legend {
+    display: flex;
+    gap: 20px;
+    margin-top: 16px;
+    flex-wrap: wrap;
+  }
+
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+  }
+
+  .legend-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 2px;
+  }
+
+  .critical-note {
+    background: #FDEDEC;
+    border-left: 4px solid var(--red);
+    padding: 12px 16px;
+    font-size: 12px;
+    margin-bottom: 8px;
+    font-family: 'IBM Plex Mono', monospace;
+  }
+
+  .info-note {
+    background: #EBF5FB;
+    border-left: 4px solid var(--blue-mid);
+    padding: 12px 16px;
+    font-size: 12px;
+    margin-bottom: 8px;
+  }
+
+  .toggle-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    color: var(--muted);
+    padding: 0;
+    letter-spacing: 1px;
+  }
+
+  .expand-all {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    background: var(--navy);
+    color: white;
+    border: none;
+    padding: 6px 14px;
+    cursor: pointer;
+    letter-spacing: 1px;
+    margin-bottom: 8px;
+  }
+
+  .phase-toggle {
+    font-size: 14px;
+    color: var(--muted);
+  }
+
+  .resources {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 2px;
+    margin-top: 4px;
+  }
+
+  .resource-card {
+    background: white;
+    padding: 14px 16px;
+    border-top: 3px solid var(--navy);
+  }
+
+  .resource-name {
+    font-weight: 700;
+    font-size: 12px;
+    margin-bottom: 6px;
+    color: var(--navy);
+  }
+
+  .resource-role {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    color: var(--muted);
+    margin-bottom: 8px;
+  }
+
+  .resource-phases {
+    font-size: 11px;
+    color: #444;
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-top">
+    <div>
+      <h1>SMEDESTRÆDE 4, JYLLINGE</h1>
+      <div class="subtitle">MASTERPLAN — TOTALRENOVERING</div>
+    </div>
+    <div class="meta">
+      Ejer: Henrik Ludvig<br>
+      Rådgiver: MZ Byggerådgivning<br>
+      Opstart: 15. maj 2026<br>
+      Estimeret slutning: dec. 2026
+    </div>
+  </div>
+</div>
+
+<div class="alert-bar">
+  <span>Asbestentreprenør bestilles NU - blokerer alt tagarbejde</span>
+  <span>Ingeniørrapport bestilles NU - blokerer væggnedrivning</span>
+  <span>Byggetilladelse søges NU - ovenlys + 1. sals bad</span>
+  <span>Miljøscreening bestilles NU - blokerer nedrivning indvendigt</span>
+</div>
+
+<div class="main">
+
+  <!-- GANTT -->
+  <div class="section-title">OVERBLIK — FASEPLAN UGE FOR UGE</div>
+
+  <div class="gantt">
+    <div class="gantt-header">
+      <div class="gantt-header-label">FASE / ENTREPRISE</div>
+      <div class="gantt-header-weeks">
+        <div class="gantt-week-label highlight">U20</div>
+        <div class="gantt-week-label highlight">U21</div>
+        <div class="gantt-week-label">U22</div>
+        <div class="gantt-week-label">U23</div>
+        <div class="gantt-week-label">U24</div>
+        <div class="gantt-week-label">U25</div>
+        <div class="gantt-week-label">U26</div>
+        <div class="gantt-week-label">U27</div>
+        <div class="gantt-week-label">U28</div>
+        <div class="gantt-week-label">U29</div>
+        <div class="gantt-week-label">U30</div>
+        <div class="gantt-week-label">U31</div>
+        <div class="gantt-week-label">U32</div>
+        <div class="gantt-week-label">U33</div>
+        <div class="gantt-week-label">U34</div>
+        <div class="gantt-week-label">U35</div>
+        <div class="gantt-week-label">U36</div>
+        <div class="gantt-week-label">U37</div>
+        <div class="gantt-week-label">U38</div>
+        <div class="gantt-week-label">U39</div>
+        <div class="gantt-week-label">U40</div>
+        <div class="gantt-week-label">U41</div>
+        <div class="gantt-week-label">U42</div>
+        <div class="gantt-week-label">U43</div>
+      </div>
+    </div>
+
+    <!-- Forberedelse -->
+    <div class="gantt-row">
+      <div class="gantt-label">Stillads<div class="sub">T8 - UL</div></div>
+      <div class="gantt-weeks">
+        <div class="gantt-week"><div class="gantt-bar bar-red" style="margin-left:0%;width:100%"></div></div>
+        <div class="gantt-week"><div class="gantt-bar bar-red"></div></div>
+        <div class="gantt-week"><div class="gantt-bar bar-red"></div></div>
+        <div class="gantt-week"><div class="gantt-bar bar-red"></div></div>
+        <div class="gantt-week"><div class="gantt-bar bar-red"></div></div>
+        <div class="gantt-week"><div class="gantt-bar bar-red"></div></div>
+        <div class="gantt-week"><div class="gantt-bar bar-red"></div></div>
+        <div class="gantt-week"><div class="gantt-bar bar-red"></div></div>
+        <div class="gantt-week"><div class="gantt-bar bar-red"></div></div>
+        <div class="gantt-week"><div class="gantt-bar bar-red"></div></div>
+        <div class="gantt-week"><div class="gantt-bar bar-red"></div></div>
+        <div class="gantt-week"><div class="gantt-bar bar-red"></div></div>
+        <div class="gantt-week"><div class="gantt-bar bar-red"></div></div>
+        <div class="gantt-week"><div class="gantt-bar bar-red"></div></div>
+        <div class="gantt-week"><div class="gantt-bar bar-red"></div></div>
+        <div class="gantt-week"><div class="gantt-bar bar-red"></div></div>
+        <div class="gantt-week"></div>
+        <div class="gantt-week"></div>
+        <div class="gantt-week"></div>
+        <div class="gantt-week"></div>
+        <div class="gantt-week"></div>
+        <div class="gantt-week"></div>
+        <div class="gantt-week"></div>
+        <div class="gantt-week"></div>
+      </div>
+    </div>
+
+    <div class="gantt-row">
+      <div class="gantt-label">Asbest + tag-afdækning<div class="sub">T9/T10 - UL</div></div>
+      <div class="gantt-weeks">
+        <div class="gantt-week"><div class="gantt-bar bar-navy"></div></div>
+        <div class="gantt-week"><div class="gantt-bar bar-navy"></div></div>
+        <div class="gantt-week"></div>
+        <div class="gantt-week"></div>
+        <div class="gantt-week"></div>
+        <div class="gantt-week"></div>
+        <div class="gantt-week"></div>
+        <div class="gantt-week"></div>
+        <div class="gantt-week"></div>
+        <div class="gantt-week"></div>
+        <div class="gantt-week"></div>
+        <div class="gantt-week"></div>
+        <div class="gantt-week"></div>
+        <div class="gantt-week"></div>
+        <div class="gantt-week"></div>
+        <div class="gantt-week"></div>
+        <div class="gantt-week"></div>
+        <div class="gantt-week"></div>
+        <div class="gantt-week"></div>
+        <div class="gantt-week"></div>
+        <div class="gantt-week"></div>
+        <div class="gantt-week"></div>
+        <div class="gantt-week"></div>
+        <div class="gantt-week"></div>
+      </div>
+    </div>
+
+    <div class="gantt-row">
+      <div class="gantt-label">Tag — ny konstruktion<div class="sub">T8 - TØM + UL</div></div>
+      <div class="gantt-weeks">
+        <div class="gantt-week"></div>
+        <div class="gantt-week"></div>
+        <div class="gantt-week"><div class="gantt-bar bar-navy"></div></div>
+        <div class="gantt-week"><div class="gantt-bar bar-navy"></div></div>
+        <div class="gantt-week"><div class="gantt-bar bar-navy"></div></div>
+        <div class="gantt-week"><div class="gantt-bar bar-navy"></div></div>
+        <div class="gantt-week"><div class="gantt-bar bar-navy"></div></div>
+        <div class="gantt-week"><div class="gantt-bar bar-navy"></div></div>
+        <div class="gantt-week"></div>
+        <div class="gantt-week"></div>
+        <div class="gantt-week"></div>
+        <div class="gantt-week"></div>
+        <div class="gantt-week"></div>
+        <div class="gantt-week"></div>
+        <div class="gantt-week"></div>
+        <div class="gantt-week"></div>
+        <div class="gantt-week"></div>
+        <div class="gantt-week"></div>
+        <div class="gantt-week"></div>
+        <div class="gantt-week"></div>
+        <div class="gantt-week"></div>
+        <div class="gantt-week"></div>
+        <div class="gantt-week"></div>
+        <div class="gantt-week"></div>
+      </div>
+    </div>
+
+    <div class="gantt-row">
+      <div class="gantt-label">Hanebåndsloft isolation<div class="sub">T5 - TØM</div></div>
+      <div class="gantt-weeks">
+        <div class="gantt-week"></div>
+        <div class="gantt-week"></div>
+        <div class="gantt-week"></div>
+        <div class="gantt-week"></div>
+        <div class="gantt-week"></div>
+        <div class="gantt-week"></div>
+        <div class="gantt-week"></div>
+        <div class="gantt-week"><div class="gantt-bar bar-blue"></div></div>
+        <div class="gantt-week"></div>
+        <div class="gantt-week"></div>
+        <div class="gantt-week"></div>
+        <div class="gantt-week"></div>
+        <div class="gantt-week"></div>
+        <div class="gantt-week"></div>
+        <div class="gantt-week"></div>
+        <div class="gantt-week"></div>
+        <div class="gantt-week"></div>
+        <div class="gantt-week"></div>
+        <div class="gantt-week"></div>
+        <div class="gantt-week"></div>
+        <div class="gantt-week"></div>
+        <div class="gantt-week"></div>
+        <div class="gantt-week"></div>
+        <div class="gantt-week"></div>
+      </div>
+    </div>
+
+    <div class="gantt-row">
+      <div class="gantt-label">1. sal — rå (vægge, gulv, skråv.)<div class="sub">T3 - TØM + MUR</div></div>
+      <div class="gantt-weeks">
+        <div class="gantt-week"></div>
+        <div class="gantt-week"></div>
+        <div class="gantt-week"><div class="gantt-bar bar-green"></div></div>
+        <div class="gantt-week"><div class="gantt-bar bar-green"></div></div>
+        <div class="gantt-week"><div class="gantt-bar bar-green"></div></div>
+        <div class="gantt-week"><div class="gantt-bar bar-green"></div></div>
+        <div class="gantt-week"></div>
+        <div class="gantt-week"></div>
+        <div class="gantt-week"></div>
+        <div class="gantt-week"></div>
+        <div class="gantt-week"></div>
+        <div class="gantt-week"></div>
+        <div class="gantt-week"></div>
+        <div class="gantt-week"></div>
+        <div class="gantt-week"></div>
+        <div class="gantt-week"></div>
+        <div class="gantt-week"></div>
+        <div class="gantt-week"></div>
+        <div class="gantt-week"></div>
+        <div class="gantt-week"></div>
+        <div class="gantt-week"></div>
+        <div class="gantt-week"></div>
+        <div class="gantt-week"></div>
+        <div class="gantt-week"></div>
+      </div>
+    </div>
+
+    <div class="gantt-row">
+      <div class="gantt-label">1. sal bad x2<div class="sub">T4 - VVS + TØM + MUR</div></div>
+      <div class="gantt-weeks">
+        <div class="gantt-week"></div>
+        <div class="gantt-week"></div>
+        <div class="gantt-week"></div>
+        <div class="gantt-week"></div>
+        <div class="gantt-week"><div class="gantt-bar bar-orange"></div></div>
+        <div class="gantt-week"><div class="gantt-bar bar-orange"></div></div>
+        <div class="gantt-week"><div class="gantt-bar bar-orange"></div></div>
+        <div class="gantt-week"><div class="gantt-bar bar-orange"></div></div>
+        <div class="gantt-week"><div class="gantt-bar bar-orange"></div></div>
+        <div class="gantt-week"></div>
+        <div class="gantt-week"></div>
+        <div class="gantt-week"></div>
+        <div class="gantt-week"></div>
+        <div class="gantt-week"></div>
+        <div class="gantt-week"></div>
+        <div class="gantt-week"></div>
+        <div class="gantt-week"></div>
+        <div class="gantt-week"></div>
+        <div class="gantt-week"></div>
+        <div class="gantt-week"></div>
+        <div class="gantt-week"></div>
+        <div class="gantt-week"></div>
+        <div class="gantt-week"></div>
+        <div class="gantt-week"></div>
+      </div>
+    </div>
+
+    <div class="gantt-row">
+      <div class="gantt-label">Stueetage — rå (vægge, gulv)<div class="sub">T2 - TØM + MUR + VVS</div></div>
+      <div class="gantt-weeks">
+        <div class="gantt-week"></div>
+        <div class="gantt-week"></div>
+        <div class="gantt-week"><div class="gantt-bar bar-green"></div></div>
+        <div class="gantt-week"><div class="gantt-bar bar-green"></div></div>
+        <div class="gantt-week"><div class="gantt-bar bar-green"></div></div>
+        <div class="gantt-week"><div class="gantt-bar bar-green"></div></div>
+        <div class="gantt-week"><div class="gantt-bar bar-green"></div></div>
+        <div class="gantt-week"><div class="gantt-bar bar-green"></div></div>
+        <div class="gantt-week"><div class="gantt-bar bar-green"></div></div>
+        <div class="gantt-week"><div class="gantt-bar bar-green"></div></div>
+        <div class="gantt-week"></div>
+        <div class="gantt-week"></div>
+        <div class="gantt-week"></div>
+        <div class="gantt-week"></div>
+        <div class="gantt-week"></div>
+        <div class="gantt-week"></div>
+        <div class="gantt-week"></div>
+        <div class="gantt-week"></div>
+        <div class="gantt-week"></div>
+        <div class="gantt-week"></div>
+        <div class="gantt-week"></div>
+        <div class="gantt-week"></div>
+        <div class="gantt-week"></div>
+        <div class="gantt-week"></div>
+      </div>
+    </div>
+
+    <div class="gantt-row">
+      <div class="gantt-label">Vinduer + døre<div class="sub">T1 - TØM + MUR</div></div>
+      <div class="gantt-weeks">
+        <div class="gantt-week"></div>
+        <div class="gantt-week"></div>
+        <div class="gantt-week"></div>
+        <div class="gantt-week"></div>
+        <div class="gantt-week"></div>
+        <div class="gantt-week"></div>
+        <div class="gantt-week"></div>
+        <div class="gantt-week"></div>
+        <div class="gantt-week"><div class="gantt-bar bar-navy"></div></div>
+        <div class="gantt-week"><div class="gantt-bar bar-navy"></div></div>
+        <div class="gantt-week"><div class="gantt-bar bar-navy"></div></div>
+        <div class="gantt-week"></div>
+        <div class="gantt-week"></div>
+        <div class="gantt-week"></div>
+        <div class="gantt-week"></div>
+        <div class="gantt-week"></div>
+        <div class="gantt-week"></div>
+        <div class="gantt-week"></div>
+        <div class="gantt-week"></div>
+        <div class="gantt-week"></div>
+        <div class="gantt-week"></div>
+        <div class="gantt-week"></div>
+        <div class="gantt-week"></div>
+        <div class="gantt-week"></div>
+      </div>
+    </div>
+
+    <div class="gantt-row">
+      <div class="gantt-label">Varmepumpe<div class="sub">T7 - VVS</div></div>
+      <div class="gantt-weeks">
+        <div class="gantt-week"></div>
+        <div class="gantt-week"></div>
+        <div class="gantt-week"></div>
+        <div class="gantt-week"></div>
+        <div class="gantt-week"></div>
+        <div class="gantt-week"></div>
+        <div class="gantt-week"></div>
+        <div class="gantt-week"></div>
+        <div class="gantt-week"></div>
+        <div class="gantt-week"><div class="gantt-bar bar-orange"></div></div>
+        <div class="gantt-week"><div class="gantt-bar bar-orange"></div></div>
+        <div class="gantt-week"><div class="gantt-bar bar-orange"></div></div>
+        <div class="gantt-week"></div>
+        <div class="gantt-week"></div>
+        <div class="gantt-week"></div>
+        <div class="gantt-week"></div>
+        <div class="gantt-week"></div>
+        <div class="gantt-week"></div>
+        <div class="gantt-week"></div>
+        <div class="gantt-week"></div>
+        <div class="gantt-week"></div>
+        <div class="gantt-week"></div>
+        <div class="gantt-week"></div>
+        <div class="gantt-week"></div>
+      </div>
+    </div>
+
+    <div class="gantt-row">
+      <div class="gantt-label">Facadeisolering<div class="sub">T12 - MUR + UL</div></div>
+      <div class="gantt-weeks">
+        <div class="gantt-week"></div>
+        <div class="gantt-week"></div>
+        <div class="gantt-week"></div>
+        <div class="gantt-week"></div>
+        <div class="gantt-week"></div>
+        <div class="gantt-week"></div>
+        <div class="gantt-week"></div>
+        <div class="gantt-week"></div>
+        <div class="gantt-week"></div>
+        <div class="gantt-week"></div>
+        <div class="gantt-week"><div class="gantt-bar bar-green"></div></div>
+        <div class="gantt-week"><div class="gantt-bar bar-green"></div></div>
+        <div class="gantt-week"><div class="gantt-bar bar-green"></div></div>
+        <div class="gantt-week"><div class="gantt-bar bar-green"></div></div>
+        <div class="gantt-week"><div class="gantt-bar bar-green"></div></div>
+        <div class="gantt-week"><div class="gantt-bar bar-green"></div></div>
+        <div class="gantt-week"></div>
+        <div class="gantt-week"></div>
+        <div class="gantt-week"></div>
+        <div class="gantt-week"></div>
+        <div class="gantt-week"></div>
+        <div class="gantt-week"></div>
+        <div class="gantt-week"></div>
+        <div class="gantt-week"></div>
+      </div>
+    </div>
+
+    <div class="gantt-row">
+      <div class="gantt-label">El-installationer<div class="sub">T11 - EL</div></div>
+      <div class="gantt-weeks">
+        <div class="gantt-week"></div>
+        <div class="gantt-week"></div>
+        <div class="gantt-week"></div>
+        <div class="gantt-week"></div>
+        <div class="gantt-week"></div>
+        <div class="gantt-week"></div>
+        <div class="gantt-week"><div class="gantt-bar bar-blue"></div></div>
+        <div class="gantt-week"><div class="gantt-bar bar-blue"></div></div>
+        <div class="gantt-week"><div class="gantt-bar bar-blue"></div></div>
+        <div class="gantt-week"><div class="gantt-bar bar-blue"></div></div>
+        <div class="gantt-week"><div class="gantt-bar bar-blue"></div></div>
+        <div class="gantt-week"><div class="gantt-bar bar-blue"></div></div>
+        <div class="gantt-week"><div class="gantt-bar bar-blue"></div></div>
+        <div class="gantt-week"><div class="gantt-bar bar-blue"></div></div>
+        <div class="gantt-week"><div class="gantt-bar bar-blue"></div></div>
+        <div class="gantt-week"></div>
+        <div class="gantt-week"></div>
+        <div class="gantt-week"></div>
+        <div class="gantt-week"></div>
+        <div class="gantt-week"></div>
+        <div class="gantt-week"></div>
+        <div class="gantt-week"></div>
+        <div class="gantt-week"></div>
+        <div class="gantt-week"></div>
+      </div>
+    </div>
+
+    <div class="gantt-row">
+      <div class="gantt-label">Garage ny opbygning<div class="sub">T13 - TØM + MUR</div></div>
+      <div class="gantt-weeks">
+        <div class="gantt-week"></div>
+        <div class="gantt-week"></div>
+        <div class="gantt-week"></div>
+        <div class="gantt-week"></div>
+        <div class="gantt-week"></div>
+        <div class="gantt-week"></div>
+        <div class="gantt-week"></div>
+        <div class="gantt-week"></div>
+        <div class="gantt-week"></div>
+        <div class="gantt-week"></div>
+        <div class="gantt-week"></div>
+        <div class="gantt-week"><div class="gantt-bar bar-muted"></div></div>
+        <div class="gantt-week"><div class="gantt-bar bar-muted"></div></div>
+        <div class="gantt-week"><div class="gantt-bar bar-muted"></div></div>
+        <div class="gantt-week"><div class="gantt-bar bar-muted"></div></div>
+        <div class="gantt-week"><div class="gantt-bar bar-muted"></div></div>
+        <div class="gantt-week"><div class="gantt-bar bar-muted"></div></div>
+        <div class="gantt-week"><div class="gantt-bar bar-muted"></div></div>
+        <div class="gantt-week"></div>
+        <div class="gantt-week"></div>
+        <div class="gantt-week"></div>
+        <div class="gantt-week"></div>
+        <div class="gantt-week"></div>
+        <div class="gantt-week"></div>
+      </div>
+    </div>
+
+    <div class="gantt-row">
+      <div class="gantt-label">Maler — hele huset<div class="sub">T6 - MAL</div></div>
+      <div class="gantt-weeks">
+        <div class="gantt-week"></div>
+        <div class="gantt-week"></div>
+        <div class="gantt-week"></div>
+        <div class="gantt-week"></div>
+        <div class="gantt-week"></div>
+        <div class="gantt-week"></div>
+        <div class="gantt-week"></div>
+        <div class="gantt-week"></div>
+        <div class="gantt-week"></div>
+        <div class="gantt-week"></div>
+        <div class="gantt-week"></div>
+        <div class="gantt-week"></div>
+        <div class="gantt-week"></div>
+        <div class="gantt-week"></div>
+        <div class="gantt-week"></div>
+        <div class="gantt-week"><div class="gantt-bar bar-orange"></div></div>
+        <div class="gantt-week"><div class="gantt-bar bar-orange"></div></div>
+        <div class="gantt-week"><div class="gantt-bar bar-orange"></div></div>
+        <div class="gantt-week"><div class="gantt-bar bar-orange"></div></div>
+        <div class="gantt-week"><div class="gantt-bar bar-orange"></div></div>
+        <div class="gantt-week"></div>
+        <div class="gantt-week"></div>
+        <div class="gantt-week"></div>
+        <div class="gantt-week"></div>
+      </div>
+    </div>
+
+    <div class="gantt-row">
+      <div class="gantt-label">Finish + aflevering<div class="sub">ALLE</div></div>
+      <div class="gantt-weeks">
+        <div class="gantt-week"></div>
+        <div class="gantt-week"></div>
+        <div class="gantt-week"></div>
+        <div class="gantt-week"></div>
+        <div class="gantt-week"></div>
+        <div class="gantt-week"></div>
+        <div class="gantt-week"></div>
+        <div class="gantt-week"></div>
+        <div class="gantt-week"></div>
+        <div class="gantt-week"></div>
+        <div class="gantt-week"></div>
+        <div class="gantt-week"></div>
+        <div class="gantt-week"></div>
+        <div class="gantt-week"></div>
+        <div class="gantt-week"></div>
+        <div class="gantt-week"></div>
+        <div class="gantt-week"></div>
+        <div class="gantt-week"></div>
+        <div class="gantt-week"></div>
+        <div class="gantt-week"></div>
+        <div class="gantt-week"><div class="gantt-bar bar-navy"></div></div>
+        <div class="gantt-week"><div class="gantt-bar bar-navy"></div></div>
+        <div class="gantt-week"><div class="gantt-bar bar-navy"></div></div>
+        <div class="gantt-week"><div class="gantt-bar bar-navy"></div></div>
+      </div>
+    </div>
+
+    <div class="legend">
+      <div class="legend-item"><div class="legend-dot" style="background:var(--navy)"></div> Tømrer / Konstruktion</div>
+      <div class="legend-item"><div class="legend-dot" style="background:var(--red)"></div> Kritisk / Stillads</div>
+      <div class="legend-item"><div class="legend-dot" style="background:var(--green)"></div> Murer / Råbyg</div>
+      <div class="legend-item"><div class="legend-dot" style="background:var(--blue-mid)"></div> El / Loft</div>
+      <div class="legend-item"><div class="legend-dot" style="background:var(--orange)"></div> VVS / Maler / Finish</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#aaa"></div> Garage</div>
+    </div>
+  </div>
+
+  <!-- FASEPLAN -->
+  <div class="section-title">FASER I DETALJER</div>
+
+  <button class="expand-all" onclick="toggleAll()">FOLD ALT UD / IND</button>
+
+  <div class="phases">
+
+    <!-- PRE-OPSTART -->
+    <div class="phase critical">
+      <div class="phase-header" onclick="togglePhase(this)">
+        <div>
+          <div class="phase-id">PRE-OPSTART — UGE 18-20</div>
+          <div class="phase-name">Myndighedsforhold + bestillinger</div>
+        </div>
+        <div></div>
+        <div style="display:flex;gap:16px;align-items:center">
+          <span class="tag tag-bygherre">BYGHERRE</span>
+          <span class="tag tag-asbest">KRITISK</span>
+          <span class="phase-toggle">▼</span>
+        </div>
+      </div>
+      <div class="phase-body">
+        <div>
+          <div class="col-label">Handlinger</div>
+          <ul class="task-list">
+            <li><span class="tag tag-asbest">ASBEST</span> Bestil autoriseret asbestentreprenør. Aftal dokumentation + bortskaffelsesattest.</li>
+            <li><span class="tag tag-bygherre">BYG.H</span> Søg byggetilladelse: nye ovenlys + nyt badeværelse 1. sal. Afvent svar (4-8 uger).</li>
+            <li><span class="tag tag-bygherre">BYG.H</span> Bestil ingeniørrapport: bærende vægge stueetagen. Kræves inden væggnedrivning.</li>
+            <li><span class="tag tag-bygherre">BYG.H</span> Bestil miljøscreening: PCB, bly, asbest i indvendige konstruktioner.</li>
+            <li><span class="tag tag-stillas">STILLAS</span> Bekræft stilladsbestilling. Leveringsdato: 15. maj.</li>
+            <li><span class="tag tag-bygherre">BYG.H</span> Bygherre afmonter solceller på garage inden opstart.</li>
+            <li>Bestil Metro Therm Metroair I 16 varmepumpe (leveringstid kan være lang).</li>
+            <li>Bestil Outline vinduer og døre — alle mål verificeres på stedet inden ordreafgivelse.</li>
+            <li>Bestil Lertegl Ravensberger light dyb sort engoberet (leveringstid tjekkes).</li>
+            <li>Bestil Lindab arkitektrender nr. 12 aluzink + nedløbsrør.</li>
+            <li>Bestil Lewis svalehale plader til 1. sals badeværelser.</li>
+            <li>Bestil Unidrain komplet x3 (2 stk. 1. sal + 1 stk. stueetage).</li>
+            <li>Bestil Geberit hængestativ x3.</li>
+            <li>Bestil Kingspan 200 mm isolering til stueetage terrændæk.</li>
+            <li>Bestil Aquapanel H2O plader til garage + gavle.</li>
+          </ul>
+          <div class="blocker">Intet arbejde kan igangsættes på tag eller indvendige konstruktioner før asbest er fjernet og miljøscreening foreligger.</div>
+        </div>
+        <div>
+          <div class="col-label">Bemanding uge 20</div>
+          <ul class="task-list">
+            <li>Stillads opstilles dag 1 (underleverandør).</li>
+            <li>Asbestentreprenør følger samme dag eller dag 2.</li>
+            <li>Byggebod + byggestrøm etableres af tømrer.</li>
+            <li>Byggeplads indrettes: container, køreplader, afspærring.</li>
+          </ul>
+          <div class="col-label" style="margin-top:16px">Dokumentation krævet inden opstart</div>
+          <ul class="task-list">
+            <li>Gyldig erhvervsansvarsforsikring fra alle UL.</li>
+            <li>Bygherre tegner All-Risk entrepriseforsikring.</li>
+            <li>Tidsplan + betalingsplan fra hoved-UL indsendes og godkendes.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- FASE 1 -->
+    <div class="phase critical">
+      <div class="phase-header" onclick="togglePhase(this)">
+        <div>
+          <div class="phase-id">FASE 1 — UGE 20-21</div>
+          <div class="phase-name">Stillads + asbest + afdækning</div>
+        </div>
+        <div></div>
+        <div style="display:flex;gap:16px;align-items:center">
+          <span class="tag tag-stillas">STILLAS</span>
+          <span class="tag tag-asbest">ASBEST-UL</span>
+          <span class="tag tag-tommer">TØMRER</span>
+          <span class="phase-toggle">▼</span>
+        </div>
+      </div>
+      <div class="phase-body">
+        <div>
+          <div class="col-label">Rækkefølge</div>
+          <ul class="task-list">
+            <li>Dag 1: Stillads opstilles rundt om hele huset (T8).</li>
+            <li>Dag 1-2: Tagrender og nedløb afmonteres.</li>
+            <li>Dag 2: Asbestentreprenør afmonterer asbest-tagplader lovligt. Dokumentation udleveres.</li>
+            <li>Dag 3: Ovenlys afmonteres.</li>
+            <li>Dag 3: Al gammel isolering og rør i skråvægge og skunk fjernes (nu asbest er væk).</li>
+            <li>Dag 3-4: Telt/presenning afdækning monteres (T9/T10) — huset skal være tæt inden tømmeren starter på ny tagkonstruktion.</li>
+            <li>Registrer eventuelle skader på eksisterende konstruktion inden videre arbejde.</li>
+          </ul>
+          <div class="blocker">Ingen tømrer må røre tagkonstruktion før bortskaffelsesattest for asbest er modtaget og underskrevet.</div>
+        </div>
+        <div>
+          <div class="col-label">Materialer til rådighed uge 20</div>
+          <ul class="task-list">
+            <li>Presenning til afdækning (T9) — bestilles uge 18.</li>
+            <li>Evt. teltkonstruktion (T10) — prissættes og besluttes.</li>
+            <li>Stillads (UL leverer og monterer).</li>
+          </ul>
+          <div class="col-label" style="margin-top:16px">Parallel uge 20-21</div>
+          <ul class="task-list">
+            <li>Ingeniørrapport afventes — forventes klar uge 22-23.</li>
+            <li>Vinduer og døre opmåles præcist af leverandør.</li>
+            <li>Miljøscreening indvendigt gennemføres mens tagarbejde pågår.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- FASE 2 -->
+    <div class="phase">
+      <div class="phase-header" onclick="togglePhase(this)">
+        <div>
+          <div class="phase-id">FASE 2 — UGE 22-28</div>
+          <div class="phase-name">Tag — ny komplet konstruktion + hanebåndsloft</div>
+        </div>
+        <div></div>
+        <div style="display:flex;gap:16px;align-items:center">
+          <span class="tag tag-tommer">TØMRER</span>
+          <span class="tag tag-murer">MURER</span>
+          <span class="phase-toggle">▼</span>
+        </div>
+      </div>
+      <div class="phase-body">
+        <div>
+          <div class="col-label">Rækkefølge tømmerfase (T8)</div>
+          <ul class="task-list">
+            <li>Isolering 150 mm lambda 32 monteres mellem eksisterende spær.</li>
+            <li>Nyt spærtræ laskeres op langs eksisterende spær — forhøjelse 150 mm. Ingeniørberegning skal foreligge.</li>
+            <li>Opretning af spær i nødvendigt omfang.</li>
+            <li>Nyt undertag Icopal Monarperm 1000 KK monteres.</li>
+            <li>Undertagsudluftninger monteres ved spidsloft og skunke.</li>
+            <li>Afstandslister trykimpr. monteres.</li>
+            <li>Taglægter T1 godkendt 38x73 mm leveres og monteres.</li>
+            <li>Nye ovenlys monteres — samme antal og størrelse. Indvendig lysning i gips færdigmonteret.</li>
+            <li>Lertegl Ravensberger light dyb sort engoberet lægges.</li>
+            <li>Fodblik i tagrende, undertag limes på fodblik.</li>
+            <li>Nye Lindab arkitektrender nr. 12 aluzink + nedløbsrør monteres.</li>
+          </ul>
+          <div class="col-label" style="margin-top:16px">Gavle + sterne (T8)</div>
+          <ul class="task-list">
+            <li>Nye vindskeder i H2O Power Panel plader (højere pga. merisolering +200 mm).</li>
+            <li>Vindskedetegl afsluttes.</li>
+            <li>Gesims i H2O plader med 7 cm fremspring på facader — ventileret konstruktion.</li>
+            <li>Netpuds på vindskeder, sterne og underudhæng.</li>
+            <li>Balkongulvkonstruktioner som tæt konstruktion med afvanding til nedløb.</li>
+            <li>Gavltrekanter som ventileret pladekonstruktion pudset.</li>
+            <li>Limtræsdragere beklædes med ventileret pladekonstruktion og pudses.</li>
+            <li>Stolper ved hoveddør (2 stk.) og terrasse vest (1 stk.) beklædes og pudses.</li>
+            <li>OBS: Ingen trekantsvinduer i gavle mod loftrum monteres.</li>
+          </ul>
+        </div>
+        <div>
+          <div class="col-label">Materialer til rådighed uge 22</div>
+          <ul class="task-list">
+            <li>Lertegl Ravensberger (bestilt uge 18 — leveringstid kontrolleres).</li>
+            <li>Icopal Monarperm 1000 KK undertag.</li>
+            <li>Spærtræ 45 mm til forhøjelse + lasker.</li>
+            <li>Isolering 150 mm lambda 32.</li>
+            <li>Taglægter T1 38x73 mm.</li>
+            <li>H2O Power Panel plader til gavle og sterne.</li>
+            <li>Lindab arkitektrender nr. 12 + nedløbsrør.</li>
+            <li>Ovenlys — præcist antal og mål fra nedtagningstegning.</li>
+          </ul>
+          <div class="col-label" style="margin-top:16px">Hanebåndsloft (T5) — uge 27</div>
+          <ul class="task-list">
+            <li>Udføres efter asbest-tagplader er fjernet og nyt undertag er tæt.</li>
+            <li>Al eksisterende isolering fjernes og støvsuges.</li>
+            <li>Nyt isoleret aftræk fra 2 badeværelser 1. sal føres gennem tag fra loftet.</li>
+            <li>Gangbro afmonteres og hæves — isol. herunder.</li>
+            <li>Isoleres med 450 mm papiruld.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- FASE 3 -->
+    <div class="phase running">
+      <div class="phase-header" onclick="togglePhase(this)">
+        <div>
+          <div class="phase-id">FASE 3 — UGE 22-26 (PARALLELT MED TAG)</div>
+          <div class="phase-name">1. sal — rå: vægge, gulv, skråvægge</div>
+        </div>
+        <div></div>
+        <div style="display:flex;gap:16px;align-items:center">
+          <span class="tag tag-tommer">TØMRER</span>
+          <span class="tag tag-murer">MURER</span>
+          <span class="phase-toggle">▼</span>
+        </div>
+      </div>
+      <div class="phase-body">
+        <div>
+          <div class="col-label">Rækkefølge (T3)</div>
+          <ul class="task-list">
+            <li>Alle lette vægge på 1. sal fjernes.</li>
+            <li>Brændeovn 1. sal fjernes og nedlægges.</li>
+            <li>Alle trægulve afmonteres og isolering fjernes i bjælkelag.</li>
+            <li>Skråvægge: profilbrædder og dampspærre afmonteres.</li>
+            <li>Ny dampspærre monteres på skråvægge + forskalling 50 mm til installationer.</li>
+            <li>2 lag gips på skråvægge (forskudte lag).</li>
+            <li>El og VVS i skråvægge udføres FØR gips lukkes.</li>
+            <li>Nye gulvbjælker monteres mellem eksisterende — 45 mm spærtræ, 1 stk. pr. fag.</li>
+            <li>Rockwool lydbattes isolering i etageadskillelse.</li>
+            <li>Bjælkelag oprettes til +/- 2 mm på 2 m retholt.</li>
+            <li>22 mm spånplader med spor til gulvvarme monteres.</li>
+            <li>Varmefordelingsplader i spor.</li>
+            <li>Gulvvarme 6 zoner trådløs styring (koordineres med VVS).</li>
+            <li>12 mm spånplade monteres.</li>
+            <li>Støddæmpende lag monteres.</li>
+            <li>14 mm lamelparket (afsæt 400 kr./m2) — monteres EFTER badeværelser er færdige.</li>
+            <li>Nye vægge iht. bygherres tegning: 2x45 mm regler forskudt, 2x45 mm Rockwool lydbattes, 2 lag gips forskudte lag, lydfuger.</li>
+            <li>Fodlister 3 cm massiv eg limes.</li>
+          </ul>
+        </div>
+        <div>
+          <div class="col-label">Materialer klar uge 22</div>
+          <ul class="task-list">
+            <li>Spærtræ 45 mm til nye gulvbjælker.</li>
+            <li>Rockwool lydbattes etageadskillelse.</li>
+            <li>22 mm spånplader med spor.</li>
+            <li>Varmefordelingsplader.</li>
+            <li>Gulvvarmeslanger 6 zoner + trådløs styring.</li>
+            <li>12 mm spånplader.</li>
+            <li>Støddæmpende lag.</li>
+            <li>14 mm lamelparket (bestilles — leveringstid).</li>
+            <li>Stålregler 45 mm til nye vægge.</li>
+            <li>Rockwool lydbattes til vægge.</li>
+            <li>Gips 15 mm til vægge og skråvægge.</li>
+            <li>Massiv eg fodlister 3 cm.</li>
+          </ul>
+          <div class="col-label" style="margin-top:16px">Inderdøre 1. sal</div>
+          <ul class="task-list">
+            <li>Swedoor Stable Nature Eg Advance Line — hvide, massive, glatte.</li>
+            <li>Karme uden bundstykker.</li>
+            <li>Indehold 6.000 kr. inkl. moms til greb og låse.</li>
+            <li>Ingen indfatninger — fuges mellem karm og væg.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- FASE 4 -->
+    <div class="phase running">
+      <div class="phase-header" onclick="togglePhase(this)">
+        <div>
+          <div class="phase-id">FASE 4 — UGE 24-28</div>
+          <div class="phase-name">1. sal — 2 badeværelser</div>
+        </div>
+        <div></div>
+        <div style="display:flex;gap:16px;align-items:center">
+          <span class="tag tag-vvs">VVS</span>
+          <span class="tag tag-tommer">TØMRER</span>
+          <span class="tag tag-murer">MURER</span>
+          <span class="phase-toggle">▼</span>
+        </div>
+      </div>
+      <div class="phase-body">
+        <div>
+          <div class="col-label">Rækkefølge (T4)</div>
+          <ul class="task-list">
+            <li>Afmontering: faldstammer, WC, vask, armaturer, badekar, gulvafløb.</li>
+            <li>Optagning af eksisterende støbt gulv.</li>
+            <li>Forstærkning bjælkelag — max 400 mm mellem bjælker. Ingeniør regner badekar-forstærkning separat.</li>
+            <li>Nye lydisolerede faldstammer monteres.</li>
+            <li>Unidrain monteres og tilsluttes faldstammer.</li>
+            <li>Lewis svalehale plader monteres.</li>
+            <li>Gulvvarmeslanger fastgøres med clips.</li>
+            <li>Kantisolering som ekspansionsbånd.</li>
+            <li>Thermodyn ca. 8 cm — min. 20-30 mm dæklag over varmeslanger.</li>
+            <li>Fald i bruseniche og rum med kar udføres iht. gældende regler.</li>
+            <li>Overkant afløb til gulv udenfor rum: min. 30 mm.</li>
+            <li>Gulvvarmestyring + fordeler samles på 1. sal.</li>
+            <li>Geberit hængestativ WC monteres.</li>
+            <li>Vægge klargøres til flise- og malerarbejde.</li>
+            <li>Priming af vægge og gulv til vådrumsmembran.</li>
+            <li>Vådrumsmembran på gulv og vægge i brus og ved vask.</li>
+            <li>Fliser på vægge i brus, kar og gulv (400 kr./m2 inkl. moms).</li>
+            <li>Fugning af alle fliser inkl. gummifuge i hjørner og sokkel.</li>
+            <li>2 gange vådrumsmaling øvrige vægge.</li>
+            <li>Thermex Silent 300 CHRZ ventilator monteres i eksisterende hul.</li>
+            <li>Indehold 50.000 kr. inkl. moms pr. bad (100.000 kr. total) til: badmøbel m. vask, vandarmaturer, Geberit stativ, WC-skål m. bræt, glasvæg og dør til brus. Alt monteres af entreprenør.</li>
+          </ul>
+        </div>
+        <div>
+          <div class="col-label">Materialer klar uge 24</div>
+          <ul class="task-list">
+            <li>Lewis svalehale plader.</li>
+            <li>Unidrain komplet x2.</li>
+            <li>Lydisolerede faldstammer.</li>
+            <li>Thermodyn ca. 8 cm.</li>
+            <li>Gulvvarmeslanger + clips + kantisolering.</li>
+            <li>Geberit hængestativ x2.</li>
+            <li>Fliser (koordineres med bygherre for valg).</li>
+            <li>Vådrumsmembran.</li>
+            <li>Thermex Silent 300 CHRZ x2.</li>
+            <li>Badmøbler, vandarmaturer, WC-skål x2 (bestilles af UL inden for 100.000 kr. budget).</li>
+          </ul>
+          <div class="blocker">Kræver ingeniørrapport om bjælkelag-forstærkning til badekar inden støbning.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- FASE 5 -->
+    <div class="phase running">
+      <div class="phase-header" onclick="togglePhase(this)">
+        <div>
+          <div class="phase-id">FASE 5 — UGE 22-30</div>
+          <div class="phase-name">Stueetage — komplet råbyg</div>
+        </div>
+        <div></div>
+        <div style="display:flex;gap:16px;align-items:center">
+          <span class="tag tag-tommer">TØMRER</span>
+          <span class="tag tag-murer">MURER</span>
+          <span class="tag tag-vvs">VVS</span>
+          <span class="phase-toggle">▼</span>
+        </div>
+      </div>
+      <div class="phase-body">
+        <div>
+          <div class="col-label">Nedrivning — kræver ingeniørrapport + miljøscreening (T2)</div>
+          <ul class="task-list">
+            <li>Vægge markeret rødt på tegning fjernes (afventer ingeniørrapport).</li>
+            <li>Væg mellem gæstetoilet og teknikrum fjernes.</li>
+            <li>Pejs berøres ikke.</li>
+            <li>Eksisterende jerndrager bibeholdes.</li>
+            <li>Afmontering og bortskaffelse af køkken.</li>
+            <li>Afpropning af afløb og vandinstallationer.</li>
+            <li>Eksisterende varmeinstallationer til pillefyr i skur afmonteres.</li>
+            <li>Radiatorer afmonteres.</li>
+            <li>Eksisterende gulvkonstruktioner fjernes (to typer — klinker og trægulv).</li>
+            <li>Rist/lem i blank mur ved spisebord fjernes og mures til (obs farveforskel på fuge).</li>
+            <li>Trappe til 1. sal nedtages af entreprenør.</li>
+          </ul>
+          <div class="col-label" style="margin-top:12px">Ny gulvkonstruktion stueetage</div>
+          <ul class="task-list">
+            <li>Afretningssand udlægges.</li>
+            <li>Ny kloak og vandinstallation til fremtidigt køkken og badeværelse forberedes.</li>
+            <li>Emfang aftrækskanal indstøbes og føres ud gennem sokkel.</li>
+            <li>Kingspan 200 mm isolering udlægges (eller tilsvarende).</li>
+            <li>Radonsikring monteres ved ydervægge og gennemgående skillevægge.</li>
+            <li>Armeringsnet 6 mm monteres med varmeslanger: 1 kreds pr. rum, 2 i køkken/alrum, 2 i stue.</li>
+            <li>10 cm betonlag støbes.</li>
+            <li>Affugtning — bygherre afholder strøm.</li>
+            <li>Fugtspærre 0,2 mm PE-folie monteres.</li>
+            <li>Stødabsorberende lag udlægges.</li>
+            <li>Nyt plankegulv fuldlimes (400 kr./m2 inkl. moms).</li>
+            <li>Flisegulve i gæstebadeværelse og bryggers.</li>
+            <li>Fodlister 3 cm massiv eg limes.</li>
+          </ul>
+        </div>
+        <div>
+          <div class="col-label">Nye vægge + lofter stueetage</div>
+          <ul class="task-list">
+            <li>Nye vægge iht. bygherres tegning: 70 mm stålregler, isolering, 1 lag 15 mm ultraboard limet i samlinger.</li>
+            <li>Bærende bjælker i lofter: trækasse afmonteres.</li>
+            <li>Rockwool lydbattes ca. 50 mm mellem bjælkerne.</li>
+            <li>Forskalning til gips monteres plan med underkant bjælker.</li>
+            <li>1 lag fibergips 15 mm i hele stueetagen.</li>
+          </ul>
+          <div class="col-label" style="margin-top:12px">Stueetage badeværelse</div>
+          <ul class="task-list">
+            <li>Udføres som del af fase 5 (samme tid som gulvstøbning).</li>
+            <li>Støbning af betondæk med fald til Unidrain.</li>
+            <li>Geberit hængestativ WC.</li>
+            <li>Vådrumsmembran + fliser bruseniche + ca. 10 cm.</li>
+            <li>Fliser på gulv + sokkelkant.</li>
+            <li>Indehold 50.000 kr. inkl. moms til Unidrain, badmøbler, vask, spejl, vandarmaturer, Geberit stativ, WC-skål, glasvæg.</li>
+            <li>Afsæt 400 kr./m2 til fliser.</li>
+          </ul>
+          <div class="col-label" style="margin-top:12px">Bryggers + inderdøre stueetage</div>
+          <ul class="task-list">
+            <li>Vand og afløb til vaskemaskine etableres.</li>
+            <li>Indehold 25.000 kr. inkl. moms til vask, skabe og vandarmatur i bryggers.</li>
+            <li>El, VVS og kloak i køkken: indehold 10.000 kr. inkl. moms.</li>
+            <li>Bygherre indkøber og monterer selv køkken og blandingsbatterier.</li>
+            <li>Swedoor Stable Nature Eg Advance Line — alle inderdøre inkl. karme uden bundstykker.</li>
+            <li>Indehold 10.000 kr. inkl. moms til greb og låse stueetage.</li>
+          </ul>
+          <div class="blocker">Væggnedrivning kræver ingeniørrapport. Gulvnedrivning kræver miljøscreening.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- FASE 6 -->
+    <div class="phase">
+      <div class="phase-header" onclick="togglePhase(this)">
+        <div>
+          <div class="phase-id">FASE 6 — UGE 28-31</div>
+          <div class="phase-name">Vinduer + døre (T1)</div>
+        </div>
+        <div></div>
+        <div style="display:flex;gap:16px;align-items:center">
+          <span class="tag tag-tommer">TØMRER</span>
+          <span class="tag tag-murer">MURER</span>
+          <span class="phase-toggle">▼</span>
+        </div>
+      </div>
+      <div class="phase-body">
+        <div>
+          <div class="col-label">Rækkefølge</div>
+          <ul class="task-list">
+            <li>Hoveddør inkl. 2 sidepartier afmonteres. Nyt hoveddørsparti monteres (indehold 20.000 kr. inkl. moms til materialer).</li>
+            <li>2 skydedørspartier stue og spisestue mod vest udskiftes til nye.</li>
+            <li>1. sal: skydedørspartier mod vest til nye faste glaspartier og terrassedøre iht. tegning.</li>
+            <li>Dør og vindue gavl øst skiftes til ny, samme størrelse.</li>
+            <li>Punkt 1: Gæsteværelse — muret brystning fjernes, udadgående terrassedør + fast sideparti isættes.</li>
+            <li>Punkt 2: Stue mod syd — muret brystning fjernes, udadgående terrassedør + fast sideparti isættes.</li>
+            <li>Punkt 3: Køkkenvindue udskiftes til nyt topstyret, eksisterende murhul.</li>
+            <li>Punkt 4: Bryggersvindue udskiftes til nyt topstyret, eksisterende murhul.</li>
+            <li>Punkt 5: Bryggersdør udskiftes til ny pladedør, eksisterende murhul.</li>
+            <li>Punkt 6: Nyt vindueshul i murstensfacade nord stueetagen (nyt stort badeværelse) — nyt topstyret vindue monteres.</li>
+            <li>Alle partier: Outline 3-lags super lavenergi, træ/alu, sort ude og inde. Inkl. kranudgifter.</li>
+            <li>Friskluftsventiler i alle vinduer og døre hvor muligt.</li>
+            <li>Min. 12-15 mm luft hele vejen rundt om alle partier.</li>
+            <li>Fuges med silikone med bagstop ude og inde efter isætning.</li>
+            <li>Nye sålbænke i sort skiffer monteres (koordineres med facadeisolering).</li>
+          </ul>
+        </div>
+        <div>
+          <div class="col-label">Materialer klar uge 26</div>
+          <ul class="task-list">
+            <li>Alle Outline vinduer og døre — bestilt uge 18, opmålt uge 20. Leveringstid typisk 6-8 uger.</li>
+            <li>Sort skiffer sålbænke.</li>
+            <li>Silikone med bagstop.</li>
+            <li>Vinkelbeslag til udflytning af eksisterende partier i facade (facadeisoleringstykkelse).</li>
+          </ul>
+          <div class="info-note">Vinduer monteres EFTER facadeisolering er planlagt — partier flyttes ud i facade med vinkelbeslag. Koordiner med fase 7.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- FASE 7 -->
+    <div class="phase">
+      <div class="phase-header" onclick="togglePhase(this)">
+        <div>
+          <div class="phase-id">FASE 7 — UGE 29-35</div>
+          <div class="phase-name">Varmepumpe + VVS komplet</div>
+        </div>
+        <div></div>
+        <div style="display:flex;gap:16px;align-items:center">
+          <span class="tag tag-vvs">VVS</span>
+          <span class="phase-toggle">▼</span>
+        </div>
+      </div>
+      <div class="phase-body">
+        <div>
+          <div class="col-label">Rækkefølge (T7)</div>
+          <ul class="task-list">
+            <li>Eksisterende pillefyr i garage fjernes — rør afproppes.</li>
+            <li>Metro Therm Metroair I 16 installeres: udedel mod facade nord (udfor bryggers), indedel i bryggers.</li>
+            <li>Alle installationer inkluderes i pris.</li>
+            <li>Gulvvarmekredse tilsluttes varmepumpe — stueetage, 1. sal, garage.</li>
+            <li>Trådløse digitale termostater monteres (mærke specificeres i tilbud).</li>
+            <li>Alle installationer nye — ingen genbrug af eksisterende rør.</li>
+          </ul>
+        </div>
+        <div>
+          <div class="col-label">Forudsætninger</div>
+          <ul class="task-list">
+            <li>Gulvvarmekredse i stueetage skal være støbt og klar inden tilslutning.</li>
+            <li>Gulvvarmekredse på 1. sal skal være monteret inden tilslutning.</li>
+            <li>El-installation til varmepumpe koordineres med el-entreprisen (T11).</li>
+            <li>Udedel: facade nord skal have endeligt isoleringstykkelse fastlagt inden montering.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- FASE 8 -->
+    <div class="phase parallel">
+      <div class="phase-header" onclick="togglePhase(this)">
+        <div>
+          <div class="phase-id">FASE 8 — UGE 26-35</div>
+          <div class="phase-name">El-installationer (T11)</div>
+        </div>
+        <div></div>
+        <div style="display:flex;gap:16px;align-items:center">
+          <span class="tag tag-el">EL</span>
+          <span class="phase-toggle">▼</span>
+        </div>
+      </div>
+      <div class="phase-body">
+        <div>
+          <div class="col-label">Rækkefølge</div>
+          <ul class="task-list">
+            <li>El-installationer i skråvægge og nye vægge udføres FØR gips lukkes.</li>
+            <li>El til badeværelser (alle 3) koordineres med VVS-fase.</li>
+            <li>El til varmepumpe — indedel og udedel.</li>
+            <li>El flyttes ud i facade (koordineres med facadeisolering — indeholdes under el-entreprisen).</li>
+            <li>El til gulvvarmestyring alle etager.</li>
+            <li>El til emfang.</li>
+            <li>El til bryggers (vaskemaskine).</li>
+            <li>El til garage (koordineres med garage-fase).</li>
+            <li>Alle installationer iht. lovkrav og gældende reglement.</li>
+          </ul>
+        </div>
+        <div>
+          <div class="col-label">Koordinering kritisk</div>
+          <ul class="task-list">
+            <li>El løber parallelt med råbyg — må ikke forsinke gipslukning.</li>
+            <li>El-entreprisen indeholder flytning af udendørs installationer til facade.</li>
+            <li>Udendørs vandhane mod nord forlænges ud i facade (ny hane) — koordineres med murer.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- FASE 9 -->
+    <div class="phase running">
+      <div class="phase-header" onclick="togglePhase(this)">
+        <div>
+          <div class="phase-id">FASE 9 — UGE 30-36</div>
+          <div class="phase-name">Facadeisolering Skalflex (T12)</div>
+        </div>
+        <div></div>
+        <div style="display:flex;gap:16px;align-items:center">
+          <span class="tag tag-murer">MURER</span>
+          <span class="phase-toggle">▼</span>
+        </div>
+      </div>
+      <div class="phase-body">
+        <div>
+          <div class="col-label">Rækkefølge (T12)</div>
+          <ul class="task-list">
+            <li>Skifferklinker på trapperepos fjernes — betonplade repareres — nye klinker (400 kr./m2).</li>
+            <li>Aquadræn foran trappe monteres og tilsluttes regnvandsbrønd.</li>
+            <li>Lamper og udvendigt udstyr afmonteres.</li>
+            <li>Nedløbsrør afmonteres.</li>
+            <li>Nedløbsbrønde graves op — nye PVC brønde monteres 100 mm længere fra facade.</li>
+            <li>Graves op rundt om huset til sokkel.</li>
+            <li>Facade rengøres, løse sten mures fast, sætningsskader repareres med rustfrie armeringsjern.</li>
+            <li>Facade oprettes — plan og stokret. Skalflex Multi-rep 2080 eller KC35/65/550 iht. leverandør.</li>
+            <li>Sokkelisolering EPS 80F-L 100 mm: over terræn punktlimes + dybles, under terræn fuldlimes. Skalflex multiklæb m. tandspartel. Føres min. 60 cm ned under færdigt terræn.</li>
+            <li>Sokkelprofil monteres.</li>
+            <li>100 mm Skalflex facadeisolering monteres iht. leverandørens anvisning — fuldlimning/punktlimning + dybler.</li>
+            <li>Forstærkninger med net og hjørneprofiler ved døre, vinduer, hjørner.</li>
+            <li>Fiberarmeringsnet med overlap trykkes i pudslag og fuldpudses.</li>
+            <li>Tyndpuds/slutpuds Skalcem S2000-01 hvid afsluttes 1-5 dage efter.</li>
+            <li>Eksisterende døre og vinduer flyttes ud i facade med vinkelbeslag.</li>
+            <li>Nye sålbænke sort skiffer monteres.</li>
+            <li>Stopning og fugning silikone rundt om vinduer, døre og sålbænke udvendigt.</li>
+            <li>De to murede flanger isoleres kun på 1 side.</li>
+            <li>Al jord bortkøres inkl. miljøprøver. Terræn afleveres grovplaneret.</li>
+          </ul>
+        </div>
+        <div>
+          <div class="col-label">Forudsætninger</div>
+          <ul class="task-list">
+            <li>Stillads skal fortsat stå under hele facadeisoleringsperioden.</li>
+            <li>Vinduer er monteret inden sålbænke og fugearbejde.</li>
+            <li>El-installationer i facade er færdigflyttet inden isolering påbegyndes.</li>
+          </ul>
+          <div class="col-label" style="margin-top:12px">Materialer klar uge 28</div>
+          <ul class="task-list">
+            <li>Skalflex sokkelisolering EPS 80F-L 100 mm.</li>
+            <li>Skalflex multiklæb.</li>
+            <li>100 mm Skalflex facadeisolering.</li>
+            <li>Skalcem S2000-01 hvid slutpuds.</li>
+            <li>Fiberarmeringsnet.</li>
+            <li>Hjørneprofiler og sokkelprofil.</li>
+            <li>Sort skiffer sålbænke.</li>
+            <li>Nye PVC nedløbsbrønde.</li>
+            <li>Aquadræn til trappe og garage.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- FASE 10 -->
+    <div class="phase">
+      <div class="phase-header" onclick="togglePhase(this)">
+        <div>
+          <div class="phase-id">FASE 10 — UGE 31-38</div>
+          <div class="phase-name">Garage — ny opbygning (T13)</div>
+        </div>
+        <div></div>
+        <div style="display:flex;gap:16px;align-items:center">
+          <span class="tag tag-tommer">TØMRER</span>
+          <span class="tag tag-murer">MURER</span>
+          <span class="phase-toggle">▼</span>
+        </div>
+      </div>
+      <div class="phase-body">
+        <div>
+          <div class="col-label">Rækkefølge (T13)</div>
+          <ul class="task-list">
+            <li>Bygherre afmonterer solceller inden opstart (bygherre bestiller genmontering).</li>
+            <li>Nedrivning tag og vægge — bortskaffelse. Havemur forbliver.</li>
+            <li>Muret væg mod nabo: skæres 30 cm af højde indefra nabosiden + 18 cm i bredden. Bundrem lægges på indersiden af randfundament.</li>
+            <li>Randfundament forbliver — pudses op. Muret flange mod huset.</li>
+            <li>Lecatermblok H=200 mm mures på randfundament. Murpap monteres.</li>
+            <li>Terrændæk: afretningssand — ny kloak og vand til udekøkken + udevandhane — Kingspan 200 mm — radonsikring — armeringsnet 6 mm med 2 varmekredse — 10 cm beton støbes — affugtning.</li>
+            <li>Gulv afsluttes som betongulv uden belægning.</li>
+            <li>Ydervægge: stolper 45x195 mm m. mineraluld lambda 32 — vindtæt dug — dampspærre — 45 mm installationslægte — Aquapanel H2O 12,5 mm — netpuds m. glasfibernet 5-8 mm.</li>
+            <li>1 lag fibergips spartlet og malet indvendigt.</li>
+            <li>Tag: konstruktionstræ 45x295 mm (ingeniørberegning pga. stort spænd) — tagkrydsfiner TG1 21 mm — 100 mm PIR plan isolering limes med 2-komponent PU-lim — dampspærre selvklæbende eller svejset — kilesiolering 150 mm fald min. 1:40 — overpap SBS 4-5 mm svejses.</li>
+            <li>Bjælker og krydsfiner males hvide.</li>
+            <li>Sterne i H2O plader med puds og zinkafdækning foroven.</li>
+            <li>Yderdør med glas mod have monteres.</li>
+            <li>Aquadræn foran garageport tilsluttes regnvandsbrønd.</li>
+            <li>Bygherre leverer og monterer garageport.</li>
+          </ul>
+        </div>
+        <div>
+          <div class="col-label">Forudsætninger</div>
+          <ul class="task-list">
+            <li>Randfundament forudsættes intakt og genanvendeligt — Henriks ansvar.</li>
+            <li>Punktfundamenter under stolper forudsættes intakte.</li>
+            <li>Ingeniørberegning til tagkonstruktion (bygherre afholder).</li>
+            <li>Garage holdes min. 14-15 grader om vinteren — Henriks ansvar.</li>
+          </ul>
+          <div class="col-label" style="margin-top:12px">Materialer klar uge 29</div>
+          <ul class="task-list">
+            <li>Lecatermblok H=200 mm.</li>
+            <li>Stolper 45x195 mm konstruktionstræ.</li>
+            <li>Mineraluld lambda 32.</li>
+            <li>Aquapanel H2O 12,5 mm.</li>
+            <li>Tagkrydsfiner TG1 21 mm.</li>
+            <li>Konstruktionstræ 45x295 mm (antal efter ingeniørberegning).</li>
+            <li>PIR isolering 100 mm plan + kilesiolering 150 mm.</li>
+            <li>SBS overpap og underpap.</li>
+            <li>2-komponent PU-lim.</li>
+            <li>Kingspan 200 mm til terrændæk.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- FASE 11 -->
+    <div class="phase">
+      <div class="phase-header" onclick="togglePhase(this)">
+        <div>
+          <div class="phase-id">FASE 11 — UGE 35-40</div>
+          <div class="phase-name">Maler — hele huset (T6)</div>
+        </div>
+        <div></div>
+        <div style="display:flex;gap:16px;align-items:center">
+          <span class="tag tag-maler">MALER</span>
+          <span class="phase-toggle">▼</span>
+        </div>
+      </div>
+      <div class="phase-body">
+        <div>
+          <div class="col-label">Rækkefølge (T6)</div>
+          <ul class="task-list">
+            <li>Alle vægge spartles, strimles, primes, filt monteres, 2 gange hvid maling.</li>
+            <li>Lofter spartles og males hvid hvor nyt gips er opsat (ingen filt).</li>
+            <li>Entre: mursten pudses, spartles, filt og malerbehandling.</li>
+            <li>Blank mur i spisestue og stue forbliver — ingen malerbehandling.</li>
+            <li>Garage: 1 lag fibergips spartlet og malet hvid indvendigt.</li>
+          </ul>
+        </div>
+        <div>
+          <div class="col-label">Forudsætninger</div>
+          <ul class="task-list">
+            <li>Al gips er lukket og skruet færdigt.</li>
+            <li>El og VVS er afsluttet — ingen gennembrydninger efterfølgende.</li>
+            <li>Tørt byggeri — fugtmålinger gennemføres inden maling påbegyndes.</li>
+            <li>Trappe er monteret af bygherre inden maler afslutter.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- FASE 12 -->
+    <div class="phase">
+      <div class="phase-header" onclick="togglePhase(this)">
+        <div>
+          <div class="phase-id">FASE 12 — UGE 40-43</div>
+          <div class="phase-name">Finish + aflevering</div>
+        </div>
+        <div></div>
+        <div style="display:flex;gap:16px;align-items:center">
+          <span class="tag tag-tommer">TØMRER</span>
+          <span class="tag tag-vvs">VVS</span>
+          <span class="tag tag-el">EL</span>
+          <span class="phase-toggle">▼</span>
+        </div>
+      </div>
+      <div class="phase-body">
+        <div>
+          <div class="col-label">Gennemgang og finish</div>
+          <ul class="task-list">
+            <li>Gulve: 14 mm lamelparket 1. sal monteres (afventer tørt miljø).</li>
+            <li>Trægulv stueetage fuldlimes (koordineres med maler — gulv lægges sidst).</li>
+            <li>Fliser i gæstebad og bryggers — eventuel resterende fugearbejde.</li>
+            <li>Alle inderdøre hænges, greb og låse monteres.</li>
+            <li>Ny trappe monteres af trappefirma (bygherre indkøber).</li>
+            <li>Bygherre monterer køkken og blandingsbatterier.</li>
+            <li>Glasværn til to balkoner opmåles — bygherre sørger for levering og montering.</li>
+            <li>Have ryddes for glas, søm, skruer og byggeaffald.</li>
+            <li>Stillads nedtages.</li>
+            <li>Alle fejl og mangler rettes inden afleveringsforretning.</li>
+            <li>Skriftlig godkendelse fra tilsyn (MZ) inden udbetaling af sidste rate.</li>
+          </ul>
+        </div>
+        <div>
+          <div class="col-label">Afleveringsdokumentation</div>
+          <ul class="task-list">
+            <li>Bortskaffelsesattest for asbest.</li>
+            <li>Miljøscreeningsrapport.</li>
+            <li>Ingeniørrapport bærende vægge.</li>
+            <li>Ingeniørberegning tagkonstruktion (forhøjelse).</li>
+            <li>Ingeniørberegning garajetag (stort spænd).</li>
+            <li>Elinstallationsattest.</li>
+            <li>VVS-dokumentation (varmepumpe, gulvvarme).</li>
+            <li>5 års leverandøransvar dokumentation alle materialer.</li>
+            <li>Kvalitetssikringsdokumentation fra alle entrepriser.</li>
+            <li>1 og 5 års gennemgang jf. AB92 aftalt og kalendersat.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- MATERIALEBESTILLINGER -->
+  <div class="section-title">KRITISKE MATERIALEBESTILLINGER — RÆKKEFØLGE</div>
+
+  <div class="critical-note">Leveringstider på specialvarer kan være 6-10 uger. Bestil alt med lang leveringstid uge 18-19.</div>
+
+  <table class="mat-table">
+    <thead>
+      <tr>
+        <th>Bestilles</th>
+        <th>Materiale</th>
+        <th>Specifikation</th>
+        <th>Leveringstid</th>
+        <th>Til fase</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td class="week">Uge 18 — NU</td>
+        <td class="item">Metro Therm Metroair I 16 varmepumpe</td>
+        <td class="spec">Inkl. udedel. Leveringstid ukendt — bestil straks.</td>
+        <td class="week">6-10 uger</td>
+        <td><span class="tag tag-vvs">T7</span></td>
+      </tr>
+      <tr>
+        <td class="week">Uge 18 — NU</td>
+        <td class="item">Lertegl Ravensberger light dyb sort engoberet</td>
+        <td class="spec">Antal beregnes af tømrer. Tagflade + overskud.</td>
+        <td class="week">4-8 uger</td>
+        <td><span class="tag tag-tommer">T8</span></td>
+      </tr>
+      <tr>
+        <td class="week">Uge 18 — NU</td>
+        <td class="item">Outline vinduer og døre — komplet sæt</td>
+        <td class="spec">3-lags super lavenergi, træ/alu, sort ude/inde. Opmål uge 20 — ordrebekræft uge 21.</td>
+        <td class="week">6-8 uger</td>
+        <td><span class="tag tag-tommer">T1</span></td>
+      </tr>
+      <tr>
+        <td class="week">Uge 18 — NU</td>
+        <td class="item">Lindab arkitektrender nr. 12 aluzink</td>
+        <td class="spec">Inkl. nedløbsrør. Mål fra eksisterende tegninger.</td>
+        <td class="week">2-3 uger</td>
+        <td><span class="tag tag-tommer">T8</span></td>
+      </tr>
+      <tr>
+        <td class="week">Uge 18 — NU</td>
+        <td class="item">Swedoor Stable Nature Eg Advance Line</td>
+        <td class="spec">Alle inderdøre inkl. karme. Antal fra tegninger 1. sal + stue.</td>
+        <td class="week">4-6 uger</td>
+        <td><span class="tag tag-tommer">T2/T3</span></td>
+      </tr>
+      <tr>
+        <td class="week">Uge 19</td>
+        <td class="item">Kingspan 200 mm isolering</td>
+        <td class="spec">Stueetage terrændæk + garage. M2-beregning fra tegninger.</td>
+        <td class="week">1-2 uger</td>
+        <td><span class="tag tag-murer">T2/T13</span></td>
+      </tr>
+      <tr>
+        <td class="week">Uge 19</td>
+        <td class="item">Unidrain komplet</td>
+        <td class="spec">3 stk. Stueetage bad x1, 1. sal bad x2.</td>
+        <td class="week">2-3 uger</td>
+        <td><span class="tag tag-vvs">T2/T4</span></td>
+      </tr>
+      <tr>
+        <td class="week">Uge 19</td>
+        <td class="item">Geberit hængestativ WC</td>
+        <td class="spec">3 stk.</td>
+        <td class="week">1-2 uger</td>
+        <td><span class="tag tag-vvs">T2/T4</span></td>
+      </tr>
+      <tr>
+        <td class="week">Uge 19</td>
+        <td class="item">Skalflex facadeisolering 100 mm</td>
+        <td class="spec">M2-beregning fra facadetegninger inkl. sokkel EPS 80F-L.</td>
+        <td class="week">1-2 uger</td>
+        <td><span class="tag tag-murer">T12</span></td>
+      </tr>
+      <tr>
+        <td class="week">Uge 20</td>
+        <td class="item">Icopal Monarperm 1000 KK undertag</td>
+        <td class="spec">M2 fra tagflade.</td>
+        <td class="week">1-2 uger</td>
+        <td><span class="tag tag-tommer">T8</span></td>
+      </tr>
+      <tr>
+        <td class="week">Uge 20</td>
+        <td class="item">H2O Power Panel Fermacell plader</td>
+        <td class="spec">Gavle, sterne, balkoner, garage, stolper.</td>
+        <td class="week">1-2 uger</td>
+        <td><span class="tag tag-tommer">T8/T13</span></td>
+      </tr>
+      <tr>
+        <td class="week">Uge 20</td>
+        <td class="item">Ovenlys nye</td>
+        <td class="spec">Samme antal og størrelse som eksisterende. Opmål inden bestilling.</td>
+        <td class="week">3-5 uger</td>
+        <td><span class="tag tag-tommer">T8</span></td>
+      </tr>
+      <tr>
+        <td class="week">Uge 21</td>
+        <td class="item">Lewis svalehale plader</td>
+        <td class="spec">1. sals badeværelser x2. M2 fra tegninger.</td>
+        <td class="week">1-2 uger</td>
+        <td><span class="tag tag-vvs">T4</span></td>
+      </tr>
+      <tr>
+        <td class="week">Uge 22</td>
+        <td class="item">14 mm lamelparket</td>
+        <td class="spec">1. sal. Afsæt 400 kr./m2. Koordiner med bygherre om valg.</td>
+        <td class="week">2-4 uger</td>
+        <td><span class="tag tag-tommer">T3</span></td>
+      </tr>
+      <tr>
+        <td class="week">Uge 22</td>
+        <td class="item">Trægulv stueetage plankegulv</td>
+        <td class="spec">400 kr./m2 inkl. moms. Fuldlimes. Koordiner med bygherre.</td>
+        <td class="week">2-4 uger</td>
+        <td><span class="tag tag-tommer">T2</span></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- TJEKLISTER -->
+  <div class="section-title">TJEKLISTER — DAGLIG STYRING</div>
+
+  <div class="checklist-grid">
+
+    <div class="check-group">
+      <div class="check-group-title">Opstart uge 20 — dag 1</div>
+      <div class="check-item"><div class="check-box" onclick="this.classList.toggle('checked')"></div> Stillads leveret og opstillet</div>
+      <div class="check-item"><div class="check-box" onclick="this.classList.toggle('checked')"></div> Byggestrøm etableret</div>
+      <div class="check-item"><div class="check-box" onclick="this.classList.toggle('checked')"></div> Byggebod på plads</div>
+      <div class="check-item"><div class="check-box" onclick="this.classList.toggle('checked')"></div> Køreplader under container</div>
+      <div class="check-item"><div class="check-box" onclick="this.classList.toggle('checked')"></div> Asbestentreprenør bekræftet til dag 2</div>
+      <div class="check-item"><div class="check-box" onclick="this.classList.toggle('checked')"></div> Alle UL forsikringer modtaget</div>
+      <div class="check-item"><div class="check-box" onclick="this.classList.toggle('checked')"></div> Bygherre All-Risk forsikring aktiv</div>
+      <div class="check-item"><div class="check-box" onclick="this.classList.toggle('checked')"></div> Tagrender og nedløb afmonteret</div>
+      <div class="check-item"><div class="check-box" onclick="this.classList.toggle('checked')"></div> Eksisterende skader registreret og fotograferet</div>
+    </div>
+
+    <div class="check-group">
+      <div class="check-group-title">Inden væggnedrivning stueetage</div>
+      <div class="check-item"><div class="check-box" onclick="this.classList.toggle('checked')"></div> Ingeniørrapport modtaget og gennemgået</div>
+      <div class="check-item"><div class="check-box" onclick="this.classList.toggle('checked')"></div> Miljøscreening PCB/bly/asbest klar</div>
+      <div class="check-item"><div class="check-box" onclick="this.classList.toggle('checked')"></div> Evt. farligt materiale håndteret lovligt</div>
+      <div class="check-item"><div class="check-box" onclick="this.classList.toggle('checked')"></div> Bærende vægge markeret på pladsen</div>
+      <div class="check-item"><div class="check-box" onclick="this.classList.toggle('checked')"></div> Jerndrager verificeret bibeholdt</div>
+      <div class="check-item"><div class="check-box" onclick="this.classList.toggle('checked')"></div> Afpropning VVS bekræftet inden nedrivning</div>
+    </div>
+
+    <div class="check-group">
+      <div class="check-group-title">Inden gulvstøbning stueetage</div>
+      <div class="check-item"><div class="check-box" onclick="this.classList.toggle('checked')"></div> Kloak og VVS til køkken + bad forberedt</div>
+      <div class="check-item"><div class="check-box" onclick="this.classList.toggle('checked')"></div> Emfang aftrækskanal indstøbt</div>
+      <div class="check-item"><div class="check-box" onclick="this.classList.toggle('checked')"></div> Kingspan 200 mm udlagt</div>
+      <div class="check-item"><div class="check-box" onclick="this.classList.toggle('checked')"></div> Radonsikring monteret ved alle ydervægge</div>
+      <div class="check-item"><div class="check-box" onclick="this.classList.toggle('checked')"></div> Armeringsnet + gulvvarmekredse lagt</div>
+      <div class="check-item"><div class="check-box" onclick="this.classList.toggle('checked')"></div> Antal zoner verificeret (1 pr. rum, 2 i køkken, 2 i stue)</div>
+      <div class="check-item"><div class="check-box" onclick="this.classList.toggle('checked')"></div> Trykprøve gulvvarme godkendt inden støbning</div>
+      <div class="check-item"><div class="check-box" onclick="this.classList.toggle('checked')"></div> Støb 10 cm beton</div>
+    </div>
+
+    <div class="check-group">
+      <div class="check-group-title">Inden gipslukning — alle etager</div>
+      <div class="check-item"><div class="check-box" onclick="this.classList.toggle('checked')"></div> El-installationer i vægge og skråvægge færdige</div>
+      <div class="check-item"><div class="check-box" onclick="this.classList.toggle('checked')"></div> VVS-rør i vægge færdige og tryktestet</div>
+      <div class="check-item"><div class="check-box" onclick="this.classList.toggle('checked')"></div> Dampspærre på skråvægge 1. sal monteret og tæt</div>
+      <div class="check-item"><div class="check-box" onclick="this.classList.toggle('checked')"></div> Lydisolering i etageadskillelse korrekt</div>
+      <div class="check-item"><div class="check-box" onclick="this.classList.toggle('checked')"></div> Fotodokumentation af alle skjulte installationer</div>
+    </div>
+
+    <div class="check-group">
+      <div class="check-group-title">Inden flisearbejde — alle badeværelser</div>
+      <div class="check-item"><div class="check-box" onclick="this.classList.toggle('checked')"></div> Fald i gulv verificeret (bruseniche + rum m. kar)</div>
+      <div class="check-item"><div class="check-box" onclick="this.classList.toggle('checked')"></div> Overkant afløb til gulv udenfor: min. 30 mm</div>
+      <div class="check-item"><div class="check-box" onclick="this.classList.toggle('checked')"></div> Priming udført</div>
+      <div class="check-item"><div class="check-box" onclick="this.classList.toggle('checked')"></div> Vådrumsmembran godkendt (fotodokumentation)</div>
+      <div class="check-item"><div class="check-box" onclick="this.classList.toggle('checked')"></div> Geberit stativ placering bekræftet</div>
+      <div class="check-item"><div class="check-box" onclick="this.classList.toggle('checked')"></div> Fliser valgt og godkendt af bygherre</div>
+    </div>
+
+    <div class="check-group">
+      <div class="check-group-title">Inden aflevering</div>
+      <div class="check-item"><div class="check-box" onclick="this.classList.toggle('checked')"></div> Bortskaffelsesattest asbest foreligger</div>
+      <div class="check-item"><div class="check-box" onclick="this.classList.toggle('checked')"></div> Elinstallationsattest modtaget</div>
+      <div class="check-item"><div class="check-box" onclick="this.classList.toggle('checked')"></div> VVS-dokumentation komplet</div>
+      <div class="check-item"><div class="check-box" onclick="this.classList.toggle('checked')"></div> Alle fejl og mangler udbedret</div>
+      <div class="check-item"><div class="check-box" onclick="this.classList.toggle('checked')"></div> Have ryddet for glas, søm, skruer</div>
+      <div class="check-item"><div class="check-box" onclick="this.classList.toggle('checked')"></div> Stillads nedtaget</div>
+      <div class="check-item"><div class="check-box" onclick="this.classList.toggle('checked')"></div> MZ skriftlig godkendelse modtaget</div>
+      <div class="check-item"><div class="check-box" onclick="this.classList.toggle('checked')"></div> 1 og 5 års gennemgang kalendersat</div>
+    </div>
+
+  </div>
+
+  <!-- ANSVAR -->
+  <div class="section-title">BYGHERRE-ANSVAR — MÅ IKKE GLEMMES</div>
+
+  <div class="info-note">
+    Disse punkter er Henriks ansvar og må ikke forveksles med entreprisens leverancer.
+  </div>
+
+  <table class="mat-table">
+    <thead>
+      <tr><th>Punkt</th><th>Handling</th><th>Timing</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>Byggetilladelse</td><td>Søges til nye ovenlys + nyt badeværelse 1. sal</td><td class="week">Uge 18 — NU</td></tr>
+      <tr><td>Ingeniør bærende vægge</td><td>Bestilles straks — rapport kræves uge 22</td><td class="week">Uge 18 — NU</td></tr>
+      <tr><td>Ingeniør badekar 1. sal</td><td>Ekstra forstærkning bjælkelag</td><td class="week">Uge 20</td></tr>
+      <tr><td>Ingeniør garajetag</td><td>Stort spænd — beregning nødvendig</td><td class="week">Uge 20</td></tr>
+      <tr><td>Geoteknik</td><td>Evt. geotekniker til stueetage terrændæk</td><td class="week">Uge 19</td></tr>
+      <tr><td>Solceller garage</td><td>Afmonteres af bygherre inden opstart fase 10</td><td class="week">Uge 30</td></tr>
+      <tr><td>Ny trappe</td><td>Trappefirma indkøbes og monterer</td><td class="week">Uge 36-38</td></tr>
+      <tr><td>Køkken</td><td>Bygherre indkøber og monterer køkken + blandingsbatterier</td><td class="week">Uge 36-40</td></tr>
+      <tr><td>Garageport</td><td>Bygherre leverer og monterer</td><td class="week">Uge 38</td></tr>
+      <tr><td>Glasværn balkoner</td><td>Opmåles når huset er færdigrenoveret</td><td class="week">Uge 42+</td></tr>
+      <tr><td>All-Risk forsikring</td><td>Tegnes inden opstart — alle UL meddækket</td><td class="week">Uge 19</td></tr>
+      <tr><td>Strøm til affugtere</td><td>Bygherre afholder forbrug</td><td class="week">Under byggeriet</td></tr>
+      <tr><td>Terrænreetablering</td><td>Bygherre reetablerer flisearealer efter facadeisolering</td><td class="week">Fase 9 afslutning</td></tr>
+    </tbody>
+  </table>
+
+</div>
+
+<script>
+function togglePhase(header) {
+  const body = header.nextElementSibling;
+  const toggle = header.querySelector('.phase-toggle');
+  if (body.classList.contains('open')) {
+    body.classList.remove('open');
+    body.style.display = 'none';
+    toggle.textContent = '▼';
+  } else {
+    body.classList.add('open');
+    body.style.display = 'grid';
+    toggle.textContent = '▲';
+  }
+}
+
+function toggleAll() {
+  const bodies = document.querySelectorAll('.phase-body');
+  const anyOpen = Array.from(bodies).some(b => b.classList.contains('open'));
+  bodies.forEach(body => {
+    const toggle = body.previousElementSibling.querySelector('.phase-toggle');
+    if (anyOpen) {
+      body.classList.remove('open');
+      body.style.display = 'none';
+      if (toggle) toggle.textContent = '▼';
+    } else {
+      body.classList.add('open');
+      body.style.display = 'grid';
+      if (toggle) toggle.textContent = '▲';
+    }
+  });
+}
+
+// Checkboxes persist in session
+document.querySelectorAll('.check-box').forEach((box, i) => {
+  const key = 'check_' + i;
+  if (sessionStorage.getItem(key) === '1') box.classList.add('checked');
+  box.addEventListener('click', () => {
+    sessionStorage.setItem(key, box.classList.contains('checked') ? '1' : '0');
+  });
+});
+</script>
+
+</body>
+</html>

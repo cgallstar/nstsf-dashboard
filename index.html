@@ -2281,6 +2281,16 @@ function seedCustomerTasks20260504(){
       dueDate:'',
       owner:'Søren',
     },
+    {
+      id:'manual-customer-2026-05-04-henrik-masterplan',
+      markers:['henrik', 'jyllinge', 'smedestræde 4', 'smedestraede 4'],
+      customerId:'1005',
+      title:'Åbn masterplan for Smedestræde 4',
+      notes:'Masterplanen er lagt ind som klikbart link på kunden.',
+      dueDate:'',
+      owner:'Søren',
+      url:'smedestrade4_masterplan.html',
+    },
   ];
   const findCase = (task)=>{
     const markerCompacts = task.markers.map(compactMatchText).filter(Boolean);
@@ -2311,6 +2321,7 @@ function seedCustomerTasks20260504(){
           dueDate:task.dueDate,
           owner:task.owner,
           notes:task.notes,
+          url:task.url || '',
           createdAt,
           source:'manual_codex',
         });
@@ -3720,9 +3731,9 @@ function renderTaskList(items=[], caseIndex=null){
   return items.length ? `<ul class="action-list">${items.map((item)=>`<li>
     <button class="action-check" title="Marker som færdig" aria-label="Marker som færdig" onclick="markCaseTaskDone(${caseIndex === null ? -1 : caseIndex}, '${escapeAttr(item.id || '')}')">✓</button>
     <div>
-      <div class="action-title">${escapeAttr(item.title || 'Opgave')}</div>
+      <div class="action-title">${item.url ? `<a href="${escapeAttr(item.url)}" target="_blank" rel="noopener">${escapeAttr(item.title || 'Opgave')}</a>` : escapeAttr(item.title || 'Opgave')}</div>
       <div class="action-meta">${escapeAttr(item.status || 'Åben')}${item.dueDate ? ` · frist ${displayDate(item.dueDate)}` : ''}${item.owner ? ` · ${escapeAttr(item.owner)}` : ''}</div>
-      ${item.notes ? `<div class="action-notes">${escapeAttr(item.notes)}</div>` : ''}
+      ${item.notes || item.url ? `<div class="action-notes">${item.notes ? escapeAttr(item.notes) : ''}${item.url ? `${item.notes ? ' · ' : ''}<a href="${escapeAttr(item.url)}" target="_blank" rel="noopener">Åbn side</a>` : ''}</div>` : ''}
     </div>
   </li>`).join('')}</ul>` : '<div class="doc-empty">Ingen to-do&apos;s registreret endnu.</div>';
 }
