@@ -2206,6 +2206,14 @@ function seedManualTasks20260504(){
       domain:'hr',
       owner:'',
     },
+    {
+      id:'manual-2026-05-04-mankov-betaling',
+      title:'Afklar betaling til Mankov',
+      notes:'Afklar om Mankov skal betales, eller om det er en gammel aftale. Mailspor: Slettede betalinger i bank.',
+      bucket:'week',
+      domain:'arbejde',
+      owner:'Søren',
+    },
   ];
   const existingIds = new Set(internalTasks.map((task)=>task.id));
   tasks.reverse().forEach((task)=>{
