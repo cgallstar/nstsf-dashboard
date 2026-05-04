@@ -491,6 +491,7 @@
   .priority-toggle button{font-size:11px;font-weight:500;padding:6px 13px;border-radius:6px;border:none;background:transparent;color:var(--muted);cursor:pointer;font-family:var(--font)}
   .priority-toggle button.active{background:#fff;color:var(--text);box-shadow:0 1px 3px rgba(0,0,0,.08)}
   .priority-toggle button{min-width:86px;text-align:center;line-height:1.2}
+  .priority-toggle-count{opacity:.55;margin-left:4px;font-weight:600}
   .priority-layout{display:grid;grid-template-columns:minmax(0,1fr) 320px;min-height:620px}
   .priority-main{background:#fff}
   .priority-side{display:block;background:#fcfbf8;border-left:.5px solid var(--line)}
@@ -3088,8 +3089,8 @@ function priorityBoardTemplate(config){
         <span class="priority-topbar-title">${escapeAttr(c.title)}</span>
         <div class="priority-topbar-sub">${escapeAttr(c.subtitle)}</div>
         <div class="priority-toggle" style="margin-top:10px;width:max-content">
-          <button id="priorityScopeToday" onclick="setPriorityTaskScope('today')">I dag</button>
-          <button id="priorityScopeAll" onclick="setPriorityTaskScope('all')">Alle opgaver</button>
+          <button id="priorityScopeToday" onclick="setPriorityTaskScope('today')">I dag <span class="priority-toggle-count" id="priorityScopeTodayCount">0</span></button>
+          <button id="priorityScopeAll" onclick="setPriorityTaskScope('all')">Alle opgaver <span class="priority-toggle-count" id="priorityScopeAllCount">0</span></button>
         </div>
       </div>
       <div class="priority-topbar-right">
@@ -3137,8 +3138,14 @@ function renderPriorities(){
   if(stamp) stamp.textContent = `Opdateret ${new Date().toLocaleString('da-DK')}`;
   const todayBtn = document.getElementById('priorityScopeToday');
   const allBtn = document.getElementById('priorityScopeAll');
+  const todayCount = activeItems.filter((item)=>item.bucket === 'now' || item.bucket === 'today').length;
+  const allCount = activeItems.length;
   if(todayBtn) todayBtn.classList.toggle('active', todayScope);
   if(allBtn) allBtn.classList.toggle('active', !todayScope);
+  const todayCountEl = document.getElementById('priorityScopeTodayCount');
+  const allCountEl = document.getElementById('priorityScopeAllCount');
+  if(todayCountEl) todayCountEl.textContent = `(${todayCount})`;
+  if(allCountEl) allCountEl.textContent = `(${allCount})`;
   const title = document.getElementById('priorityTodoTitle');
   const subtitle = document.getElementById('priorityTodoSubtitle');
   const divider = document.getElementById('prioritySecondaryDivider');
