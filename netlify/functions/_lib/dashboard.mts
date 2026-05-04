@@ -194,6 +194,9 @@ export function normalizeInternalTask(task: any) {
     bucket: textValue(task?.bucket, ""),
     domain: textValue(task?.domain, "intern"),
     threadId: textValue(task?.threadId, ""),
+    customerId: textValue(task?.customerId || task?.kundeId, ""),
+    sagId: textValue(task?.sagId, ""),
+    unlinkedRef: textValue(task?.unlinkedRef, ""),
     createdAt: textValue(task?.createdAt, new Date().toISOString()),
   };
 }

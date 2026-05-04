@@ -27,7 +27,7 @@ Likviditets- og marginagenten ejer fakturastatus på sager.
 Faktura må kun kobles automatisk til en sag når mindst én stærk regel rammer:
 - fakturanummeret findes allerede på sagen (`fak` eller `workflow.invoiceNumber`)
 - fakturanummeret findes i sagens betalings-/mail-dokumenter
-- mailtekst eller filnavn indeholder et sikkert `SagsID`
+- mailtekst, PDF-tekst eller filnavn indeholder sikker `S-` reference eller sikker adresse
 - mailtekst eller filnavn indeholder en sikker adresse
 
 Hvis ingen stærk regel rammer, skal fakturaen ikke arkiveres automatisk. Den skal skrives til `Opdateringer` som manuel afklaring med fakturanummer og bedste matchscore.

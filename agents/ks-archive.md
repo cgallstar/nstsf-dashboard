@@ -14,15 +14,15 @@ Sikre at NSTSF's dokumentation bliver gemt rigtigt og kan findes igen direkte fr
 - læser nye Gmail-tråde
 - genkender mails der ligner `byggemødereferat`
 - genkender fejl-/mangelmøder og afslutningsmøder, fx Pladebutik / Blågårdsgade 14
-- matcher mailen til en konkret sag via sagsID, adresse, kundenavn, sagsopgave, mailtekst og filnavne
+- matcher mailen til en konkret sag via `S-` sag, `K-` kunde + adresse, kundenavn, sagsopgave, mailtekst, PDF-tekst og filnavne
 - bruger ikke PDF-tekstlæsning som automatisk matchgrundlag
 - arkiverer mailindholdet som markdown i `02 Referater`
-- bruger datostempel + `SagsID` i filnavnet
+- bruger datostempel + `K-` kundenr. og `S-` sag i filnavnet, når begge findes
 - tjekker Drive-mappen for samme filnavn før upload, så samme arkivfil ikke oprettes igen
 - logger i dashboard-state at mailen er arkiveret
 
 ## Output
-- filnavn: `YYYY-MM-DD - Byggemodereferat - SagsID.md`
+- filnavn: `YYYY-MM-DD - K-kundenr - S-sag - Byggemodereferat.md`
 - mappe: kundens `02 Referater`
 - aktivitet: `gmail_archive`
 - opdateringskort: linker til Drive-filen når der findes `driveUrl`, ellers til sagen

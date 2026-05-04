@@ -1255,7 +1255,7 @@
     <div class="customers-layout">
       <div class="customers-list-pane">
         <div class="sager-tools">
-          <input id="sagerSoeg" type="search" placeholder="Søg kunde, sagsnr., adresse...">
+          <input id="sagerSoeg" type="search" placeholder="Søg kunde, kundenr., adresse...">
           <select id="filterKat">
             <option value="">Alle kategorier</option>
             <option value="1">01. Arbejde færdigt</option>
@@ -1285,7 +1285,7 @@
             <thead>
               <tr>
                 <th>Kategori</th>
-                <th>Sagsnr.</th>
+                <th>Kundenr.</th>
                 <th>Kundeinfo</th>
                 <th class="wrap">Opgave</th>
                 <th class="num">Udestående</th>
@@ -1408,7 +1408,7 @@
       <table>
         <thead>
           <tr>
-            <th>Sagsnr.</th>
+            <th>Kundenr.</th>
             <th>Kunde</th>
             <th class="wrap">Opgave</th>
             <th class="num">Est. timer</th>
@@ -1813,6 +1813,28 @@ function splitCaseRef(ref=''){
   const match = raw.match(/^(\d+)([a-z]+)$/i);
   return match ? { number: match[1], letter: match[2].toUpperCase() } : { number: raw, letter: '' };
 }
+function formatCustomerIdDisplay(value=''){
+  const raw = String(value || '').trim().replace(/^K-/i, '');
+  return raw ? `K-${raw}` : '';
+}
+function caseLetterNumber(letter=''){
+  const raw = String(letter || '').toUpperCase();
+  if(!raw) return 0;
+  return raw.split('').reduce((sum, char)=>sum * 26 + (char.charCodeAt(0) - 64), 0);
+}
+function getSagIdByIndex(index){
+  const s = sager[index];
+  if(!s) return '';
+  if(s.sagId) return String(s.sagId).replace(/^S-/i, '');
+  const ref = splitCaseRef(getCaseRefByIndex(index));
+  const customerPart = Number(ref.number) || (1000 + index);
+  const letterPart = caseLetterNumber(ref.letter) || 1;
+  return String(customerPart * 100 + letterPart);
+}
+function formatSagIdDisplay(value=''){
+  const raw = String(value || '').trim().replace(/^S-/i, '');
+  return raw ? `S-${raw}` : '';
+}
 function formatCaseRefDisplay(ref=''){
   const raw = String(ref || '').trim();
   if(!raw) return '';
@@ -1822,10 +1844,13 @@ function formatCaseRefFullDisplay(ref=''){
   const split = splitCaseRef(ref);
   return [split.number, split.letter].filter(Boolean).join(' ');
 }
+function formatLegacyCaseRefDisplay(ref=''){
+  return formatCaseRefFullDisplay(ref) || formatCaseRefDisplay(ref);
+}
 function caseIdentityLabel(s, index=sager.indexOf(s)){
-  const ref = index >= 0 ? formatCaseRefFullDisplay(getCaseRefByIndex(index)) : formatCaseRefFullDisplay(getCaseRef(s));
+  const customer = formatCustomerIdDisplay(index >= 0 ? getCustomerNumber(s) : getCustomerNumber(s));
   const address = String(s?.adr || '').trim();
-  return [ref, address].filter(Boolean).join(' · ') || ref || address || 'Sag';
+  return [customer, address].filter(Boolean).join(' · ') || customer || address || 'Sag';
 }
 function formatCasePostDisplay(ref=''){
   const letter = splitCaseRef(ref).letter;
@@ -1835,6 +1860,11 @@ function normalizeCaseLookup(ref=''){
   return String(ref || '').replace(/\s+/g,'').trim().toLowerCase();
 }
 function findCaseIndexByCaseId(ref=''){
+  const raw = String(ref || '').trim();
+  const customerMatch = raw.match(/^K-?(\d+)$/i);
+  if(customerMatch) return sager.findIndex((entry)=>getCustomerNumber(entry) === customerMatch[1]);
+  const sagMatch = raw.match(/^S-?(\d+)$/i);
+  if(sagMatch) return sager.findIndex((_entry, index)=>getSagIdByIndex(index) === sagMatch[1]);
   const needle = normalizeCaseLookup(ref);
   if(!needle) return -1;
   return sager.findIndex((entry, index)=>{
@@ -1868,7 +1898,7 @@ function renderCustomerPortfolio(account, currentIndex){
   const customerNumber = current ? getCustomerNumber(current) : '';
   return `<div class="case-card">
     <h3>Kundesystem</h3>
-    <div class="case-account-chip">${escapeAttr(account.shortTitle)}${customerNumber ? ` · Kundenr. ${escapeAttr(customerNumber)}` : ''}</div>
+    <div class="case-account-chip">${escapeAttr(account.shortTitle)}${customerNumber ? ` · Kundenr. ${escapeAttr(formatCustomerIdDisplay(customerNumber))}` : ''}</div>
     <div class="case-account-note">${escapeAttr(account.note)}</div>
     <div class="case-inline-actions" style="margin-top:0;margin-bottom:12px">
       <a class="btn primary" href="${account.sheetUrl}" target="_blank" rel="noopener">${escapeAttr(account.sheetTitle)}</a>
@@ -1967,6 +1997,7 @@ function normalizeSag(saved={}, i=0){
   return {
     ...saved,
     k:+saved.k || 5,
+    sagId:textValue(saved.sagId, ''),
     sid:textValue(saved.sid, ''),
     nr:textValue(saved.nr, ''),
     kunde:textValue(saved.kunde, 'Ukendt kunde'),
@@ -2011,7 +2042,17 @@ function normalizeSag(saved={}, i=0){
 }
 function normalizeBetaling(saved={}){ return { ...saved, nr:textValue(saved.nr, ''), kunde:textValue(saved.kunde, 'Ukendt kunde'), milepael:textValue(saved.milepael, 'Udestående betaling'), dato:textValue(saved.dato, ''), beloeb:textValue(saved.beloeb, '0'), fak:textValue(saved.fak, ''), status:textValue(saved.status, 'udestaaende') }; }
 function normalizeEmployee(saved={}, i=0){ return { id:textValue(saved.id, `employee-${i + 1}`), name:textValue(saved.name, `Medarbejder ${i + 1}`), hours:Number(saved.hours) || 37, type:textValue(saved.type, 'employee'), overrides: saved && typeof saved.overrides === 'object' && !Array.isArray(saved.overrides) ? saved.overrides : {} }; }
-function normalizeInternalTask(saved={}){ return { id:textValue(saved.id, `internal-${Date.now()}`), title:textValue(saved.title || saved.name, 'Intern opgave'), status:textValue(saved.status, 'Åben'), dueDate:textValue(saved.dueDate, ''), owner:textValue(saved.owner, ''), notes:textValue(saved.notes, ''), source:textValue(saved.source, 'custom-gpt'), bucket:textValue(saved.bucket, ''), domain:textValue(saved.domain, 'intern'), threadId:textValue(saved.threadId, ''), createdAt:textValue(saved.createdAt, new Date().toISOString()) }; }
+function stableThreeDigitHash(value=''){
+  let hash = 0;
+  String(value || '').split('').forEach((char)=>{ hash = ((hash * 31) + char.charCodeAt(0)) % 900; });
+  return String(100 + hash).padStart(3, '0').slice(-3);
+}
+function internalTaskCustomerRef(task={}){
+  const explicit = textValue(task.customerId || task.kundeId || task.customerRef || task.unlinkedRef, '');
+  if(explicit) return explicit.startsWith('K-') ? explicit : `K-${explicit.replace(/^K-/i, '')}`;
+  return `K-${stableThreeDigitHash(task.id || task.title || task.createdAt)}`;
+}
+function normalizeInternalTask(saved={}){ return { id:textValue(saved.id, `internal-${Date.now()}`), title:textValue(saved.title || saved.name, 'Intern opgave'), status:textValue(saved.status, 'Åben'), dueDate:textValue(saved.dueDate, ''), owner:textValue(saved.owner, ''), notes:textValue(saved.notes, ''), source:textValue(saved.source, 'custom-gpt'), bucket:textValue(saved.bucket, ''), domain:textValue(saved.domain, 'intern'), threadId:textValue(saved.threadId, ''), customerId:textValue(saved.customerId || saved.kundeId, ''), sagId:textValue(saved.sagId, ''), unlinkedRef:textValue(saved.unlinkedRef, ''), createdAt:textValue(saved.createdAt, new Date().toISOString()) }; }
 function normalizeEmail(saved={}){ return { id:textValue(saved.id, `mail-${Date.now()}`), threadId:textValue(saved.threadId, ''), kunde:textValue(saved.kunde, ''), from:textValue(saved.from, ''), subject:textValue(saved.subject, ''), date:textValue(saved.date, ''), preview:textValue(saved.preview, ''), body:textValue(saved.body, ''), tags:Array.isArray(saved.tags) ? saved.tags.map((tag)=>String(tag)) : [], handled:!!saved.handled, type:textValue(saved.type, 'todo'), latestSenderType:textValue(saved.latestSenderType, ''), repliedAt:textValue(saved.repliedAt, ''), archivedAt:textValue(saved.archivedAt, ''), archivedUrl:textValue(saved.archivedUrl, ''), archivedCaseId:textValue(saved.archivedCaseId, ''), archivedCustomer:textValue(saved.archivedCustomer, ''), archivedType:textValue(saved.archivedType, ''), archivedDate:textValue(saved.archivedDate, ''), syncedAt:textValue(saved.syncedAt, '') }; }
 function normalizeSyncLogEntry(saved={}){ return { id:textValue(saved.id, `sync-${Date.now()}`), createdAt:textValue(saved.createdAt, new Date().toISOString()), source:textValue(saved.source, 'gmail_sync'), status:textValue(saved.status, 'info'), archiveKey:textValue(saved.archiveKey, ''), threadId:textValue(saved.threadId, ''), subject:textValue(saved.subject, 'Ukendt tråd'), customerName:textValue(saved.customerName, ''), caseId:textValue(saved.caseId, ''), documentType:textValue(saved.documentType, ''), documentDate:textValue(saved.documentDate, ''), category:textValue(saved.category, ''), fileName:textValue(saved.fileName, ''), driveUrl:textValue(saved.driveUrl, ''), error:textValue(saved.error, ''), notes:textValue(saved.notes, '') }; }
 function isAllowedNstsfMail(item={}){
@@ -2638,14 +2679,14 @@ function resolvePriorityBucket(flags = {}){
 function casePriorityTitle(s){
   const base = getCustomerDisplay(s);
   const address = String(s?.adr || '').trim();
-  const ref = formatCaseRefFullDisplay(getCaseRef(s));
+  const ref = formatCustomerIdDisplay(getCustomerNumber(s));
   const title = address ? `${base} · ${address}` : base;
   return ref ? `${ref} · ${title}` : title;
 }
 function casePriorityMeta(s, options = {}){
   const parts = [];
   const customerNumber = getCustomerNumber(s);
-  if(customerNumber) parts.push(`kundenr. ${customerNumber}`);
+  if(customerNumber) parts.push(`kundenr. ${formatCustomerIdDisplay(customerNumber)}`);
   parts.push(KAT[s.k]);
   if(s.opg) parts.push(s.opg);
   if(parseNumber(s.u) > 0) parts.push(`udestående ${formatCurrency(parseNumber(s.u))}`);
@@ -2820,7 +2861,7 @@ function buildPriorities(includeDismissed=false){
       bucket,
       score: bucket === 'now' ? 9 : bucket === 'today' ? 7 : 5,
       title: task.title,
-      meta: `Intern opgave${task.owner ? ` · ${task.owner}` : ''}${task.dueDate ? ` · frist ${displayDate(task.dueDate)}` : ''}`,
+      meta: `${internalTaskCustomerRef(task)} · Intern opgave${task.owner ? ` · ${task.owner}` : ''}${task.dueDate ? ` · frist ${displayDate(task.dueDate)}` : ''}`,
       reason: task.notes || 'Intern opgave fra Custom GPT',
       actionText: task.notes || 'Løs den interne opgave og marker den derefter som fuldført.',
       links: '',
@@ -2981,7 +3022,7 @@ function priorityGroupKey(item={}){
     const customer = getCustomerNumber(s) || getCustomerDisplay(s);
     if(customer) return `customer:${String(customer).toLowerCase()}`;
   }
-  const metaCustomer = String(item.meta || '').match(/kundenr\.\s*(\d+)/i);
+  const metaCustomer = String(item.meta || '').match(/kundenr\.\s*K?-?(\d+)/i);
   if(metaCustomer) return `customer:${metaCustomer[1]}`;
   if(/henrik|jyllinge|helt nyt hus/i.test(`${item.title || ''} ${item.meta || ''} ${item.reason || ''}`)) return 'customer:1005';
   return String(item.title || item.key || '')
@@ -3147,7 +3188,7 @@ function collectPriorityUpdates(){
         : item.status === 'error'
           ? 'Fejl'
           : 'Opdatering';
-    const targetLabel = item.caseId || item.customerName || 'Ukendt sag';
+    const targetLabel = item.caseId ? formatCustomerIdDisplay(String(item.caseId).match(/(\d+)/)?.[1] || item.caseId) : item.customerName || 'Ukendt sag';
     const driveUrl = textValue(item.driveUrl, '');
     const targetType = driveUrl ? 'drive' : hasCase ? 'case' : item.status === 'error' ? 'tasks' : '';
     entries.push({
@@ -3173,7 +3214,7 @@ function collectPriorityUpdates(){
           id:`${index}-${activity.id || activity.createdAt}`,
           createdAt: activity.createdAt,
           title:`${getCustomerDisplay(s)} opdateret`,
-          meta:`${formatCaseRefDisplay(s.sid || s.nr || '') || 'Sag'} · ${displayDate(activity.createdAt)} · ${actor}`,
+          meta:`${formatCustomerIdDisplay(getCustomerNumber(s)) || 'Kunde'} · ${displayDate(activity.createdAt)} · ${actor}`,
           body:textValue(activity.summary, 'Sagen er opdateret.'),
           targetType:'case',
           caseIndex:index,
@@ -3185,7 +3226,7 @@ function collectPriorityUpdates(){
           id:`${index}-${activity.id || activity.createdAt}`,
           createdAt: activity.createdAt,
           title:`${getCustomerDisplay(s)} · betaling markeret`,
-          meta:`${formatCaseRefDisplay(s.sid || s.nr || '') || 'Sag'} · ${displayDate(activity.createdAt)} · ${actor}`,
+          meta:`${formatCustomerIdDisplay(getCustomerNumber(s)) || 'Kunde'} · ${displayDate(activity.createdAt)} · ${actor}`,
           body:textValue(activity.summary, 'En betaling er markeret som betalt.'),
           targetType:'case',
           caseIndex:index,
@@ -3283,6 +3324,7 @@ function saveSidebarTask(){
       notes,
       domain,
       bucket,
+      unlinkedRef:`K-${stableThreeDigitHash(`${title}|${Date.now()}`)}`,
       source:'dashboard',
       status:'Åben'
     }));
@@ -3422,7 +3464,7 @@ function setCustomerView(view){
   closeSag();
   render();
 }
-function render(){ const tbody = document.getElementById('sagerBody'); const q = (document.getElementById('sagerSoeg').value || '').toLowerCase(); const katF = document.getElementById('filterKat').value; const allowed = customerView === 'archived' ? ARCHIVED_CASE_CATEGORIES : ACTIVE_CASE_CATEGORIES; const rows = sager.filter(s=>{ if(!allowed.has(+s.k)) return false; if(katF && String(s.k)!==katF) return false; if(q){ const idx = sager.indexOf(s); const derivedRef = getCaseRefByIndex(idx); const customerNumber = getCustomerNumber(s); const hay = `${derivedRef} ${customerNumber} ${formatCaseRefFullDisplay(derivedRef)} ${s.nr} ${s.kunde} ${s.adr} ${s.opg} ${s.fak}`.toLowerCase(); if(!hay.includes(q)) return false; } return true; }).sort((a,b)=>a.k-b.k || a.sort-b.sort); tbody.innerHTML = rows.map(s=>{ const idx = sager.indexOf(s); const account = getCustomerAccount(s); const kundeCell = getCustomerDisplay(s); const primary = s.adr ? s.adr : kundeCell; const subline = account ? `${kundeCell}${s.fak ? ` · Faktura ${s.fak}` : ''}` : `${s.kunde || 'Kunde mangler'}${s.fak ? ` · Faktura ${s.fak}` : ''}`; const derivedRef = getCaseRefByIndex(idx) || '—'; const formattedRef = formatCaseRefFullDisplay(derivedRef) || formatCaseRefDisplay(derivedRef) || '—'; const activeRow = selectedCustomerIndex === idx ? ' style="background:#fcfbf8"' : ''; return `<tr data-kat="${s.k}"${activeRow}><td><select class="kategori kat-${s.k}" onchange="changeKat(${idx}, this.value)">${Object.entries(KAT).map(([k,v])=>`<option value="${k}"${+k===s.k?' selected':''}>${v}</option>`).join('')}</select></td><td><span class="case-ref-text">${formattedRef}</span></td><td title="${escapeAttr(`${s.kunde} ${s.adr || ''} ${s.fak || ''}`)}"><button class="kunde-link" onclick="openSag(${idx})"><strong>${escapeAttr(primary || kundeCell)}</strong></button><div class="kunde-address">${escapeAttr(subline)}</div></td><td class="wrap" title="${escapeAttr(s.opg)}"><div class="opg-main">${s.opg || '—'}</div><div class="opg-sub">${s.b && s.b !== '0' ? `Est. entreprise ${s.b} kr.` : 'Est. entreprise mangler'}</div></td><td class="num">${s.u && s.u !== '0' ? '<span class="chip chip-amber">' + formatCurrency(parseNumber(s.u)).replace(' kr.','') + ' kr.</span>' : '—'}</td><td class="dim date-cell">${displayDate(s.start)}</td><td class="dim date-cell">${displayDate(s.slut)}</td><td class="num"><button class="icon-btn" title="Rediger" aria-label="Rediger" onclick="openEditSag(${idx})">✎</button></td></tr>`; }).join(''); document.getElementById('count').textContent = customerView === 'archived' ? `${rows.length} arkiverede kunder` : `${rows.length} aktive/potentielle kunder`; updateCaseTabCount(); renderAppendix(); renderFinancials(); renderBetalinger(); }
+function render(){ const tbody = document.getElementById('sagerBody'); const q = (document.getElementById('sagerSoeg').value || '').toLowerCase(); const numericOnlySearch = /^\d+$/.test(q.trim()); const katF = document.getElementById('filterKat').value; const allowed = customerView === 'archived' ? ARCHIVED_CASE_CATEGORIES : ACTIVE_CASE_CATEGORIES; const rows = sager.filter(s=>{ if(!allowed.has(+s.k)) return false; if(katF && String(s.k)!==katF) return false; if(q){ if(numericOnlySearch) return false; const idx = sager.indexOf(s); const derivedRef = getCaseRefByIndex(idx); const customerNumber = getCustomerNumber(s); const customerRef = formatCustomerIdDisplay(customerNumber); const sagRef = formatSagIdDisplay(getSagIdByIndex(idx)); const hay = `${derivedRef} ${customerNumber} ${customerRef} ${sagRef} ${formatLegacyCaseRefDisplay(derivedRef)} ${s.nr} ${s.kunde} ${s.adr} ${s.opg} ${s.fak}`.toLowerCase(); if(!hay.includes(q)) return false; } return true; }).sort((a,b)=>a.k-b.k || a.sort-b.sort); tbody.innerHTML = rows.map(s=>{ const idx = sager.indexOf(s); const account = getCustomerAccount(s); const kundeCell = getCustomerDisplay(s); const primary = s.adr ? s.adr : kundeCell; const subline = account ? `${kundeCell}${s.fak ? ` · Faktura ${s.fak}` : ''}` : `${s.kunde || 'Kunde mangler'}${s.fak ? ` · Faktura ${s.fak}` : ''}`; const formattedRef = formatCustomerIdDisplay(getCustomerNumber(s)) || '—'; const activeRow = selectedCustomerIndex === idx ? ' style="background:#fcfbf8"' : ''; return `<tr data-kat="${s.k}"${activeRow}><td><select class="kategori kat-${s.k}" onchange="changeKat(${idx}, this.value)">${Object.entries(KAT).map(([k,v])=>`<option value="${k}"${+k===s.k?' selected':''}>${v}</option>`).join('')}</select></td><td><span class="case-ref-text">${formattedRef}</span></td><td title="${escapeAttr(`${s.kunde} ${s.adr || ''} ${s.fak || ''}`)}"><button class="kunde-link" onclick="openSag(${idx})"><strong>${escapeAttr(primary || kundeCell)}</strong></button><div class="kunde-address">${escapeAttr(subline)}</div></td><td class="wrap" title="${escapeAttr(s.opg)}"><div class="opg-main">${s.opg || '—'}</div><div class="opg-sub">${s.b && s.b !== '0' ? `Est. entreprise ${s.b} kr.` : 'Est. entreprise mangler'}</div></td><td class="num">${s.u && s.u !== '0' ? '<span class="chip chip-amber">' + formatCurrency(parseNumber(s.u)).replace(' kr.','') + ' kr.</span>' : '—'}</td><td class="dim date-cell">${displayDate(s.start)}</td><td class="dim date-cell">${displayDate(s.slut)}</td><td class="num"><button class="icon-btn" title="Rediger" aria-label="Rediger" onclick="openEditSag(${idx})">✎</button></td></tr>`; }).join(''); document.getElementById('count').textContent = numericOnlySearch ? 'Skriv K- eller S- foran tallet' : customerView === 'archived' ? `${rows.length} arkiverede kunder` : `${rows.length} aktive/potentielle kunder`; updateCaseTabCount(); renderAppendix(); renderFinancials(); renderBetalinger(); }
 function changeKat(i,v){ sager[i].k = +v; saveState(); render(); renderPriorities(); }
 function changeStatus(i,v){ sager[i].status = v; saveState(); render(); renderPriorities(); }
 function openSag(i){ if(selectedCustomerIndex === i){ closeSag(); return; } selectedCustomerIndex = i; render(); renderSagDetail(i); }
@@ -3548,6 +3590,8 @@ function renderSagDetail(i){
   const account = getCustomerAccount(s);
   const customerNumber = getCustomerNumber(s);
   const caseRef = getCaseRefByIndex(i);
+  const customerRef = formatCustomerIdDisplay(customerNumber);
+  const sagRef = formatSagIdDisplay(getSagIdByIndex(i));
   const driveUrl = getSagDrive(s);
   const driveLink = driveUrl ? `<a class="btn primary" href="${driveUrl}" target="_blank" rel="noopener">Åbn kundemappe</a>` : `<a class="btn" href="${CUSTOMER_DRIVE_ROOT}" target="_blank" rel="noopener">Find/opret kundemappe</a>`;
   const latestDialog = latestDialogDate(s);
@@ -3565,7 +3609,7 @@ function renderSagDetail(i){
       <div class="case-head-top">
         <div>
           <h2>${account ? account.title : s.kunde}</h2>
-          <div class="sub">${s.opg || 'Sag uden titel'}${caseRef ? ` · Sagsnr. ${formatCaseRefDisplay(caseRef)}` : ''}${s.adr ? ` · ${s.adr}` : ''}</div>
+          <div class="sub">${s.opg || 'Sag uden titel'}${customerRef ? ` · Kundenr. ${customerRef}` : ''}${s.adr ? ` · ${s.adr}` : ''}</div>
         </div>
         <button class="btn" onclick="closeSag()">Tilbage</button>
       </div>
@@ -3574,8 +3618,8 @@ function renderSagDetail(i){
       <div class="case-card">
         <h3>Overblik</h3>
         <table class="case-summary-table"><tbody>
-          <tr><td>Kundenr.</td><td>${customerNumber || '—'}</td></tr>
-          <tr><td>SagsID</td><td><span class="case-ref-inline">${formatCaseRefFullDisplay(caseRef) || formatCaseRefDisplay(caseRef) || '—'}</span></td></tr>
+          <tr><td>Kundenr.</td><td>${customerRef || '—'}</td></tr>
+          <tr><td>Sag</td><td><span class="case-ref-inline">${sagRef || '—'}</span>${caseRef ? ` <span class="dim">(tidl. ${formatLegacyCaseRefDisplay(caseRef)})</span>` : ''}</td></tr>
           ${account ? `<tr><td>Kundekonto</td><td>${account.title}</td></tr>` : ''}
           <tr><td>Adresse</td><td>${s.adr || 'Adresse mangler'}</td></tr>
           <tr><td>Entreprisesum</td><td>${parseNumber(s.b) > 0 ? formatCurrency(parseNumber(s.b)) : '—'}</td></tr>
@@ -3610,7 +3654,7 @@ function renderSagDetail(i){
 function closeSag(){ const caseDetail = document.getElementById('caseDetail'); const customerLayout = document.querySelector('.customers-layout'); selectedCustomerIndex = null; editSagIndex = null; render(); if(customerLayout) customerLayout.classList.remove('detail-open'); if(caseDetail){ caseDetail.classList.remove('active'); caseDetail.innerHTML = '<div class="case-placeholder">Vælg en kunde i listen for at se info, betalinger, noter, referater og links i højre side.</div>'; } }
 function addSag(){ const idx = sager.length; sager.push(normalizeSag({ k:3,nr:"",kunde:"Ny kunde",adr:"",opg:"",b:"0",u:"0",dato:"",status:"—",timer:"",fak:"",start:"",slut:"",info:"",mail:"",tlf:"",drive:"",sort:idx,docs:{drive:"",byggereferater:docDemo.byggereferater,transkripter:docDemo.transkripter}}, idx)); saveState(); openEditSag(idx); render(); }
 let editSagIndex = null;
-function openEditSag(i){ const s = sager[i]; const caseDetail = document.getElementById('caseDetail'); const customerLayout = document.querySelector('.customers-layout'); if(!s || !caseDetail) return; const customerNumber = getCustomerNumber(s); const caseRef = getCaseRefByIndex(i); editSagIndex = i; selectedCustomerIndex = i; render(); if(customerLayout) customerLayout.classList.add('detail-open'); caseDetail.classList.add('active'); caseDetail.innerHTML = `<div class="case-shell"><div class="case-head"><div class="case-eyebrow">NSTSF kundesystem</div><div class="case-head-top"><div><h2>Rediger sag</h2><div class="sub">${s.kunde || 'Ukendt kunde'}${caseRef ? ` · Sagsnr. ${formatCaseRefDisplay(caseRef)}` : ''}</div></div><button class="btn ghost" onclick="closeSag()">Luk</button></div></div><div class="case-card"><div class="case-form"><label>Kundenr.<input value="${escapeAttr(customerNumber)}" disabled></label><label>Sagsnr.<input value="${escapeAttr(formatCaseRefDisplay(caseRef))}" disabled></label>${formatCasePostDisplay(caseRef) ? `<label>Faktura/post<input value="${escapeAttr(formatCasePostDisplay(caseRef))}" disabled></label>` : ""}<label>Kategori<select id="edit-k">${Object.entries(KAT).map(([k,v])=>`<option value="${k}"${+k===s.k?' selected':''}>${v}</option>`).join('')}</select></label><label>Eksisterende ref.<input id="edit-nr" value="${escapeAttr(s.nr)}" placeholder="Valgfrit eksternt referencenr."></label><label>Kundenavn<input id="edit-kunde" value="${escapeAttr(s.kunde)}"></label><label class="wide">Adresse<input id="edit-adr" value="${escapeAttr(s.adr === '—' ? '' : s.adr)}"></label><label class="wide">Opgave<textarea id="edit-opg">${escapeAttr(s.opg)}</textarea></label><label>Est. beløb<input id="edit-b" value="${escapeAttr(s.b)}"></label><label>Udestående<input id="edit-u" value="${escapeAttr(s.u)}"></label><label>Betalingsdato<input id="edit-dato" type="date" value="${escapeAttr(s.dato)}"></label><label>Startdato<input id="edit-start" type="date" value="${escapeAttr(s.start)}"></label><label>Slutdato<input id="edit-slut" type="date" value="${escapeAttr(s.slut)}"></label><label>Fin. status<input id="edit-status" value="${escapeAttr(s.status)}"></label><label>Est. timer<input id="edit-timer" value="${escapeAttr(s.timer)}"></label><label>Fakturanr.<input id="edit-fak" value="${escapeAttr(s.fak)}"></label><label>Mail<input id="edit-mail" value="${escapeAttr(s.mail)}"></label><label>Telefon<input id="edit-tlf" value="${escapeAttr(s.tlf)}"></label><label class="wide">Google Drive-folder URL<input id="edit-drive" value="${escapeAttr(getSagDrive(s))}" placeholder="Indsæt link til kundens Drive-mappe"></label><label class="wide">Noter/info<textarea id="edit-info">${escapeAttr(s.info)}</textarea></label></div><div style="display:flex;gap:8px;margin-top:14px"><button class="btn primary" onclick="saveSagEdit()">Gem</button><button class="btn" onclick="renderSagDetail(${i})">Annuller</button></div></div></div>`; }
+function openEditSag(i){ const s = sager[i]; const caseDetail = document.getElementById('caseDetail'); const customerLayout = document.querySelector('.customers-layout'); if(!s || !caseDetail) return; const customerNumber = getCustomerNumber(s); const caseRef = getCaseRefByIndex(i); const customerRef = formatCustomerIdDisplay(customerNumber); const sagRef = formatSagIdDisplay(getSagIdByIndex(i)); editSagIndex = i; selectedCustomerIndex = i; render(); if(customerLayout) customerLayout.classList.add('detail-open'); caseDetail.classList.add('active'); caseDetail.innerHTML = `<div class="case-shell"><div class="case-head"><div class="case-eyebrow">NSTSF kundesystem</div><div class="case-head-top"><div><h2>Rediger sag</h2><div class="sub">${s.kunde || 'Ukendt kunde'}${customerRef ? ` · Kundenr. ${customerRef}` : ''}</div></div><button class="btn ghost" onclick="closeSag()">Luk</button></div></div><div class="case-card"><div class="case-form"><label>Kundenr.<input value="${escapeAttr(customerRef)}" disabled></label><label>Sag<input value="${escapeAttr(sagRef)}" disabled></label>${formatCasePostDisplay(caseRef) ? `<label>Tidl. post<input value="${escapeAttr(formatLegacyCaseRefDisplay(caseRef))}" disabled></label>` : ""}<label>Kategori<select id="edit-k">${Object.entries(KAT).map(([k,v])=>`<option value="${k}"${+k===s.k?' selected':''}>${v}</option>`).join('')}</select></label><label>Eksisterende ref.<input id="edit-nr" value="${escapeAttr(s.nr)}" placeholder="Valgfrit eksternt referencenr."></label><label>Kundenavn<input id="edit-kunde" value="${escapeAttr(s.kunde)}"></label><label class="wide">Adresse<input id="edit-adr" value="${escapeAttr(s.adr === '—' ? '' : s.adr)}"></label><label class="wide">Opgave<textarea id="edit-opg">${escapeAttr(s.opg)}</textarea></label><label>Est. beløb<input id="edit-b" value="${escapeAttr(s.b)}"></label><label>Udestående<input id="edit-u" value="${escapeAttr(s.u)}"></label><label>Betalingsdato<input id="edit-dato" type="date" value="${escapeAttr(s.dato)}"></label><label>Startdato<input id="edit-start" type="date" value="${escapeAttr(s.start)}"></label><label>Slutdato<input id="edit-slut" type="date" value="${escapeAttr(s.slut)}"></label><label>Fin. status<input id="edit-status" value="${escapeAttr(s.status)}"></label><label>Est. timer<input id="edit-timer" value="${escapeAttr(s.timer)}"></label><label>Fakturanr.<input id="edit-fak" value="${escapeAttr(s.fak)}"></label><label>Mail<input id="edit-mail" value="${escapeAttr(s.mail)}"></label><label>Telefon<input id="edit-tlf" value="${escapeAttr(s.tlf)}"></label><label class="wide">Google Drive-folder URL<input id="edit-drive" value="${escapeAttr(getSagDrive(s))}" placeholder="Indsæt link til kundens Drive-mappe"></label><label class="wide">Noter/info<textarea id="edit-info">${escapeAttr(s.info)}</textarea></label></div><div style="display:flex;gap:8px;margin-top:14px"><button class="btn primary" onclick="saveSagEdit()">Gem</button><button class="btn" onclick="renderSagDetail(${i})">Annuller</button></div></div></div>`; }
 function readEdit(id){ return document.getElementById(id).value.trim(); }
 function saveSagEdit(){ if(editSagIndex === null || !sager[editSagIndex]) return; const s = sager[editSagIndex]; const before = JSON.parse(JSON.stringify(s)); s.k = +readEdit('edit-k') || 3; s.nr = readEdit('edit-nr'); s.kunde = readEdit('edit-kunde') || 'Ukendt kunde'; s.adr = readEdit('edit-adr'); s.opg = readEdit('edit-opg'); s.b = readEdit('edit-b') || '0'; s.u = readEdit('edit-u') || '0'; s.dato = readEdit('edit-dato'); s.start = readEdit('edit-start'); s.slut = readEdit('edit-slut'); s.status = readEdit('edit-status') || '—'; s.timer = readEdit('edit-timer'); s.fak = readEdit('edit-fak'); s.mail = readEdit('edit-mail'); s.tlf = readEdit('edit-tlf'); s.drive = readEdit('edit-drive'); s.info = readEdit('edit-info'); s.docs = s.docs || {byggereferater:docDemo.byggereferater, transkripter:docDemo.transkripter}; s.docs.drive = s.drive; const changed = describeChangedFields(before, s); if(changed.length){ addCaseActivity(s, { type:'case_update', title:'Sag opdateret', summary:`Opdateret: ${changed.join(', ')}.` }); } saveState(); render(); renderPriorities(); renderCapacity(); renderSagDetail(editSagIndex); }
 function markCasePaymentPaid(caseIndex, historyKey=''){

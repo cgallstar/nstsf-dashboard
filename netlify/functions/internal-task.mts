@@ -8,6 +8,12 @@ import {
   textValue,
 } from "./_lib/dashboard.mts";
 
+function stableThreeDigitHash(value = "") {
+  let hash = 0;
+  for (const char of String(value || "")) hash = ((hash * 31) + char.charCodeAt(0)) % 900;
+  return String(100 + hash).padStart(3, "0").slice(-3);
+}
+
 export default async (request: Request) => {
   const auth = authorizeDashboardRequest(request, { allowActionsToken: true });
   if (!auth.ok) return auth.response;
@@ -33,7 +39,10 @@ export default async (request: Request) => {
     email: textValue(body.actorEmail, auth.actor?.email || ""),
   };
 
-  const task = normalizeInternalTask(body);
+  const task = normalizeInternalTask({
+    ...body,
+    unlinkedRef: textValue(body.unlinkedRef, `K-${stableThreeDigitHash(`${body.title || body.name || ""}|${Date.now()}`)}`),
+  });
   state.internalTasks.unshift(task);
   state.internalTaskActivity = Array.isArray(state.internalTaskActivity) ? state.internalTaskActivity : [];
   state.internalTaskActivity.unshift({

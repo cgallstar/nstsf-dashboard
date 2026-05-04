@@ -13,11 +13,11 @@
 
 ## Navngivning i første version
 - byggemødereferat:
-  - `YYYY-MM-DD - Byggemodereferat - SagsID.md`
+  - `YYYY-MM-DD - K-kundenr - S-sag - Byggemodereferat.md`
 - fejl og mangler møde:
-  - `YYYY-MM-DD - SagsID - Fejl og mangler moede.md`
+  - `YYYY-MM-DD - K-kundenr - S-sag - Fejl og mangler moede.md`
 - afslutningsmøde:
-  - `YYYY-MM-DD - SagsID - Afslutningsmoede.md`
+  - `YYYY-MM-DD - K-kundenr - S-sag - Afslutningsmoede.md`
 
 ## Datokilder
 Dato udledes i denne rækkefølge:
@@ -26,8 +26,9 @@ Dato udledes i denne rækkefølge:
 3. mailens egen dato
 
 ## Sagsidentitet
-- primær nøgle: `SagsID`
-- fallback: gammelt `Sagsnr.`
+- primær nøgle: `S-` sag
+- sekundær nøgle: `K-` kunde + sikker adresse
+- rå tal uden prefix er uklare og må ikke bruges alene
 - visning i UI: eksempel `1004 C`
 - normaliseret match: `1004C`
 

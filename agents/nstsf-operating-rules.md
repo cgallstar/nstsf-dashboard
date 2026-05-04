@@ -35,7 +35,7 @@ Den definerer:
 Noget er en kundesag når det vedrører:
 - kunde
 - adresse
-- sagsnummer
+- kundenr. / sagId
 - tilbud
 - byggemøde
 - KS
@@ -210,11 +210,43 @@ Skriver:
 
 ## Objektmodel
 
+### ID-model
+Sag og Kunde er separate entiteter.
+
+Begge kan have numeriske interne IDs:
+- `sagId`
+- `kundeId`
+
+De må ikke vises som rene tal i brugerfladen, fordi det skaber forveksling.
+
+Visningsregler:
+- Sag vises som `S-{sagId}`, fx `S-123`
+- Kunde vises som `K-{kundeId}`, fx `K-456`
+
+Sag og Kunde må eksistere hver for sig.
+
+Når en sag kobles til en kunde, skal relationen gemmes som:
+```text
+SagKunde {
+  sagId,
+  kundeId
+}
+```
+
+Relationen betyder kun: `Sag S-123 er koblet til Kunde K-456`.
+
+Inputregler:
+- `S-` prefix skal slå op i sager
+- `K-` prefix skal slå op i kunder
+- input kun med tal, fx `123`, er uklart og skal afvises eller kræve afklaring
+- en opgave uden sikker kundekobling må oprettes som ukoblet opgave og vises med en midlertidig `K-xxx` reference, indtil den matches manuelt
+
 ### Kundesag
 Felter:
 - kundenavn
 - adresse
-- sagsnummer
+- kundeId / kundenr.
+- sagId ved konkret sag
 - kategori
 - opgave
 - entreprisesum
@@ -298,10 +330,10 @@ Felter:
 Før et dokument uploades til Drive, skal agenten tjekke om samme filnavn allerede findes i målmappe. Hvis ja, bruges eksisterende Drive-fil og linket skrives tilbage til state.
 
 ### Porteføljekunder
-For kunder med flere poster/sager under samme kundenr., fx DKE / Charlotte, må agenten ikke arkivere på kundenummer alene. Automatisk arkivering kræver fuldt `SagsID`, sikker adresse eller anden stærk post-identifikation. Filnavne og opdateringskort skal bruge fuldt `SagsID` med bogstav, når det findes, fx `1002 C`.
+For kunder med flere poster/sager under samme kundenr., fx DKE / Charlotte, må agenten ikke arkivere på kundenummer alene. Automatisk arkivering kræver sikker `S-` reference, sikker adresse eller anden stærk post-identifikation. Filnavne og opdateringskort skal bruge `K-` kundenr. og `S-` sag, når de findes.
 
 ### Fakturamatch
-Fakturaer må ikke matches via gæt eller PDF-tekst som primær kilde. Automatisk match kræver eksisterende fakturanr. i state, sikkert `SagsID`, sikker adresse, stærkt entydigt kundenavn i mailtekst/filnavn eller dokumenthistorik på sagen. Ellers skal fakturaen blive en manuel afklaring i `Opdateringer`.
+Fakturaer må ikke matches via gæt. Automatisk match kræver eksisterende fakturanr. i state, sikker `S-`/`K-` reference, sikker adresse, stærkt entydigt kundenavn i mailtekst/filnavn/PDF-tekst eller dokumenthistorik på sagen. PDF-tekst må bruges som evidens, men hvis den giver flere nærliggende matches, skal fakturaen blive en manuel afklaring i `Opdateringer`.
 
 Når en faktura matches sikkert, skal fakturabeløbet fra fakturaen opdatere sagens udestående beløb. Eksisterende estimater eller tidligere aconto-beløb må ikke vinde over et sikkert fakturabeløb.
 
@@ -324,7 +356,7 @@ Flere opgaver på samme kunde/sag skal samles i samme opgavekort. Delopgaver ska
 - arkiverede/håndterede mails og `gmail_archive`-aktivitet må ikke genaktivere en sag som opgave
 - en opgave markeret `Fuldført` skal ligge i arkiv og må ikke vises i aktive opgaver igen
 - samme mail må kun vises én gang: enten som del af en konkret sag eller som løs mailopgave, ikke begge steder
-- porteføljekunder må ikke matches på kundenavn alene; kræv adresse, fuldt sagsID eller tydelig opgavetitel
+- porteføljekunder må ikke matches på kundenavn alene; kræv adresse, sikker `S-`/`K-` reference eller tydelig opgavetitel
 - betalingsopgaver må kun oprettes fra eksplicit åbne betalingsposter; rene `invoice_update`, `Faktura sendt`, afledte betalingslinjer og betalt betalingshistorik må ikke skabe opgave
 
 ### `Now`

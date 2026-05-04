@@ -102,7 +102,7 @@ function formatSyncError(error: unknown) {
     ? textValue(error, "archive_failed")
     : textValue((error as Error)?.message, "archive_failed");
   if (message === "case_not_matched") return "Mailen kunne ikke matches sikkert til en eksisterende sag.";
-  if (message === "invoice_match_low_confidence") return "Fakturaen kunne ikke matches sikkert til en sag ud fra mailtekst, filnavn, adresse, sagsID eller kendt fakturanummer.";
+  if (message === "invoice_match_low_confidence") return "Fakturaen kunne ikke matches sikkert ud fra mailtekst, filnavn, adresse, S-/K-reference eller kendt fakturanummer.";
   if (message === "invoice_match_ambiguous") return "Fakturaen matcher flere mulige sager og kræver manuel afklaring.";
   if (message.startsWith("google_token_error:")) return "Google OAuth-token kunne ikke fornyes.";
   if (message.startsWith("google_fetch_timeout:")) return "Google API svarede for langsomt. Sync blev stoppet for at undgå Netlify-timeout.";
@@ -274,6 +274,12 @@ function normalizeAddressAlias(value = "") {
     .replace(/\ballé\b/g, "alle")
     .replace(/\s+/g, " ")
     .trim();
+}
+
+function normalizeAddressForLooseMatch(value = "") {
+  return normalizeAddressAlias(value)
+    .replace(/\b(st|tv|th|mf|sal|kl|kld|lej|lejl|lejlighed)\b/g, "")
+    .replace(/\s+/g, "");
 }
 
 function decodePdfString(value = "") {
@@ -523,6 +529,12 @@ function scoreInvoiceCase(entry: any, invoiceText: string, invoiceNumber = "") {
     reasons.push("adresse");
   }
   if (address && normalizeAddressAlias(invoiceText).includes(normalizeAddressAlias(entry?.adr || ""))) {
+    score += 10;
+    reasons.push("adresse");
+  }
+  const looseInvoiceAddress = normalizeAddressForLooseMatch(invoiceText);
+  const looseEntryAddress = normalizeAddressForLooseMatch(entry?.adr || "");
+  if (looseEntryAddress && looseEntryAddress.length >= 8 && looseInvoiceAddress.includes(looseEntryAddress)) {
     score += 10;
     reasons.push("adresse");
   }
@@ -988,7 +1000,7 @@ function buildArchiveMarkdown(thread: any, item: any, matched: any, signal: any,
     `# ${signal.documentType}`,
     "",
     `- Dato: ${documentDate}`,
-    `- SagsID: ${displayCaseId || "Ikke fundet"}`,
+    `- Kunde/Sag: ${displayCaseId || "Ikke fundet"}`,
     `- Kunde: ${textValue(matched?.kunde, item.kunde || "Ukendt kunde")}`,
     address ? `- Adresse: ${address}` : "",
     `- Arkiveret fra mailtråd: ${textValue(item.subject, "Mail uden emne")}`,
@@ -1069,6 +1081,13 @@ function extractInvoiceAmount(text = "") {
   while ((match = totalPattern.exec(source))) {
     const value = parseMoneyValue(match[1]);
     if (value >= 1000) totalValues.push(value);
+  }
+  const totalBlockPattern = /(?:total\s+dkk|total|i alt(?:\s+inkl\.?\s+moms)?|beløb\s+inkl\.?\s+moms|beloeb\s+inkl\.?\s+moms|at betale)[\s\S]{0,180}/gi;
+  while ((match = totalBlockPattern.exec(source))) {
+    const values = [...match[0].matchAll(/(\d{1,3}(?:[.\s]\d{3})*(?:,\d{2})?|\d{4,})/g)]
+      .map((candidate) => parseMoneyValue(candidate[1]))
+      .filter((value) => value >= 1000);
+    if (values.length) totalValues.push(Math.max(...values));
   }
 
   const krValues: number[] = [];
