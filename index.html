@@ -542,6 +542,10 @@
     margin-top:12px;border:.5px solid var(--line);border-radius:14px;background:#faf7f1;padding:14px 16px;
   }
   .priority-suggestion-label{font-size:9px;font-weight:700;color:#b0ada8;text-transform:uppercase;letter-spacing:.1em;margin-bottom:6px}
+  .editable-suggestion{outline:none;border-radius:8px;padding:2px 4px;margin-left:-4px}
+  .editable-suggestion:focus{background:#fff;border:1px solid #ded7cb;padding:7px 9px;margin-left:-9px}
+  .editable-suggestion ul{margin:0;padding-left:18px}
+  .editable-suggestion li{margin:3px 0}
   .priority-bullets{display:grid;gap:10px;margin-top:10px}
   .priority-bullet{display:grid;grid-template-columns:16px minmax(0,1fr) auto;gap:10px;align-items:flex-start;padding:10px 0;border-top:.5px solid rgba(0,0,0,.06)}
   .priority-bullet:first-child{border-top:none;padding-top:0}
@@ -1698,6 +1702,7 @@ let selectedAgentId = 'chief-of-staff';
 let handledEmailIds = [];
 let dismissedPriorityKeys = [];
 let archivedPriorityItems = [];
+let prioritySuggestionOverrides = {};
 let customerView = 'active';
 let lastUpdatedAt = null;
 const ACTIVE_CASE_CATEGORIES = new Set([1,2,3,4,5]);
@@ -2052,7 +2057,7 @@ function addLocalSyncLogEntries(entries=[]){
   syncLog.splice(80);
 }
 function stripDemoEmails(items=[]){ return items.filter((item)=>!DEMO_EMAIL_IDS.has(textValue(item?.id, ''))); }
-function collectState(){ ensureCaseIds(); const capacityHours = document.getElementById('capacityHours') ? +document.getElementById('capacityHours').value || 37 : 37; return { schema:'nstsf-dashboard-state-v1', savedFrom:location.hostname || 'local-file', savedAt:new Date().toISOString(), sager:sager, betalinger:betalinger, emails:emails.filter(isAllowedNstsfMail), employees:employees, internalTasks:internalTasks, syncLog:syncLog.filter(isAllowedNstsfSyncLog), settings:{capacityHours, handledEmailIds, dismissedPriorityKeys, archivedPriorityItems} }; }
+function collectState(){ ensureCaseIds(); const capacityHours = document.getElementById('capacityHours') ? +document.getElementById('capacityHours').value || 37 : 37; return { schema:'nstsf-dashboard-state-v1', savedFrom:location.hostname || 'local-file', savedAt:new Date().toISOString(), sager:sager, betalinger:betalinger, emails:emails.filter(isAllowedNstsfMail), employees:employees, internalTasks:internalTasks, syncLog:syncLog.filter(isAllowedNstsfSyncLog), settings:{capacityHours, handledEmailIds, dismissedPriorityKeys, archivedPriorityItems, prioritySuggestionOverrides} }; }
 function formatHeaderUpdated(value){
   const date = parseDateValue(value) || new Date();
   return `Pipeline, sager og økonomi — opdateret ${date.toLocaleDateString('da-DK', { day:'numeric', month:'short', year:'numeric' })}`;
@@ -2094,7 +2099,7 @@ function loadUiState(){
     inboxFilter = saved.inboxFilter || inboxFilter;
   }catch(e){}
 }
-function applyState(state){ if(!state || typeof state !== 'object') return; stateWasSanitized = false; if(Array.isArray(state.sager)){ sager.splice(0, sager.length, ...state.sager.map(normalizeSag)); ensureCaseIds(); } if(Array.isArray(state.betalinger)){ betalinger.splice(0, betalinger.length, ...state.betalinger.map(normalizeBetaling)); } if(Array.isArray(state.emails)){ const rawEmails = stripDemoEmails(state.emails).map(normalizeEmail); const allowedEmails = rawEmails.filter(isAllowedNstsfMail); if(rawEmails.length !== allowedEmails.length) stateWasSanitized = true; emails.splice(0, emails.length, ...allowedEmails); } if(Array.isArray(state.employees)){ employees.splice(0, employees.length, ...state.employees.map(normalizeEmployee)); } if(Array.isArray(state.internalTasks)){ internalTasks.splice(0, internalTasks.length, ...state.internalTasks.map(normalizeInternalTask)); } if(Array.isArray(state.syncLog)){ const rawSyncLog = state.syncLog.map(normalizeSyncLogEntry); const allowedSyncLog = rawSyncLog.filter(isAllowedNstsfSyncLog); const dedupedSyncLog = dedupeSyncLogEntries(allowedSyncLog); if(rawSyncLog.length !== allowedSyncLog.length || allowedSyncLog.length !== dedupedSyncLog.length) stateWasSanitized = true; syncLog.splice(0, syncLog.length, ...dedupedSyncLog); } if(state.settings && document.getElementById('capacityHours')){ document.getElementById('capacityHours').value = state.settings.capacityHours || 37; handledEmailIds = Array.isArray(state.settings.handledEmailIds) ? state.settings.handledEmailIds : []; dismissedPriorityKeys = Array.isArray(state.settings.dismissedPriorityKeys) ? state.settings.dismissedPriorityKeys : []; archivedPriorityItems = Array.isArray(state.settings.archivedPriorityItems) ? state.settings.archivedPriorityItems : []; } if(state.savedAt) updateHeaderTimestamp(state.savedAt); }
+function applyState(state){ if(!state || typeof state !== 'object') return; stateWasSanitized = false; if(Array.isArray(state.sager)){ sager.splice(0, sager.length, ...state.sager.map(normalizeSag)); ensureCaseIds(); } if(Array.isArray(state.betalinger)){ betalinger.splice(0, betalinger.length, ...state.betalinger.map(normalizeBetaling)); } if(Array.isArray(state.emails)){ const rawEmails = stripDemoEmails(state.emails).map(normalizeEmail); const allowedEmails = rawEmails.filter(isAllowedNstsfMail); if(rawEmails.length !== allowedEmails.length) stateWasSanitized = true; emails.splice(0, emails.length, ...allowedEmails); } if(Array.isArray(state.employees)){ employees.splice(0, employees.length, ...state.employees.map(normalizeEmployee)); } if(Array.isArray(state.internalTasks)){ internalTasks.splice(0, internalTasks.length, ...state.internalTasks.map(normalizeInternalTask)); } if(Array.isArray(state.syncLog)){ const rawSyncLog = state.syncLog.map(normalizeSyncLogEntry); const allowedSyncLog = rawSyncLog.filter(isAllowedNstsfSyncLog); const dedupedSyncLog = dedupeSyncLogEntries(allowedSyncLog); if(rawSyncLog.length !== allowedSyncLog.length || allowedSyncLog.length !== dedupedSyncLog.length) stateWasSanitized = true; syncLog.splice(0, syncLog.length, ...dedupedSyncLog); } if(state.settings && document.getElementById('capacityHours')){ document.getElementById('capacityHours').value = state.settings.capacityHours || 37; handledEmailIds = Array.isArray(state.settings.handledEmailIds) ? state.settings.handledEmailIds : []; dismissedPriorityKeys = Array.isArray(state.settings.dismissedPriorityKeys) ? state.settings.dismissedPriorityKeys : []; archivedPriorityItems = Array.isArray(state.settings.archivedPriorityItems) ? state.settings.archivedPriorityItems : []; prioritySuggestionOverrides = state.settings.prioritySuggestionOverrides && typeof state.settings.prioritySuggestionOverrides === 'object' && !Array.isArray(state.settings.prioritySuggestionOverrides) ? state.settings.prioritySuggestionOverrides : {}; } if(state.savedAt) updateHeaderTimestamp(state.savedAt); }
 function persistLocalState(){ const state = collectState(); localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); updateHeaderTimestamp(state.savedAt); }
 function loadState(){ try{ const state = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}'); const hadDemoEmails = Array.isArray(state?.emails) && state.emails.some((item)=>DEMO_EMAIL_IDS.has(textValue(item?.id, ''))); applyState(state); if(hadDemoEmails) persistLocalState(); }catch(e){} loadUiState(); updateHeaderTimestamp(lastUpdatedAt || new Date().toISOString()); updatePreviewNotice(); }
 async function saveRemoteState(manual=false){ if(!authUser){ if(manual) setSyncStatus('Du skal være logget ind for at gemme centralt.', 'error'); return; } if(location.protocol === 'file:'){ if(manual) setSyncStatus('Backend virker først på Netlify eller via netlify dev. Lokal fil er kun browser-kopi.', 'error'); return; } try{ setSyncStatus('Gemmer til central backend...'); const payload = collectState(); const res = await fetch(STATE_API, { method:'PUT', credentials:'include', headers:{'content-type':'application/json'}, body:JSON.stringify(payload) }); const data = await res.json().catch(()=>({})); if(!res.ok) throw new Error(data.error || `HTTP ${res.status}`); updateHeaderTimestamp(data.savedAt || payload.savedAt); setSyncStatus(`Gemt centralt ${new Date(data.savedAt || Date.now()).toLocaleString('da-DK')}`, 'ok'); }catch(err){ setSyncStatus(`Kun lokal kopi gemt. Backend-fejl: ${err.message}`, 'error'); } }
@@ -2554,6 +2559,8 @@ function emailSignal(mail){
 function priorityActionText(mail, signal, fallback=''){
   const subject = String(mail?.subject || '').toLowerCase();
   const body = String(mail?.body || '').toLowerCase();
+  const combined = `${subject} ${body}`;
+  if(/henrik|helt nyt hus|kontrakt|ab92|sørens?\/henrik/.test(combined)) return '- Lav kontrakt med kunden.\n- Afklar kontraktgrundlag og send til underskrift.';
   if(signal?.asksForPictures && subject.includes('status på igangværende sager')) return 'Send billeder for Guldborgvej 1, Lykkesholms Allé 33 og Blågårdsgade 14, og giv status på Ryesgade 62, lejlighed 35.';
   if(signal?.asksForPictures) return 'Send KS, billeder eller dokumentation til kunden.';
   if(signal?.asksForDate && subject.includes('lykkesholms')) return 'Svar Charlotte med en konkret dato for udførelsen på Lykkesholms Allé.';
@@ -2870,11 +2877,50 @@ function dismissPriority(key=''){
   renderPriorities();
 }
 function priorityGroupKey(item={}){
+  if(typeof item.caseIndex === 'number' && item.caseIndex >= 0){
+    const s = sager[item.caseIndex];
+    const ref = getCaseRef(s);
+    if(ref) return `case:${String(ref).replace(/\s+/g,'').toLowerCase()}`;
+    const customer = getCustomerNumber(s) || getCustomerDisplay(s);
+    if(customer) return `customer:${String(customer).toLowerCase()}`;
+  }
+  const metaCustomer = String(item.meta || '').match(/kundenr\.\s*(\d+)/i);
+  if(metaCustomer) return `customer:${metaCustomer[1]}`;
+  if(/henrik|jyllinge|helt nyt hus/i.test(`${item.title || ''} ${item.meta || ''} ${item.reason || ''}`)) return 'customer:1005';
   return String(item.title || item.key || '')
     .replace(/^(\d+)\s+[a-z]\s+·/i, '$1 ·')
     .toLowerCase()
     .replace(/\s+/g,' ')
     .trim();
+}
+function prioritySuggestionText(item={}){
+  return prioritySuggestionOverrides[item.key] || item.actionText || item.reason || '';
+}
+function mergedPrioritySuggestion(items=[]){
+  const lines = [];
+  items.forEach((item)=>{
+    const text = prioritySuggestionText(item);
+    String(text || '').split(/\n+/).forEach((line)=>{
+      const cleaned = line.trim().replace(/^[-*•]\s+/, '');
+      if(cleaned && !lines.includes(cleaned)) lines.push(cleaned);
+    });
+  });
+  return lines.length > 1 ? lines.map((line)=>`- ${line}`).join('\n') : (lines[0] || '');
+}
+function renderSuggestionText(text=''){
+  const lines = String(text || '').split(/\n+/).map((line)=>line.trim()).filter(Boolean);
+  if(lines.length > 1 || lines.some((line)=>/^[-*•]\s+/.test(line))){
+    return `<ul>${lines.map((line)=>`<li>${escapeAttr(line.replace(/^[-*•]\s+/, ''))}</li>`).join('')}</ul>`;
+  }
+  return escapeAttr(text || '');
+}
+function savePrioritySuggestion(key='', element=null){
+  if(!key || !element) return;
+  const text = element.innerText.trim();
+  if(text) prioritySuggestionOverrides[key] = text;
+  else delete prioritySuggestionOverrides[key];
+  saveState();
+  renderPriorities();
 }
 function groupPriorityItems(items=[]){
   const groups = [];
@@ -2899,12 +2945,13 @@ function priorityDoneButton(item={}, klass='btn'){
       : `<button class="${klass}" onclick="markPriorityComplete('${item.key}')">Fuldført</button>`;
 }
 function renderPriorityBullet(item){
+  const suggestion = prioritySuggestionText(item);
   return `<div class="priority-bullet ${item.completed ? 'completed' : ''}">
     <button class="priority-bullet-check" title="${item.completed ? 'Fuldført' : 'Marker som fuldført'}" aria-label="${item.completed ? 'Fuldført' : 'Marker som fuldført'}" ${item.completed ? 'disabled' : `onclick="${item.internalTaskId ? `markInternalTaskDone('${item.internalTaskId}','${item.key}')` : item.emailId ? `markPriorityDone('${item.emailId}','${item.key}')` : `markPriorityComplete('${item.key}')`}"`}></button>
     <div>
       <div class="priority-bullet-title">${escapeAttr(item.reason || item.title)}</div>
       <div class="priority-bullet-meta">${escapeAttr(item.meta || '')}</div>
-      <div class="priority-bullet-text">${escapeAttr(item.actionText || item.reason || '')}</div>
+      <div class="priority-bullet-text editable-suggestion" contenteditable="true" spellcheck="true" onblur="savePrioritySuggestion('${escapeAttr(item.key)}', this)">${renderSuggestionText(suggestion)}</div>
     </div>
     <div class="priority-bullet-tools">${priorityActionButtons(item.links)}${priorityEditButton(item.links, item)}<button class="side-btn" onclick="dismissPriority('${item.key}')">Fjern</button></div>
   </div>`;
@@ -2916,15 +2963,15 @@ function renderPriorityRows(targetId, items, buckets, type){
   const primaryBucket = wanted[0] || 'now';
   const rows = items.filter((item)=>wanted.includes(item.bucket));
   const groups = groupPriorityItems(rows);
-  el.innerHTML = groups.length ? groups.map((group, index)=>{ const item = group.items[0]; const grouped = group.items.length > 1; return `<div class="priority-row ${primaryBucket === 'now' ? 'now' : 'later'} ${item.completed ? 'completed' : ''}">
+  el.innerHTML = groups.length ? groups.map((group, index)=>{ const item = group.items[0]; const grouped = group.items.length > 1; const mergedSuggestion = mergedPrioritySuggestion(group.items); return `<div class="priority-row ${primaryBucket === 'now' ? 'now' : 'later'} ${item.completed ? 'completed' : ''}">
     <div class="priority-rank ${primaryBucket === 'now' ? 'now' : ''}">${index + 1}</div>
     <div class="priority-type"><div class="priority-dot ${type === 'sales' ? 'sales' : 'todo'}"></div></div>
     <div class="priority-body">
       <div class="priority-topline"><div class="priority-name">${escapeAttr(item.title)}</div></div>
       <div class="priority-meta">${escapeAttr(item.meta)}</div>
       ${grouped
-        ? `<div class="priority-bullets">${group.items.map(renderPriorityBullet).join('')}</div>`
-        : `<div class="priority-reason">${escapeAttr(item.reason)}</div><div class="priority-suggestion"><div class="priority-suggestion-label">Suggestion</div><div class="priority-reason">${escapeAttr(item.actionText || item.reason)}</div></div>`}
+        ? `<div class="priority-suggestion"><div class="priority-suggestion-label">Suggestion</div><div class="priority-reason editable-suggestion" contenteditable="true" spellcheck="true" onblur="savePrioritySuggestion('${escapeAttr(item.key)}', this)">${renderSuggestionText(mergedSuggestion)}</div></div><div class="priority-bullets">${group.items.map(renderPriorityBullet).join('')}</div>`
+        : `<div class="priority-reason">${escapeAttr(item.reason)}</div><div class="priority-suggestion"><div class="priority-suggestion-label">Suggestion</div><div class="priority-reason editable-suggestion" contenteditable="true" spellcheck="true" onblur="savePrioritySuggestion('${escapeAttr(item.key)}', this)">${renderSuggestionText(prioritySuggestionText(item))}</div></div>`}
     </div>
     <div class="priority-row-tools">
       ${item.completed ? '' : `<button class="btn ghost" onclick="dismissPriority('${item.key}')">Slet</button>`}

@@ -313,6 +313,8 @@ Opdateringskort for fakturaer skal være konkrete pr. sag/kunde. De må ikke st�
 
 Samme tråd eller dokument må kun optræde én gang i `Opdateringer`. En senere succes skal erstatte en tidligere fejl for samme tråd, ikke lægges ved siden af.
 
+Flere opgaver på samme kunde/sag skal samles i samme opgavekort. Delopgaver skal vises som bullets under `Suggestion`, og suggestion-teksten skal kunne redigeres direkte inline.
+
 ## Prioriteringsregler
 
 ### Grundregler
