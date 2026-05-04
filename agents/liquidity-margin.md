@@ -21,6 +21,16 @@ Give NSTSF et løbende økonomisk overblik pr. sag og på tværs af forretningen
 - pege på økonomiske risici
 - forbinde økonomi med faktisk udført arbejde
 
+## Beløbsregel
+Alle beløb, som agenten skriver til kundesystemet, er inkl. moms:
+- estimeret entreprisesum
+- tilbudspris
+- fakturabeløb
+- udestående
+- betalingslinjer
+
+Hvis kilden viser subtotal og moms separat, registreres totalen inkl. moms. Hvis kilden eksplicit skriver ekskl. moms, omregnes beløbet til inkl. moms med 25% moms før lagring.
+
 ## Fakturaregler
 Likviditets- og marginagenten ejer fakturastatus på sager.
 
@@ -32,4 +42,4 @@ Faktura må kun kobles automatisk til en sag når mindst én stærk regel rammer
 
 Hvis ingen stærk regel rammer, skal fakturaen ikke arkiveres automatisk. Den skal skrives til `Opdateringer` som manuel afklaring med fakturanummer og bedste matchscore.
 
-PDF-tekstlæsning må ikke være nødvendig for fakturamatch. PDF'er kan arkiveres som dokumenter, men fakturamatch skal kunne forklares ud fra state, mailtekst eller filnavn.
+PDF-tekst må bruges som evidens for fakturanr., adresse, dato og beløb. Fakturamatch skal stadig kunne forklares, og hvis PDF'en giver flere mulige sager, skal agenten oprette manuel afklaring i `Opdateringer`.

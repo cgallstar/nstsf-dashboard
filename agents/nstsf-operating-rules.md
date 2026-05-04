@@ -332,12 +332,25 @@ Før et dokument uploades til Drive, skal agenten tjekke om samme filnavn allere
 ### Porteføljekunder
 For kunder med flere poster/sager under samme kundenr., fx DKE / Charlotte, må agenten ikke arkivere på kundenummer alene. Automatisk arkivering kræver sikker `S-` reference, sikker adresse eller anden stærk post-identifikation. Filnavne og opdateringskort skal bruge `K-` kundenr. og `S-` sag, når de findes.
 
+### Beløbsregel
+Alle økonomiske beløb i kundesystemet er inkl. moms.
+
+Det gælder:
+- fakturabeløb
+- udestående beløb
+- estimerede entreprisesummer
+- tilbudsbeløb
+- betalingslinjer
+- likviditetsvisning
+
+Hvis et dokument viser subtotal og moms separat, skal agenten registrere `subtotal + moms`.
+
+Hvis et dokument eksplicit angiver et beløb som ekskl. moms, skal agenten omregne til inkl. moms med 25% moms, før beløbet skrives til kunden.
+
 ### Fakturamatch
 Fakturaer må ikke matches via gæt. Automatisk match kræver eksisterende fakturanr. i state, sikker `S-`/`K-` reference, sikker adresse, stærkt entydigt kundenavn i mailtekst/filnavn/PDF-tekst eller dokumenthistorik på sagen. PDF-tekst må bruges som evidens, men hvis den giver flere nærliggende matches, skal fakturaen blive en manuel afklaring i `Opdateringer`.
 
 Når en faktura matches sikkert, skal fakturabeløbet fra fakturaen opdatere sagens udestående beløb. Eksisterende estimater eller tidligere aconto-beløb må ikke vinde over et sikkert fakturabeløb.
-
-Alle fakturabeløb i kundesystemet skal behandles som beløb inkl. moms. Hvis fakturaen kun viser subtotal og moms adskilt, skal agenten registrere subtotal + moms.
 
 Hvis en relevant mail ikke kan matches sikkert til en eksisterende kunde/sag, må den ikke forsvinde som ren fejl. Den skal oprettes som en intern opgave uden dato med mailens emne og forklaring, så den kan matches manuelt senere.
 

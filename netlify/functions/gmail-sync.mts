@@ -249,6 +249,7 @@ function formatCaseIdForDisplay(entry: any) {
 function plainCompactText(value = "") {
   return String(value || "")
     .replace(/\bN\s*\.?\s*V\s*\.?\s*Gadesvej/gi, "NV Gadesvej")
+    .replace(/\bN\s*\.?\s*W\s*\.?\s*Gadesvej/gi, "NV Gadesvej")
     .replace(/\bNW[\s_.-]*Gadesvej/gi, "NV Gadesvej")
     .replace(/\bN\s*V\s*Gadesvej/gi, "NV Gadesvej")
     .replace(/\blejlighed\b/gi, "lej")
@@ -1051,6 +1052,18 @@ function formatAmount(value: number) {
   return value > 0 ? String(Math.round(value)) : "";
 }
 
+function amountContextIsExVat(context = "") {
+  const source = plainCompactText(context);
+  if (!source.includes("moms")) return false;
+  if (/\binkl\b|\binklusive\b|\bmed moms\b/.test(source)) return false;
+  return /\bekskl\b|\beksklusive\b|\bex moms\b|\bexcl\b/.test(source);
+}
+
+function amountAsVatInclusive(value: number, context = "") {
+  if (!value) return 0;
+  return amountContextIsExVat(context) ? Math.round(value * 1.25) : value;
+}
+
 function extractEnterpriseAmount(text = "") {
   const source = String(text || "");
   const budgetRange = source.match(/budget[^\d]{0,40}(\d{1,3})\s*[-–]\s*(\d{1,3})\s*k\b/i);
@@ -1067,7 +1080,7 @@ function extractEnterpriseAmount(text = "") {
     let match: RegExpExecArray | null;
     while ((match = pattern.exec(source))) {
       const value = parseMoneyValue(match[1]);
-      if (value >= 1000) values.push(value);
+      if (value >= 1000) values.push(amountAsVatInclusive(value, match[0]));
     }
   }
   return values.length ? Math.max(...values) : 0;
@@ -1096,9 +1109,9 @@ function extractInvoiceAmount(text = "") {
     const value = parseMoneyValue(match[1]);
     if (value >= 1000) krValues.push(value);
   }
+  if (totalValues.length) return Math.max(...totalValues);
   if (!krValues.length) return 0;
   const sorted = [...new Set(krValues)].sort((a, b) => b - a);
-  if (totalValues.length) return Math.max(...totalValues);
   const subtotal = sorted[0];
   const vat = sorted.find((value) => value < subtotal && value / subtotal >= 0.24 && value / subtotal <= 0.26);
   return vat ? subtotal + vat : subtotal;

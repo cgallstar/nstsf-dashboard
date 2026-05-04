@@ -45,6 +45,8 @@ Hvis Drive allerede indeholder filen, må agenten ikke skrive en ny `Arkiveret`-
 ## PDF-regel
 PDF-tekstlæsning må bruges som evidens, især for fakturaer, men aldrig som gæt. Hvis PDF-teksten giver adresse, fakturanr., dato og beløb, må den indgå i sikker matching. Hvis den matcher flere nærliggende sager, skal agenten skrive en manuel afklaring i `Opdateringer`.
 
+Alle beløb udtrukket fra PDF'er skal gemmes inkl. moms. Ved subtotal + moms bruges totalen. Ved eksplicit ekskl. moms omregnes til inkl. moms.
+
 ## Opdateringer
 Når agenten skriver til `syncLog`, skal den medtage:
 - `caseId`
