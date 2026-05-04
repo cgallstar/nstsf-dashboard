@@ -826,6 +826,15 @@ async function extractAttachmentContext(thread: any) {
         sourceMessageId: message.id,
       });
       texts.push(filename);
+      if ((/pdf/i.test(mimeType) || /\.pdf$/i.test(filename)) && textValue(attachment?.attachmentId, "")) {
+        try {
+          const buffer = await getGmailAttachment(message.id, attachment.attachmentId);
+          const pdfText = extractPdfText(buffer);
+          if (pdfText) texts.push(pdfText);
+        } catch {
+          // Filename is still archived even if PDF text extraction fails.
+        }
+      }
     }
   }
 
@@ -1100,8 +1109,8 @@ function applyArchiveSideEffects(matched: any, signal: any, archiveText = "", do
     matched.workflow.invoiceNumber = textValue(signal.invoiceNumber, matched.workflow.invoiceNumber);
     matched.workflow.invoiceSentDate = documentDate || new Date().toISOString().slice(0, 10);
     const invoiceAmount = extractInvoiceAmount(archiveText);
-    if (invoiceAmount && !parseMoneyValue(textValue(matched.u, ""))) matched.u = formatAmount(invoiceAmount);
-    if (!textValue(matched.dato, "")) matched.dato = documentDate || new Date().toISOString().slice(0, 10);
+    if (invoiceAmount) matched.u = formatAmount(invoiceAmount);
+    matched.dato = documentDate || matched.dato || new Date().toISOString().slice(0, 10);
     return;
   }
   if (signal.category === "referater") {
