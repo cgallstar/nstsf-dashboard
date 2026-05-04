@@ -309,6 +309,8 @@ Hvis en relevant mail ikke kan matches sikkert til en eksisterende kunde/sag, m�
 
 Opdateringskort for fakturaer skal være konkrete pr. sag/kunde. De må ikke stå som generisk `Fakturaer · Ukendt sag`, når sync faktisk har opdateret en bestemt sag.
 
+Samme tråd eller dokument må kun optræde én gang i `Opdateringer`. En senere succes skal erstatte en tidligere fejl for samme tråd, ikke lægges ved siden af.
+
 ## Prioriteringsregler
 
 ### Grundregler

@@ -2007,7 +2007,7 @@ function normalizeBetaling(saved={}){ return { ...saved, nr:textValue(saved.nr, 
 function normalizeEmployee(saved={}, i=0){ return { id:textValue(saved.id, `employee-${i + 1}`), name:textValue(saved.name, `Medarbejder ${i + 1}`), hours:Number(saved.hours) || 37, type:textValue(saved.type, 'employee'), overrides: saved && typeof saved.overrides === 'object' && !Array.isArray(saved.overrides) ? saved.overrides : {} }; }
 function normalizeInternalTask(saved={}){ return { id:textValue(saved.id, `internal-${Date.now()}`), title:textValue(saved.title || saved.name, 'Intern opgave'), status:textValue(saved.status, 'Åben'), dueDate:textValue(saved.dueDate, ''), owner:textValue(saved.owner, ''), notes:textValue(saved.notes, ''), source:textValue(saved.source, 'custom-gpt'), bucket:textValue(saved.bucket, ''), domain:textValue(saved.domain, 'intern'), threadId:textValue(saved.threadId, ''), createdAt:textValue(saved.createdAt, new Date().toISOString()) }; }
 function normalizeEmail(saved={}){ return { id:textValue(saved.id, `mail-${Date.now()}`), threadId:textValue(saved.threadId, ''), kunde:textValue(saved.kunde, ''), from:textValue(saved.from, ''), subject:textValue(saved.subject, ''), date:textValue(saved.date, ''), preview:textValue(saved.preview, ''), body:textValue(saved.body, ''), tags:Array.isArray(saved.tags) ? saved.tags.map((tag)=>String(tag)) : [], handled:!!saved.handled, type:textValue(saved.type, 'todo'), latestSenderType:textValue(saved.latestSenderType, ''), repliedAt:textValue(saved.repliedAt, ''), archivedAt:textValue(saved.archivedAt, ''), archivedUrl:textValue(saved.archivedUrl, ''), archivedCaseId:textValue(saved.archivedCaseId, ''), archivedCustomer:textValue(saved.archivedCustomer, ''), archivedType:textValue(saved.archivedType, ''), archivedDate:textValue(saved.archivedDate, ''), syncedAt:textValue(saved.syncedAt, '') }; }
-function normalizeSyncLogEntry(saved={}){ return { id:textValue(saved.id, `sync-${Date.now()}`), createdAt:textValue(saved.createdAt, new Date().toISOString()), source:textValue(saved.source, 'gmail_sync'), status:textValue(saved.status, 'info'), archiveKey:textValue(saved.archiveKey, ''), subject:textValue(saved.subject, 'Ukendt tråd'), customerName:textValue(saved.customerName, ''), caseId:textValue(saved.caseId, ''), documentType:textValue(saved.documentType, ''), documentDate:textValue(saved.documentDate, ''), category:textValue(saved.category, ''), fileName:textValue(saved.fileName, ''), driveUrl:textValue(saved.driveUrl, ''), error:textValue(saved.error, ''), notes:textValue(saved.notes, '') }; }
+function normalizeSyncLogEntry(saved={}){ return { id:textValue(saved.id, `sync-${Date.now()}`), createdAt:textValue(saved.createdAt, new Date().toISOString()), source:textValue(saved.source, 'gmail_sync'), status:textValue(saved.status, 'info'), archiveKey:textValue(saved.archiveKey, ''), threadId:textValue(saved.threadId, ''), subject:textValue(saved.subject, 'Ukendt tråd'), customerName:textValue(saved.customerName, ''), caseId:textValue(saved.caseId, ''), documentType:textValue(saved.documentType, ''), documentDate:textValue(saved.documentDate, ''), category:textValue(saved.category, ''), fileName:textValue(saved.fileName, ''), driveUrl:textValue(saved.driveUrl, ''), error:textValue(saved.error, ''), notes:textValue(saved.notes, '') }; }
 function isAllowedNstsfMail(item={}){
   const source = [item.from, item.to, item.cc, item.body, item.preview].map((value)=>textValue(value, '')).join(' ');
   if(/(cgallstar@gmail\.com|christian@scventures\.vc|werkhaus)/i.test(source)) return false;
@@ -2019,9 +2019,36 @@ function isAllowedNstsfSyncLog(item={}){
   const source = [item.from, item.notes, item.error, item.customerName, item.subject].map((value)=>textValue(value, '')).join(' ');
   return !/(cgallstar@gmail\.com|christian@scventures\.vc|werkhaus)/i.test(source);
 }
+function syncLogDedupeKey(item={}){
+  const threadId = textValue(item.threadId, '');
+  if(threadId) return `thread:${threadId}`;
+  const archiveKey = textValue(item.archiveKey, '');
+  if(archiveKey) return `archive:${archiveKey}`;
+  const fileName = textValue(item.fileName, '');
+  const caseId = textValue(item.caseId, '');
+  if(fileName && caseId) return `file:${caseId}:${fileName}`;
+  return `subject:${textValue(item.subject, '').toLowerCase()}:${textValue(item.documentType, '').toLowerCase()}:${textValue(item.category, '').toLowerCase()}`;
+}
+function dedupeSyncLogEntries(entries=[]){
+  const seen = new Set();
+  const result = [];
+  entries.forEach((entry)=>{
+    const key = syncLogDedupeKey(entry);
+    if(seen.has(key)) return;
+    seen.add(key);
+    result.push(entry);
+  });
+  return result;
+}
 function addLocalSyncLogEntries(entries=[]){
   if(!Array.isArray(entries) || !entries.length) return;
-  entries.map(normalizeSyncLogEntry).forEach((entry)=>syncLog.unshift(entry));
+  entries.map(normalizeSyncLogEntry).forEach((entry)=>{
+    const key = syncLogDedupeKey(entry);
+    for(let i = syncLog.length - 1; i >= 0; i--){
+      if(syncLogDedupeKey(syncLog[i]) === key) syncLog.splice(i, 1);
+    }
+    syncLog.unshift(entry);
+  });
   syncLog.splice(80);
 }
 function stripDemoEmails(items=[]){ return items.filter((item)=>!DEMO_EMAIL_IDS.has(textValue(item?.id, ''))); }
@@ -2067,7 +2094,7 @@ function loadUiState(){
     inboxFilter = saved.inboxFilter || inboxFilter;
   }catch(e){}
 }
-function applyState(state){ if(!state || typeof state !== 'object') return; stateWasSanitized = false; if(Array.isArray(state.sager)){ sager.splice(0, sager.length, ...state.sager.map(normalizeSag)); ensureCaseIds(); } if(Array.isArray(state.betalinger)){ betalinger.splice(0, betalinger.length, ...state.betalinger.map(normalizeBetaling)); } if(Array.isArray(state.emails)){ const rawEmails = stripDemoEmails(state.emails).map(normalizeEmail); const allowedEmails = rawEmails.filter(isAllowedNstsfMail); if(rawEmails.length !== allowedEmails.length) stateWasSanitized = true; emails.splice(0, emails.length, ...allowedEmails); } if(Array.isArray(state.employees)){ employees.splice(0, employees.length, ...state.employees.map(normalizeEmployee)); } if(Array.isArray(state.internalTasks)){ internalTasks.splice(0, internalTasks.length, ...state.internalTasks.map(normalizeInternalTask)); } if(Array.isArray(state.syncLog)){ const rawSyncLog = state.syncLog.map(normalizeSyncLogEntry); const allowedSyncLog = rawSyncLog.filter(isAllowedNstsfSyncLog); if(rawSyncLog.length !== allowedSyncLog.length) stateWasSanitized = true; syncLog.splice(0, syncLog.length, ...allowedSyncLog); } if(state.settings && document.getElementById('capacityHours')){ document.getElementById('capacityHours').value = state.settings.capacityHours || 37; handledEmailIds = Array.isArray(state.settings.handledEmailIds) ? state.settings.handledEmailIds : []; dismissedPriorityKeys = Array.isArray(state.settings.dismissedPriorityKeys) ? state.settings.dismissedPriorityKeys : []; archivedPriorityItems = Array.isArray(state.settings.archivedPriorityItems) ? state.settings.archivedPriorityItems : []; } if(state.savedAt) updateHeaderTimestamp(state.savedAt); }
+function applyState(state){ if(!state || typeof state !== 'object') return; stateWasSanitized = false; if(Array.isArray(state.sager)){ sager.splice(0, sager.length, ...state.sager.map(normalizeSag)); ensureCaseIds(); } if(Array.isArray(state.betalinger)){ betalinger.splice(0, betalinger.length, ...state.betalinger.map(normalizeBetaling)); } if(Array.isArray(state.emails)){ const rawEmails = stripDemoEmails(state.emails).map(normalizeEmail); const allowedEmails = rawEmails.filter(isAllowedNstsfMail); if(rawEmails.length !== allowedEmails.length) stateWasSanitized = true; emails.splice(0, emails.length, ...allowedEmails); } if(Array.isArray(state.employees)){ employees.splice(0, employees.length, ...state.employees.map(normalizeEmployee)); } if(Array.isArray(state.internalTasks)){ internalTasks.splice(0, internalTasks.length, ...state.internalTasks.map(normalizeInternalTask)); } if(Array.isArray(state.syncLog)){ const rawSyncLog = state.syncLog.map(normalizeSyncLogEntry); const allowedSyncLog = rawSyncLog.filter(isAllowedNstsfSyncLog); const dedupedSyncLog = dedupeSyncLogEntries(allowedSyncLog); if(rawSyncLog.length !== allowedSyncLog.length || allowedSyncLog.length !== dedupedSyncLog.length) stateWasSanitized = true; syncLog.splice(0, syncLog.length, ...dedupedSyncLog); } if(state.settings && document.getElementById('capacityHours')){ document.getElementById('capacityHours').value = state.settings.capacityHours || 37; handledEmailIds = Array.isArray(state.settings.handledEmailIds) ? state.settings.handledEmailIds : []; dismissedPriorityKeys = Array.isArray(state.settings.dismissedPriorityKeys) ? state.settings.dismissedPriorityKeys : []; archivedPriorityItems = Array.isArray(state.settings.archivedPriorityItems) ? state.settings.archivedPriorityItems : []; } if(state.savedAt) updateHeaderTimestamp(state.savedAt); }
 function persistLocalState(){ const state = collectState(); localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); updateHeaderTimestamp(state.savedAt); }
 function loadState(){ try{ const state = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}'); const hadDemoEmails = Array.isArray(state?.emails) && state.emails.some((item)=>DEMO_EMAIL_IDS.has(textValue(item?.id, ''))); applyState(state); if(hadDemoEmails) persistLocalState(); }catch(e){} loadUiState(); updateHeaderTimestamp(lastUpdatedAt || new Date().toISOString()); updatePreviewNotice(); }
 async function saveRemoteState(manual=false){ if(!authUser){ if(manual) setSyncStatus('Du skal være logget ind for at gemme centralt.', 'error'); return; } if(location.protocol === 'file:'){ if(manual) setSyncStatus('Backend virker først på Netlify eller via netlify dev. Lokal fil er kun browser-kopi.', 'error'); return; } try{ setSyncStatus('Gemmer til central backend...'); const payload = collectState(); const res = await fetch(STATE_API, { method:'PUT', credentials:'include', headers:{'content-type':'application/json'}, body:JSON.stringify(payload) }); const data = await res.json().catch(()=>({})); if(!res.ok) throw new Error(data.error || `HTTP ${res.status}`); updateHeaderTimestamp(data.savedAt || payload.savedAt); setSyncStatus(`Gemt centralt ${new Date(data.savedAt || Date.now()).toLocaleString('da-DK')}`, 'ok'); }catch(err){ setSyncStatus(`Kun lokal kopi gemt. Backend-fejl: ${err.message}`, 'error'); } }
@@ -2118,6 +2145,8 @@ async function updatePriorities(manual=false){
       syncEntries.push({
         source:'gmail_sync',
         status:'archived',
+        archiveKey:entry.archiveKey || '',
+        threadId:entry.threadId || '',
         subject:entry.subject || entry.documentType || 'Mailtråd',
         customerName:entry.customerName || '',
         caseId:entry.caseId || '',
@@ -2132,6 +2161,7 @@ async function updatePriorities(manual=false){
       syncEntries.push({
         source:'gmail_sync',
         status:'error',
+        threadId:entry.threadId || '',
         subject:entry.subject || 'Mailtråd',
         customerName:entry.customerName || '',
         caseId:entry.matchedCaseId || entry.caseId || '',
@@ -2958,8 +2988,12 @@ function renderPriorityArchive(){
 }
 function collectPriorityUpdates(){
   const entries = [];
+  const seenSync = new Set();
   syncLog.forEach((item)=>{
     if(!item || !item.createdAt) return;
+    const syncKey = syncLogDedupeKey(item);
+    if(seenSync.has(syncKey)) return;
+    seenSync.add(syncKey);
     const caseIndex = findCaseIndexByCaseId(item.caseId);
     const hasCase = caseIndex >= 0;
     const statusLabel = item.status === 'archived'

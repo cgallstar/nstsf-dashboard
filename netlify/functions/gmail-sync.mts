@@ -56,18 +56,24 @@ const DANISH_MONTHS: Record<string, string> = {
 function appendSyncLog(state: any, payload: Record<string, unknown>) {
   state.syncLog = Array.isArray(state?.syncLog) ? state.syncLog : [];
   const archiveKey = textValue(payload.archiveKey, "");
+  const threadId = textValue(payload.threadId, "");
   const fileName = textValue(payload.fileName, "");
   const caseId = textValue(payload.caseId, "");
   const subject = textValue(payload.subject, "");
   if (archiveKey) {
-    state.syncLog = state.syncLog.filter((entry: any) => textValue(entry?.archiveKey, "") !== archiveKey);
+    state.syncLog = state.syncLog.filter((entry: any) =>
+      textValue(entry?.archiveKey, "") !== archiveKey &&
+      (!threadId || textValue(entry?.threadId, "") !== threadId)
+    );
+  } else if (threadId) {
+    state.syncLog = state.syncLog.filter((entry: any) => textValue(entry?.threadId, "") !== threadId);
   } else if (fileName && caseId) {
     state.syncLog = state.syncLog.filter((entry: any) => {
       return !(textValue(entry?.fileName, "") === fileName && textValue(entry?.caseId, "") === caseId);
     });
-  } else if (subject && payload.status === "error") {
+  } else if (subject) {
     state.syncLog = state.syncLog.filter((entry: any) => {
-      return !(textValue(entry?.subject, "") === subject && textValue(entry?.status, "") === "error");
+      return textValue(entry?.subject, "") !== subject;
     });
   }
   state.syncLog.unshift({
@@ -604,9 +610,10 @@ async function registerInvoicesFromThreads(state: any, threads: any[]) {
     if (!invoiceMatch) continue;
     const match = matchInvoiceToCase(state, threadText, invoiceMatch[1]);
     if (!match.matched) {
-      appendSyncLog(state, {
-        status: "error",
-        subject: summaries[0]?.subject || `Faktura ${invoiceMatch[1]}`,
+        appendSyncLog(state, {
+          status: "error",
+          threadId: textValue(thread?.id, ""),
+          subject: summaries[0]?.subject || `Faktura ${invoiceMatch[1]}`,
         customerName: "",
         caseId: "",
         documentType: "Faktura",
@@ -628,6 +635,7 @@ async function registerInvoicesFromThreads(state: any, threads: any[]) {
       });
       changed += 1;
       changedCases.push({
+        threadId: textValue(thread?.id, ""),
         caseId: formatCaseIdForDisplay(matched),
         customerName: textValue(matched?.kunde, ""),
         invoiceNumber: invoiceMatch[1],
@@ -1406,6 +1414,7 @@ async function archiveQualifiedThread(thread: any, item: any, state: any, integr
   return {
     ok: true,
     archiveKey,
+    threadId: textValue(item?.threadId || thread?.id, ""),
     category: signal.category,
     matchedCaseId: displayCaseId,
     customerName: textValue(matched?.kunde, item?.kunde || ""),
@@ -1455,6 +1464,7 @@ export default async (request: Request) => {
       for (const entry of invoiceRegistration.changedCases || []) {
         appendSyncLog(state, {
           status: "archived",
+          threadId: textValue(entry.threadId, ""),
           subject: entry.invoiceNumber ? `Faktura ${entry.invoiceNumber}` : "Faktura",
           customerName: textValue(entry.customerName, ""),
           caseId: textValue(entry.caseId, ""),
@@ -1505,6 +1515,7 @@ export default async (request: Request) => {
             appendSyncLog(state, {
               status: "archived",
               archiveKey: textValue(result.archiveKey, ""),
+              threadId: textValue(result.threadId || item?.threadId || thread?.id, ""),
               subject: textValue(item?.subject, ""),
               customerName: textValue(result.customerName, ""),
               caseId: textValue(result.matchedCaseId, ""),
@@ -1528,6 +1539,7 @@ export default async (request: Request) => {
           const taskCreated = ensureUnmatchedMailTask(state, result, item, errorText);
           appendSyncLog(state, {
             status: "error",
+            threadId: textValue(result.threadId || item?.threadId || thread?.id, ""),
             subject: textValue(item?.subject, ""),
             customerName: textValue(result.customerName, ""),
             caseId: textValue(result.matchedCaseId, ""),
@@ -1542,6 +1554,7 @@ export default async (request: Request) => {
         const errorText = formatSyncError(error);
         appendSyncLog(state, {
           status: "error",
+          threadId,
           subject: textValue(item?.subject, ""),
           customerName: textValue(item?.kunde, ""),
           caseId: "",
@@ -1586,6 +1599,8 @@ export default async (request: Request) => {
       ensuredFolders: ensuredFolders.length,
       archiveErrors,
       archivedCases: archivedResults.map((entry) => ({
+        archiveKey: entry.archiveKey,
+        threadId: entry.threadId,
         caseId: entry.matchedCaseId,
         customerName: entry.customerName,
         documentType: entry.documentType,
