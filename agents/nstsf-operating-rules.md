@@ -305,6 +305,15 @@ Fakturaer må ikke matches via gæt eller PDF-tekst som primær kilde. Automatis
 
 ## Prioriteringsregler
 
+### Grundregler
+- kategori `06. Afsluttet` og `07. Ikke relevant` må ikke vises i aktive opgaver
+- kategori `04. Tilbud sendt` må ikke alene oprette en opgave
+- tilbudsopfølgning bliver først en aktiv opgave, når opfølgningsfristen er nået/overskredet, eller når der findes en uløst mail, der kræver svar
+- en opgave markeret `Fuldført` skal ligge i arkiv og må ikke vises i aktive opgaver igen
+- samme mail må kun vises én gang: enten som del af en konkret sag eller som løs mailopgave, ikke begge steder
+- porteføljekunder må ikke matches på kundenavn alene; kræv adresse, fuldt sagsID eller tydelig opgavetitel
+- betalingsopgaver må kun oprettes når sagen har et reelt åbent udestående; `Faktura betalt` eller betalt betalingshistorik må ikke skabe opgave
+
 ### `Now`
 - blokering
 - fejl/mangel

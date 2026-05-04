@@ -2233,6 +2233,34 @@ function estimatedHours(s){ const explicit = parseNumber(s.timer); if(explicit) 
 function getSagDrive(s){ return (s.docs && s.docs.drive) || s.drive || ''; }
 function escapeAttr(str=''){ return String(str).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 function matchCustomer(text='', customer=''){ const a = String(text || '').toLowerCase(); const b = String(customer || '').toLowerCase(); return !!b && a.includes(b); }
+function compactMatchText(value=''){
+  return String(value || '')
+    .replace(/\bN\s*\.?\s*V\s*\.?\s*Gadesvej/gi, 'NV Gadesvej')
+    .replace(/\blejlighed\b/gi, 'lej')
+    .replace(/\blejl?\./gi, 'lej')
+    .replace(/[æÆ]/g,'ae').replace(/[øØ]/g,'o').replace(/[åÅ]/g,'a')
+    .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+    .replace(/[^a-zA-Z0-9]+/g,' ')
+    .trim()
+    .toLowerCase();
+}
+function mailMatchesCase(mail={}, s={}){
+  const source = compactMatchText([mail.kunde, mail.subject, mail.preview, mail.body].filter(Boolean).join(' '));
+  const ref = compactMatchText(getCaseRef(s));
+  const nr = compactMatchText(s.nr || '');
+  const adr = compactMatchText(s.adr || '');
+  const opg = compactMatchText(s.opg || '');
+  const kunde = compactMatchText(s.kunde || '');
+  if(ref && source.includes(ref)) return true;
+  if(nr && source.includes(nr)) return true;
+  if(adr && adr.length >= 6 && source.includes(adr)) return true;
+  if(opg && opg.length >= 12 && source.includes(opg)) return true;
+  if(getCustomerAccount(s)) return false;
+  return !!kunde && source.includes(kunde);
+}
+function isClosedPriorityCase(s={}){
+  return ARCHIVED_CASE_CATEGORIES.has(+s.k);
+}
 function casePaymentLabel(s){
   const account = getCustomerAccount(s);
   const idx = sager.indexOf(s);
@@ -2244,12 +2272,23 @@ function hasExplicitPaymentMatch(s){
   return betalinger.some((b)=>{
     if(String(b.status || '').toLowerCase() === 'betalt') return false;
     if(s.nr && b.nr && String(b.nr) === String(s.nr)) return true;
-    return matchCustomer(b.kunde, s.kunde) && String(b.dato || '') === String(s.dato || '') && parseNumber(b.beloeb) === parseNumber(s.u);
+    return paymentMatchesCase(b, s) && String(b.dato || '') === String(s.dato || '') && parseNumber(b.beloeb) === parseNumber(s.u);
   });
+}
+function paymentMatchesCase(payment={}, s={}){
+  if(s.nr && payment.nr && String(payment.nr) === String(s.nr)) return true;
+  const source = compactMatchText([payment.kunde, payment.milepael, payment.fak].filter(Boolean).join(' '));
+  const ref = compactMatchText(getCaseRef(s));
+  const adr = compactMatchText(s.adr || '');
+  const kunde = compactMatchText(s.kunde || '');
+  if(ref && source.includes(ref)) return true;
+  if(adr && adr.length >= 6 && source.includes(adr)) return true;
+  if(getCustomerAccount(s)) return false;
+  return !!kunde && source.includes(kunde);
 }
 function buildDerivedPaymentsFromCases(){
   return sager
-    .filter((s)=>ACTIVE_CASE_CATEGORIES.has(+s.k) && parseNumber(s.u) > 0 && s.dato && !hasExplicitPaymentMatch(s))
+    .filter((s)=>ACTIVE_CASE_CATEGORIES.has(+s.k) && !String(s.status || '').toLowerCase().includes('betalt') && parseNumber(s.u) > 0 && s.dato && !hasExplicitPaymentMatch(s))
     .map((s)=>({
       nr: s.nr || '',
       kunde: casePaymentLabel(s),
@@ -2267,11 +2306,11 @@ function paymentSummaryRows(){
   return [...explicit, ...buildDerivedPaymentsFromCases()].sort((a,b)=> String(a.dato || '').localeCompare(String(b.dato || '')));
 }
 function getSagPayments(s){
-  return paymentSummaryRows().filter((b)=> (s.nr && b.nr === s.nr) || matchCustomer(b.kunde, s.kunde) || (getCustomerAccount(s) && b.kunde === getCustomerAccount(s).shortTitle && String(b.milepael || '').includes(s.adr || '')));
+  return paymentSummaryRows().filter((b)=>paymentMatchesCase(b, s));
 }
 function getSagPaymentHistory(s){
   const explicit = betalinger
-    .filter((b)=> (s.nr && b.nr === s.nr) || matchCustomer(b.kunde, s.kunde) || (getCustomerAccount(s) && b.kunde === getCustomerAccount(s).shortTitle && String(b.milepael || '').includes(s.adr || '')))
+    .filter((b)=>paymentMatchesCase(b, s))
     .map((b, index)=>({
       ...b,
       source:'betaling',
@@ -2311,7 +2350,7 @@ function getSagPaymentHistory(s){
   return [...explicit, ...derived, ...invoiceOnly].sort((a,b)=> String(b.dato || '').localeCompare(String(a.dato || '')));
 }
 function isEmailHandled(mail){ return !!mail.handled || handledEmailIds.includes(mail.id); }
-function getRelatedEmails(s){ return emails.filter((mail)=> (s.nr && `${mail.subject} ${mail.body}`.includes(s.nr)) || matchCustomer(mail.kunde, s.kunde) || matchCustomer(mail.subject, s.kunde) || matchCustomer(mail.body, s.kunde)).sort((a,b)=> String(b.date).localeCompare(String(a.date))); }
+function getRelatedEmails(s){ return emails.filter((mail)=>mailMatchesCase(mail, s)).sort((a,b)=> String(b.date).localeCompare(String(a.date))); }
 function latestDialogDate(s){ const related = getRelatedEmails(s); return related.length ? related[0].date : ''; }
 function latestOfferDate(s){
   const workflowOffer = textValue(s?.workflow?.offerDate || s?.workflow?.latestOfferDate || s?.workflow?.revisedOfferDate, '');
@@ -2525,6 +2564,7 @@ function buildPriorities(includeDismissed=false){
   const sales = [];
   const todos = [];
   sager.forEach((s, i)=>{
+    if(isClosedPriorityCase(s)) return;
     const relatedEmails = getRelatedEmails(s);
     const unpaid = getSagPayments(s).filter((p)=>p.status !== 'betalt');
     const urgentPayments = unpaid.filter((p)=>{ const d = daysUntil(p.dato); return d !== null && d <= 0; });
@@ -2546,6 +2586,7 @@ function buildPriorities(includeDismissed=false){
     const strongestMail = incoming[0] || relatedEmails[0];
     const strongestSignal = strongestMail ? emailSignal(strongestMail) : null;
     const nearOfferDays = nearOfferTask ? daysUntil(nearOfferTask.dueDate) : null;
+    const offerFollowupDue = nearOfferDays !== null && nearOfferDays <= 0;
     const gptWeight = concreteActivity ? 2 : 0;
     const mailWeight = incoming.length ? 4 : relatedEmails.length ? 2 : 0;
     const paymentWeight = urgentPayments.length ? 2 : nearDuePayments.length ? 1 : 0;
@@ -2557,10 +2598,10 @@ function buildPriorities(includeDismissed=false){
       nearDuePayments.length > 0 ||
       !!(strongestSignal && (strongestSignal.hasIssue || strongestSignal.asksForDate || strongestSignal.asksForPictures));
 
-    if(incomingSales.length || pendingDraft || nearOfferTask || (latestOffer && [3,4,5].includes(+s.k))){
+    if(incomingSales.length || pendingDraft || (nearOfferTask && offerFollowupDue)){
       const bucket = resolvePriorityBucket({
-        now: pendingDraft || (nearOfferDays !== null && nearOfferDays <= 0) || !!(strongestSignal && (strongestSignal.asksForApproval || strongestSignal.asksForReply)),
-        today: !!incomingSales.length || (nearOfferDays !== null && nearOfferDays <= 1) || !!(latestActivity && latestActivity.type === 'gmail_draft') || !!strongestSignal?.asksForDate,
+        now: pendingDraft || offerFollowupDue || !!(strongestSignal && (strongestSignal.asksForApproval || strongestSignal.asksForReply)),
+        today: !!incomingSales.length || !!(latestActivity && latestActivity.type === 'gmail_draft') || !!strongestSignal?.asksForDate,
       });
       const reason = pendingDraft
         ? 'Mailudkast eller tilbud afventer godkendelse'
@@ -2633,7 +2674,9 @@ function buildPriorities(includeDismissed=false){
     }
   });
   emails.filter((mail)=>!isEmailHandled(mail)).forEach((mail)=>{
-    const alreadyRepresented = [...sales, ...todos].some((item)=>item.title === mail.kunde && item.links.includes(mail.id));
+    const relatedClosedCase = sager.some((s)=>isClosedPriorityCase(s) && mailMatchesCase(mail, s));
+    if(relatedClosedCase) return;
+    const alreadyRepresented = [...sales, ...todos].some((item)=>item.links.includes(mail.id));
     if(alreadyRepresented) return;
     const signal = emailSignal(mail);
     const item = {
@@ -2677,6 +2720,7 @@ function buildPriorities(includeDismissed=false){
   const sortItems = (items)=>items
     .filter((item)=>includeDismissed ? true : !dismissedPriorityKeys.includes(item.key))
     .map((item)=>({...item, completed: completedPriorityKeys().has(item.key)}))
+    .filter((item)=>includeDismissed ? true : !item.completed)
     .sort((a,b)=>Number(a.completed)-Number(b.completed) || b.score-a.score || a.title.localeCompare(b.title));
   return { sales: sortItems(sales), todos: sortItems(todos) };
 }
