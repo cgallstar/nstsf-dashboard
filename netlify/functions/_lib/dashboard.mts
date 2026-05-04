@@ -169,6 +169,7 @@ export function normalizeInternalTask(task: any) {
     source: textValue(task?.source, "custom-gpt"),
     bucket: textValue(task?.bucket, ""),
     domain: textValue(task?.domain, "intern"),
+    threadId: textValue(task?.threadId, ""),
     createdAt: textValue(task?.createdAt, new Date().toISOString()),
   };
 }

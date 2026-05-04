@@ -7,6 +7,7 @@ import {
   ensureCaseShape,
   json,
   loadDashboardState,
+  normalizeInternalTask,
   pushDocs,
   saveDashboardState,
   textValue,
@@ -170,6 +171,14 @@ function scoreCaseFromText(entry: any, haystack: string) {
     score += 10;
     reasons.push("adresse");
   }
+  if (compactAdr) {
+    const sourceAddress = normalizeAddressAlias(haystack);
+    const entryAddress = normalizeAddressAlias(adr);
+    if (entryAddress && sourceAddress.includes(entryAddress)) {
+      score += 10;
+      reasons.push("adresse");
+    }
+  }
   if (compactNr && compact.includes(compactNr)) {
     score += 4;
     reasons.push("sagsnr");
@@ -234,6 +243,7 @@ function plainCompactText(value = "") {
   return String(value || "")
     .replace(/\bN\s*\.?\s*V\s*\.?\s*Gadesvej/gi, "NV Gadesvej")
     .replace(/\bNW[\s_.-]*Gadesvej/gi, "NV Gadesvej")
+    .replace(/\bN\s*V\s*Gadesvej/gi, "NV Gadesvej")
     .replace(/\blejlighed\b/gi, "lej")
     .replace(/\blejl?\./gi, "lej")
     .replace(/[æÆ]/g, "ae")
@@ -249,6 +259,14 @@ function plainCompactText(value = "") {
 function meaningfulTokens(value = "") {
   const stop = new Set(["aps", "as", "dke", "charlotte", "kunde", "faktura", "vedrorende", "vedr"]);
   return plainCompactText(value).split(/\s+/).filter((token) => token.length >= 3 && !stop.has(token));
+}
+
+function normalizeAddressAlias(value = "") {
+  return plainCompactText(value)
+    .replace(/\balle\b/g, "alle")
+    .replace(/\ballé\b/g, "alle")
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
 function decodePdfString(value = "") {
@@ -298,6 +316,11 @@ function isGadesvejArchiveThread(signal: any, text = "") {
   if (!signal || signal.category !== "referater") return false;
   const compact = plainCompactText(text);
   return compact.includes("nv gadesvej") && /\b12a?\b/.test(compact);
+}
+
+function isNvGadesvej10Thread(text = "") {
+  const compact = plainCompactText(text);
+  return compact.includes("nv gadesvej") && /\b10\b/.test(compact);
 }
 
 function findOrCreateGadesvejCase(state: any) {
@@ -361,6 +384,20 @@ function findOrCreateKnownCase(state: any, signal: any, text = "") {
     state.sager = entries;
     return created;
   };
+
+  if (isNvGadesvej10Thread(text)) {
+    const existing = findByMarker([/nv gadesvej.*10/, /gadesvej.*10/, /signe/, /tam/]);
+    if (existing) return ensureCaseShape(existing);
+    return createCase({
+      k: 4,
+      sid: "1015a",
+      nr: "1015",
+      kunde: "Signe & Tam",
+      adr: "N. V. Gadesvej 10, 1. sal",
+      opg: "Istandsættelse af 1. sal",
+      status: signal?.category === "tilbud" ? "Tilbud sendt" : "Oprettet fra Gmail",
+    });
+  }
 
   const isPladebutikThread =
     compact.includes("pladebutik") ||
@@ -477,6 +514,10 @@ function scoreInvoiceCase(entry: any, invoiceText: string, invoiceNumber = "") {
     score += 10;
     reasons.push("adresse");
   }
+  if (address && normalizeAddressAlias(invoiceText).includes(normalizeAddressAlias(entry?.adr || ""))) {
+    score += 10;
+    reasons.push("adresse");
+  }
   if (sid && sid.length >= 4 && normalizeCaseKey(invoiceText).includes(sid)) {
     score += 8;
     reasons.push("sagsID");
@@ -546,6 +587,7 @@ async function extractInvoiceAttachmentText(summaries: any[]) {
 
 async function registerInvoicesFromThreads(state: any, threads: any[]) {
   let changed = 0;
+  const changedCases: any[] = [];
   for (const thread of threads) {
     const summaries = Array.isArray(thread?.messages) ? thread.messages.map(gmailMessageSummary) : [];
     const attachmentText = await extractInvoiceAttachmentText(summaries);
@@ -585,9 +627,15 @@ async function registerInvoicesFromThreads(state: any, threads: any[]) {
         summary: `Faktura ${invoiceMatch[1]} er registreret på sagen via Gmail-sync (${match.reasons.join(", ")}).`,
       });
       changed += 1;
+      changedCases.push({
+        caseId: formatCaseIdForDisplay(matched),
+        customerName: textValue(matched?.kunde, ""),
+        invoiceNumber: invoiceMatch[1],
+        amount,
+      });
     }
   }
-  return changed;
+  return { changed, changedCases };
 }
 
 async function ensureDriveFoldersForLinkedCases(state: any) {
@@ -1071,6 +1119,32 @@ function addDaysIso(dateIso: string, days: number) {
   return base.toISOString().slice(0, 10);
 }
 
+function ensureUnmatchedMailTask(state: any, result: any, item: any, errorText: string) {
+  if (result?.error !== "case_not_matched") return false;
+  state.internalTasks = Array.isArray(state.internalTasks) ? state.internalTasks : [];
+  const threadId = textValue(result?.threadId || item?.threadId || item?.id, "");
+  const title = textValue(item?.subject || result?.subject, "Mail kræver manuel opfølgning");
+  const existing = state.internalTasks.some((task: any) =>
+    textValue(task?.source, "") === "gmail_unmatched" &&
+    (textValue(task?.threadId, "") === threadId || textValue(task?.title, "") === title) &&
+    String(task?.status || "").toLowerCase() !== "fuldført"
+  );
+  if (existing) return false;
+  state.internalTasks.unshift(normalizeInternalTask({
+    id: `gmail-unmatched-${threadId || randomUUID()}`,
+    title,
+    status: "Åben",
+    dueDate: "",
+    owner: "",
+    source: "gmail_unmatched",
+    domain: "mail",
+    bucket: "week",
+    threadId,
+    notes: `${errorText} Opret eller match kunden/sagen manuelt, og arkivér derefter mailen korrekt.`,
+  }));
+  return true;
+}
+
 function ensureOfferFollowupTask(matched: any, signal: any, archiveText: string, documentDate: string) {
   if (!matched) return;
   const compact = plainCompactText(archiveText);
@@ -1375,17 +1449,20 @@ export default async (request: Request) => {
     const fullThreads = fullThreadResults
       .filter((result): result is PromiseFulfilledResult<any> => result.status === "fulfilled")
       .map((result) => result.value);
-    const invoicesUpdated = await registerInvoicesFromThreads(state, fullThreads);
+    const invoiceRegistration = await registerInvoicesFromThreads(state, fullThreads);
+    const invoicesUpdated = Number(invoiceRegistration?.changed || 0);
     if (invoicesUpdated) {
-      appendSyncLog(state, {
-        status: "archived",
-        subject: "Fakturaer",
-        customerName: "",
-        caseId: "",
-        documentType: "Faktura",
-        category: "betaling",
-        notes: `${invoicesUpdated} faktura er registreret på en sag via sikker Gmail/state-match.`,
-      });
+      for (const entry of invoiceRegistration.changedCases || []) {
+        appendSyncLog(state, {
+          status: "archived",
+          subject: entry.invoiceNumber ? `Faktura ${entry.invoiceNumber}` : "Faktura",
+          customerName: textValue(entry.customerName, ""),
+          caseId: textValue(entry.caseId, ""),
+          documentType: "Faktura",
+          category: "betaling",
+          notes: `${entry.invoiceNumber ? `Faktura ${entry.invoiceNumber}` : "Faktura"} er registreret på sagen via sikker Gmail/state-match${entry.amount ? ` med beløb ${entry.amount} kr.` : ""}.`,
+        });
+      }
     }
 
     fullThreadResults.forEach((result, index) => {
@@ -1448,6 +1525,7 @@ export default async (request: Request) => {
           }
         } else {
           const errorText = formatSyncError(result.error);
+          const taskCreated = ensureUnmatchedMailTask(state, result, item, errorText);
           appendSyncLog(state, {
             status: "error",
             subject: textValue(item?.subject, ""),
@@ -1456,7 +1534,7 @@ export default async (request: Request) => {
             documentType: textValue(result.documentType, ""),
             category: textValue(result.category, ""),
             error: errorText,
-            notes: errorText,
+            notes: taskCreated ? `${errorText} Oprettet som opgave uden dato.` : errorText,
           });
           archiveErrors.push({ ...result, error: errorText });
         }
