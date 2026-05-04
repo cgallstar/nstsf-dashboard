@@ -2550,7 +2550,7 @@ function emailSignal(mail){
   return {
     asksForDate: /dato|hvornår|mandag|aflevering|udfør|udførelsen|deadline/.test(subject),
     asksForPictures: /billeder|foto|photos|vedhæftede billede/.test(subject),
-    asksForApproval: /godkend|underskrift|accepter|tilbud/.test(subject),
+    asksForApproval: /godkend|underskrift|accepter|accept|bekræft|bekraeft/.test(subject),
     asksForReply: /vend venligst retur|give besked|afventer|spørgsmål/.test(subject),
     hasIssue: /mangel|skade|fejl|udbedr|forkert|kan anes|blikkenslager/.test(subject),
     isInternal: /@nstsf\.dk|gemini-notes@google\.com/.test(String(mail.from || '').toLowerCase()),
