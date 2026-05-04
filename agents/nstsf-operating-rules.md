@@ -303,6 +303,8 @@ For kunder med flere poster/sager under samme kundenr., fx DKE / Charlotte, må 
 ### Fakturamatch
 Fakturaer må ikke matches via gæt eller PDF-tekst som primær kilde. Automatisk match kræver eksisterende fakturanr. i state, sikkert `SagsID`, sikker adresse, stærkt entydigt kundenavn i mailtekst/filnavn eller dokumenthistorik på sagen. Ellers skal fakturaen blive en manuel afklaring i `Opdateringer`.
 
+Når en faktura matches sikkert, skal fakturabeløbet fra fakturaen opdatere sagens udestående beløb. Eksisterende estimater eller tidligere aconto-beløb må ikke vinde over et sikkert fakturabeløb.
+
 ## Prioriteringsregler
 
 ### Grundregler

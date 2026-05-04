@@ -1,4 +1,5 @@
 import { randomUUID } from "node:crypto";
+import { inflateSync } from "node:zlib";
 
 import {
   appendActivity,
@@ -13,6 +14,7 @@ import {
 import {
   ensureCaseDriveFolders,
   findDriveFileByName,
+  getGmailAttachment,
   getGmailThread,
   gmailMessageSummary,
   googleIntegrationStatus,
@@ -249,6 +251,49 @@ function meaningfulTokens(value = "") {
   return plainCompactText(value).split(/\s+/).filter((token) => token.length >= 3 && !stop.has(token));
 }
 
+function decodePdfString(value = "") {
+  return value
+    .replace(/\\([nrtbf()\\])/g, (_match, char) => {
+      if (char === "n") return "\n";
+      if (char === "r") return "\r";
+      if (char === "t") return "\t";
+      if (char === "b") return "\b";
+      if (char === "f") return "\f";
+      return char;
+    })
+    .replace(/\\([0-7]{1,3})/g, (_match, octal) => String.fromCharCode(parseInt(octal, 8)));
+}
+
+function extractPdfLiteralText(source = "") {
+  const values: string[] = [];
+  const literalPattern = /\((?:\\.|[^\\)]){2,}\)/g;
+  let match: RegExpExecArray | null;
+  while ((match = literalPattern.exec(source))) {
+    const raw = match[0].slice(1, -1);
+    const decoded = decodePdfString(raw).trim();
+    if (decoded && /[A-Za-zÆØÅæøå0-9]/.test(decoded)) values.push(decoded);
+  }
+  return values.join("\n");
+}
+
+function extractPdfText(buffer: Buffer) {
+  const chunks: string[] = [extractPdfLiteralText(buffer.toString("latin1"))];
+  const raw = buffer.toString("latin1");
+  const streamPattern = /stream\r?\n([\s\S]*?)\r?\nendstream/g;
+  let match: RegExpExecArray | null;
+  while ((match = streamPattern.exec(raw))) {
+    try {
+      const start = Buffer.byteLength(raw.slice(0, match.index + match[0].indexOf(match[1])), "latin1");
+      const length = Buffer.byteLength(match[1], "latin1");
+      const inflated = inflateSync(buffer.subarray(start, start + length));
+      chunks.push(extractPdfLiteralText(inflated.toString("latin1")));
+    } catch {
+      // Best-effort PDF extraction. If a stream is not deflated text, ignore it.
+    }
+  }
+  return chunks.filter(Boolean).join("\n");
+}
+
 function isGadesvejArchiveThread(signal: any, text = "") {
   if (!signal || signal.category !== "referater") return false;
   const compact = plainCompactText(text);
@@ -373,6 +418,7 @@ function applyInvoiceToCase(matched: any, invoiceNumber: string, date = "", amou
     status: matched.status,
     workflow: matched.workflow,
     dato: matched.dato,
+    u: matched.u,
     docs: matched.docs?.betaling,
   });
   matched.fak = invoiceNumber;
@@ -381,13 +427,14 @@ function applyInvoiceToCase(matched: any, invoiceNumber: string, date = "", amou
   matched.workflow.invoiceNumber = invoiceNumber;
   matched.workflow.invoiceSentDate = date || matched.workflow.invoiceSentDate || new Date().toISOString().slice(0, 10);
   if (!textValue(matched.dato, "")) matched.dato = matched.workflow.invoiceSentDate;
-  if (amount && !parseMoneyValue(textValue(matched.u, ""))) matched.u = formatAmount(amount);
+  if (amount) matched.u = formatAmount(amount);
   const docsChanged = labelInvoiceDocs(matched, invoiceNumber, matched.workflow.invoiceSentDate);
   const after = JSON.stringify({
     fak: matched.fak,
     status: matched.status,
     workflow: matched.workflow,
     dato: matched.dato,
+    u: matched.u,
     docs: matched.docs?.betaling,
   });
   return docsChanged || after !== before;
@@ -474,10 +521,34 @@ function matchInvoiceToCase(state: any, invoiceText: string, invoiceNumber = "")
   return { matched: best.entry, score: best.score, reasons: best.reasons, ambiguous: false };
 }
 
-function registerInvoicesFromThreads(state: any, threads: any[]) {
+async function extractInvoiceAttachmentText(summaries: any[]) {
+  const parts: string[] = [];
+  for (const message of summaries) {
+    const attachments = Array.isArray(message.attachments) ? message.attachments : [];
+    for (const attachment of attachments) {
+      const filename = textValue(attachment?.filename, "");
+      const attachmentId = textValue(attachment?.attachmentId, "");
+      const mimeType = textValue(attachment?.mimeType, "");
+      if (!attachmentId || !/faktura|invoice/i.test(filename)) continue;
+      parts.push(filename);
+      if (!/pdf/i.test(mimeType) && !/\.pdf$/i.test(filename)) continue;
+      try {
+        const buffer = await getGmailAttachment(message.id, attachmentId);
+        const text = extractPdfText(buffer);
+        if (text) parts.push(text);
+      } catch {
+        // Filename is still useful for matching even when PDF text extraction fails.
+      }
+    }
+  }
+  return parts.join("\n\n");
+}
+
+async function registerInvoicesFromThreads(state: any, threads: any[]) {
   let changed = 0;
   for (const thread of threads) {
     const summaries = Array.isArray(thread?.messages) ? thread.messages.map(gmailMessageSummary) : [];
+    const attachmentText = await extractInvoiceAttachmentText(summaries);
     const threadText = summaries
       .map((message) => [
         message.subject,
@@ -486,7 +557,7 @@ function registerInvoicesFromThreads(state: any, threads: any[]) {
         message.body,
         ...(Array.isArray(message.attachments) ? message.attachments.map((attachment: any) => attachment?.filename) : []),
       ].filter(Boolean).join("\n"))
-      .join("\n\n");
+      .join("\n\n") + (attachmentText ? `\n\n${attachmentText}` : "");
     const invoiceMatch = threadText.match(/\bfaktura\s*(?:nr\.?|nummer)?\s*[:#-]?\s*(\d{3,})\b/i);
     if (!invoiceMatch) continue;
     const match = matchInvoiceToCase(state, threadText, invoiceMatch[1]);
@@ -920,19 +991,26 @@ function extractEnterpriseAmount(text = "") {
 
 function extractInvoiceAmount(text = "") {
   const source = String(text || "");
-  const patterns = [
-    /(?:total|beløb|beloeb|faktura)[^\d]{0,80}(\d{1,3}(?:[.\s]\d{3})*(?:,\d{2})?|\d{4,})(?:\s*kr\.?)?/gi,
-    /(\d{1,3}(?:[.\s]\d{3})*(?:,\d{2})?|\d{4,})\s*kr\.?/gi,
-  ];
-  const values: number[] = [];
-  for (const pattern of patterns) {
-    let match: RegExpExecArray | null;
-    while ((match = pattern.exec(source))) {
-      const value = parseMoneyValue(match[1]);
-      if (value >= 1000) values.push(value);
-    }
+  const labelledValues: number[] = [];
+  const labelledPattern = /(?:total|i alt|beløb|beloeb|saldo|at betale)[^\d]{0,80}(\d{1,3}(?:[.\s]\d{3})*(?:,\d{2})?|\d{4,})(?:\s*kr\.?)?/gi;
+  let match: RegExpExecArray | null;
+  while ((match = labelledPattern.exec(source))) {
+    const value = parseMoneyValue(match[1]);
+    if (value >= 1000) labelledValues.push(value);
   }
-  return values.length ? Math.max(...values) : 0;
+  if (labelledValues.length) return Math.max(...labelledValues);
+
+  const krValues: number[] = [];
+  const krPattern = /(\d{1,3}(?:[.\s]\d{3})*(?:,\d{2})?|\d{4,})\s*kr\.?/gi;
+  while ((match = krPattern.exec(source))) {
+    const value = parseMoneyValue(match[1]);
+    if (value >= 1000) krValues.push(value);
+  }
+  if (!krValues.length) return 0;
+  const sorted = [...new Set(krValues)].sort((a, b) => b - a);
+  const subtotal = sorted[0];
+  const vat = sorted.find((value) => value < subtotal && value / subtotal >= 0.24 && value / subtotal <= 0.26);
+  return vat ? subtotal + vat : subtotal;
 }
 
 function ensureTask(matched: any, title: string, payload: Record<string, unknown>) {
@@ -1297,7 +1375,7 @@ export default async (request: Request) => {
     const fullThreads = fullThreadResults
       .filter((result): result is PromiseFulfilledResult<any> => result.status === "fulfilled")
       .map((result) => result.value);
-    const invoicesUpdated = registerInvoicesFromThreads(state, fullThreads);
+    const invoicesUpdated = await registerInvoicesFromThreads(state, fullThreads);
     if (invoicesUpdated) {
       appendSyncLog(state, {
         status: "archived",
