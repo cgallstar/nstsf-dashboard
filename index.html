@@ -2006,7 +2006,7 @@ function normalizeSag(saved={}, i=0){
 function normalizeBetaling(saved={}){ return { ...saved, nr:textValue(saved.nr, ''), kunde:textValue(saved.kunde, 'Ukendt kunde'), milepael:textValue(saved.milepael, 'Udestående betaling'), dato:textValue(saved.dato, ''), beloeb:textValue(saved.beloeb, '0'), fak:textValue(saved.fak, ''), status:textValue(saved.status, 'udestaaende') }; }
 function normalizeEmployee(saved={}, i=0){ return { id:textValue(saved.id, `employee-${i + 1}`), name:textValue(saved.name, `Medarbejder ${i + 1}`), hours:Number(saved.hours) || 37, type:textValue(saved.type, 'employee'), overrides: saved && typeof saved.overrides === 'object' && !Array.isArray(saved.overrides) ? saved.overrides : {} }; }
 function normalizeInternalTask(saved={}){ return { id:textValue(saved.id, `internal-${Date.now()}`), title:textValue(saved.title || saved.name, 'Intern opgave'), status:textValue(saved.status, 'Åben'), dueDate:textValue(saved.dueDate, ''), owner:textValue(saved.owner, ''), notes:textValue(saved.notes, ''), source:textValue(saved.source, 'custom-gpt'), bucket:textValue(saved.bucket, ''), domain:textValue(saved.domain, 'intern'), createdAt:textValue(saved.createdAt, new Date().toISOString()) }; }
-function normalizeEmail(saved={}){ return { id:textValue(saved.id, `mail-${Date.now()}`), threadId:textValue(saved.threadId, ''), kunde:textValue(saved.kunde, ''), from:textValue(saved.from, ''), subject:textValue(saved.subject, ''), date:textValue(saved.date, ''), preview:textValue(saved.preview, ''), body:textValue(saved.body, ''), tags:Array.isArray(saved.tags) ? saved.tags.map((tag)=>String(tag)) : [], handled:!!saved.handled, type:textValue(saved.type, 'todo'), latestSenderType:textValue(saved.latestSenderType, ''), repliedAt:textValue(saved.repliedAt, ''), syncedAt:textValue(saved.syncedAt, '') }; }
+function normalizeEmail(saved={}){ return { id:textValue(saved.id, `mail-${Date.now()}`), threadId:textValue(saved.threadId, ''), kunde:textValue(saved.kunde, ''), from:textValue(saved.from, ''), subject:textValue(saved.subject, ''), date:textValue(saved.date, ''), preview:textValue(saved.preview, ''), body:textValue(saved.body, ''), tags:Array.isArray(saved.tags) ? saved.tags.map((tag)=>String(tag)) : [], handled:!!saved.handled, type:textValue(saved.type, 'todo'), latestSenderType:textValue(saved.latestSenderType, ''), repliedAt:textValue(saved.repliedAt, ''), archivedAt:textValue(saved.archivedAt, ''), archivedUrl:textValue(saved.archivedUrl, ''), archivedCaseId:textValue(saved.archivedCaseId, ''), archivedCustomer:textValue(saved.archivedCustomer, ''), archivedType:textValue(saved.archivedType, ''), archivedDate:textValue(saved.archivedDate, ''), syncedAt:textValue(saved.syncedAt, '') }; }
 function normalizeSyncLogEntry(saved={}){ return { id:textValue(saved.id, `sync-${Date.now()}`), createdAt:textValue(saved.createdAt, new Date().toISOString()), source:textValue(saved.source, 'gmail_sync'), status:textValue(saved.status, 'info'), archiveKey:textValue(saved.archiveKey, ''), subject:textValue(saved.subject, 'Ukendt tråd'), customerName:textValue(saved.customerName, ''), caseId:textValue(saved.caseId, ''), documentType:textValue(saved.documentType, ''), documentDate:textValue(saved.documentDate, ''), category:textValue(saved.category, ''), fileName:textValue(saved.fileName, ''), driveUrl:textValue(saved.driveUrl, ''), error:textValue(saved.error, ''), notes:textValue(saved.notes, '') }; }
 function isAllowedNstsfMail(item={}){
   const source = [item.from, item.to, item.cc, item.body, item.preview].map((value)=>textValue(value, '')).join(' ');
@@ -2349,7 +2349,7 @@ function getSagPaymentHistory(s){
     : [];
   return [...explicit, ...derived, ...invoiceOnly].sort((a,b)=> String(b.dato || '').localeCompare(String(a.dato || '')));
 }
-function isEmailHandled(mail){ return !!mail.handled || handledEmailIds.includes(mail.id); }
+function isEmailHandled(mail){ return !!mail.handled || !!mail.archivedAt || !!mail.archivedUrl || handledEmailIds.includes(mail.id); }
 function getRelatedEmails(s){ return emails.filter((mail)=>mailMatchesCase(mail, s)).sort((a,b)=> String(b.date).localeCompare(String(a.date))); }
 function latestDialogDate(s){ const related = getRelatedEmails(s); return related.length ? related[0].date : ''; }
 function latestOfferDate(s){
@@ -2566,7 +2566,10 @@ function buildPriorities(includeDismissed=false){
   sager.forEach((s, i)=>{
     if(isClosedPriorityCase(s)) return;
     const relatedEmails = getRelatedEmails(s);
-    const unpaid = getSagPayments(s).filter((p)=>p.status !== 'betalt');
+    const unpaid = getSagPayments(s).filter((p)=>{
+      const status = String(p.status || '').toLowerCase();
+      return status !== 'betalt' && p.source !== 'case' && !status.includes('faktura sendt');
+    });
     const urgentPayments = unpaid.filter((p)=>{ const d = daysUntil(p.dato); return d !== null && d <= 0; });
     const nearDuePayments = unpaid.filter((p)=>{ const d = daysUntil(p.dato); return d !== null && d >= 1 && d <= 3; });
     const latestDialog = latestDialogDate(s);
@@ -2579,7 +2582,7 @@ function buildPriorities(includeDismissed=false){
       const d = daysUntil(task.dueDate);
       return !task.dueDate || (d !== null && d <= 7);
     });
-    const nearOfferTask = nearCaseTasks.find((task)=>/tilbud/i.test(`${task.title || ''} ${task.notes || ''}`));
+    const nearOfferTask = nearCaseTasks.find((task)=>!task.derived && /tilbud/i.test(`${task.title || ''} ${task.notes || ''}`));
     const incoming = relatedEmails.filter((mail)=>!isEmailHandled(mail));
     const incomingSales = incoming.filter((mail)=>mail.type === 'sales');
     const incomingTodos = incoming.filter((mail)=>mail.type === 'todo');

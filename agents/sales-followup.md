@@ -34,7 +34,7 @@ Drive alle tilbudsforløb og kundedialoger, der kan flytte omsætning fremad.
 
 ## Prioriteringsregler
 - `Tilbud sendt` er ikke i sig selv en opgave.
-- Et tilbud bliver først en opgave, når opfølgningsfristen er nået/overskredet, eller når der findes en uløst mail, der kræver svar.
+- Et tilbud bliver først en opgave, når der findes en eksplicit opgave eller en uløst mail, der kræver svar. En afledt tilbudsdato må ikke alene skabe opgave.
 - Afsluttede, tabte eller irrelevante sager må ikke optræde i aktive opgaver.
 - Når kunden har flere poster under samme kundenummer, fx DKE / Charlotte, må en mail kun kobles til en opgave ved konkret adresse, fuldt sagsID eller tydelig opgavetitel.
 - En opgave, der er markeret `Fuldført`, må ikke genskabes ved næste sync, medmindre der kommer en ny uløst mail eller ny frist med ny nøgle.
