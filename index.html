@@ -2063,6 +2063,16 @@ function internalTaskReference(task={}){
   const sagId = textValue(task.sagId || task.unlinkedRef, '').replace(/^S-/i, '').replace(/^K-/i, '');
   return formatLooseSagRef(sagId || stableThreeDigitHash(task.id || task.title || task.createdAt));
 }
+function compactDisplayRef(ref=''){
+  return String(ref || '').replace('-', '').trim();
+}
+function titleWithLeadingRef(ref='', title=''){
+  const cleanTitle = textValue(title, '').trim();
+  const cleanRef = compactDisplayRef(ref);
+  if(!cleanRef) return cleanTitle;
+  const duplicatePattern = new RegExp(`^${cleanRef.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\s*[-·:]\\s*`, 'i');
+  return `${cleanRef} - ${cleanTitle.replace(duplicatePattern, '')}`;
+}
 function normalizeInternalTask(saved={}){ return { id:textValue(saved.id, `internal-${Date.now()}`), title:textValue(saved.title || saved.name, 'Intern opgave'), status:textValue(saved.status, 'Åben'), dueDate:textValue(saved.dueDate, ''), owner:textValue(saved.owner, ''), notes:textValue(saved.notes, ''), source:textValue(saved.source, 'custom-gpt'), bucket:textValue(saved.bucket, ''), domain:textValue(saved.domain, 'intern'), threadId:textValue(saved.threadId, ''), customerId:textValue(saved.customerId || saved.kundeId, ''), sagId:textValue(saved.sagId, ''), unlinkedRef:textValue(saved.unlinkedRef, ''), createdAt:textValue(saved.createdAt, new Date().toISOString()) }; }
 function normalizeEmail(saved={}){ return { id:textValue(saved.id, `mail-${Date.now()}`), threadId:textValue(saved.threadId, ''), kunde:textValue(saved.kunde, ''), from:textValue(saved.from, ''), subject:textValue(saved.subject, ''), date:textValue(saved.date, ''), preview:textValue(saved.preview, ''), body:textValue(saved.body, ''), tags:Array.isArray(saved.tags) ? saved.tags.map((tag)=>String(tag)) : [], handled:!!saved.handled, type:textValue(saved.type, 'todo'), latestSenderType:textValue(saved.latestSenderType, ''), repliedAt:textValue(saved.repliedAt, ''), archivedAt:textValue(saved.archivedAt, ''), archivedUrl:textValue(saved.archivedUrl, ''), archivedCaseId:textValue(saved.archivedCaseId, ''), archivedCustomer:textValue(saved.archivedCustomer, ''), archivedType:textValue(saved.archivedType, ''), archivedDate:textValue(saved.archivedDate, ''), syncedAt:textValue(saved.syncedAt, '') }; }
 function normalizeSyncLogEntry(saved={}){ return { id:textValue(saved.id, `sync-${Date.now()}`), createdAt:textValue(saved.createdAt, new Date().toISOString()), source:textValue(saved.source, 'gmail_sync'), status:textValue(saved.status, 'info'), archiveKey:textValue(saved.archiveKey, ''), threadId:textValue(saved.threadId, ''), subject:textValue(saved.subject, 'Ukendt tråd'), customerName:textValue(saved.customerName, ''), caseId:textValue(saved.caseId, ''), documentType:textValue(saved.documentType, ''), documentDate:textValue(saved.documentDate, ''), category:textValue(saved.category, ''), fileName:textValue(saved.fileName, ''), driveUrl:textValue(saved.driveUrl, ''), error:textValue(saved.error, ''), notes:textValue(saved.notes, '') }; }
@@ -2693,7 +2703,7 @@ function casePriorityTitle(s){
   const address = String(s?.adr || '').trim();
   const ref = formatCustomerIdDisplay(getCustomerNumber(s));
   const title = address ? `${base} · ${address}` : base;
-  return ref ? `${ref} · ${title}` : title;
+  return titleWithLeadingRef(ref, title);
 }
 function casePriorityMeta(s, options = {}){
   const parts = [];
@@ -2866,14 +2876,15 @@ function buildPriorities(includeDismissed=false){
           now: /nu|hurtigst|akut|straks/i.test(`${task.title} ${task.notes}`),
           today: !!task.dueDate && daysUntil(task.dueDate) !== null && daysUntil(task.dueDate) <= 1,
         });
+    const taskRef = internalTaskReference(task);
     todos.push({
       key: `internal-${task.id}`,
       internalTaskId: task.id,
       emailId: '',
       bucket,
       score: bucket === 'now' ? 9 : bucket === 'today' ? 7 : 5,
-      title: task.title,
-      meta: `${internalTaskReference(task)} · Intern opgave${task.owner ? ` · ${task.owner}` : ''}${task.dueDate ? ` · frist ${displayDate(task.dueDate)}` : ''}`,
+      title: titleWithLeadingRef(taskRef, task.title),
+      meta: `Intern opgave${task.owner ? ` · ${task.owner}` : ''}${task.dueDate ? ` · frist ${displayDate(task.dueDate)}` : ''}`,
       reason: task.notes || 'Intern opgave fra Custom GPT',
       actionText: task.notes || 'Løs den interne opgave og marker den derefter som fuldført.',
       links: '',
