@@ -2792,6 +2792,7 @@ function classifyActivity(activity){
   if(activity.type === 'gmail_draft') return 'Mailudkast afventer';
   if(activity.type === 'intake') return activity.nextAction || activity.meetingType || 'Nyt GPT-input';
   if(activity.type === 'drive_archive') return 'Dokumentation arkiveret';
+  if(activity.type === 'case_update') return 'Sag opdateret';
   return activity.type || '';
 }
 function isPassiveOfferFollowupTask(task={}){
@@ -2981,6 +2982,8 @@ function buildPriorities(includeDismissed=false){
         bucket,
         score: 3 + mailWeight + paymentWeight + gptWeight + (pendingDraft ? 3 : 0) + (contractNeeded ? 3 : 0) + (strongestSignal?.hasIssue ? 2 : 0),
         title: casePriorityTitle(s),
+        dueDate: dueCaseTasks[0]?.dueDate || '',
+        caseTaskIds: dueCaseTasks.map((task)=>task.id).filter(Boolean),
         meta: casePriorityMeta(s, {
           openMailsText: incoming.length ? `${incoming.length} uløste mails` : 'ingen åbne mails',
           latestDialog,
