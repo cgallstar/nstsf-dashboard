@@ -1033,7 +1033,6 @@
 
 <nav class="tabs">
   <button class="tab-btn active" data-tab="dashboard">Dashboard</button>
-  <button class="tab-btn" data-tab="idag">I dag <span style="opacity:.6">(0)</span></button>
   <button class="tab-btn" data-tab="prioriteringer">Opgaver <span style="opacity:.6">(0)</span></button>
   <button class="tab-btn" data-tab="sager">Kunder <span style="opacity:.6">(29)</span></button>
   <button class="tab-btn" data-tab="likviditet">Likviditet</button>
@@ -1234,10 +1233,6 @@
 
 <section id="prioriteringer" class="section">
   <div id="priorityBoardHost"></div>
-</section>
-
-<section id="idag" class="section">
-  <div id="todayBoardHost"></div>
 </section>
 
 <section id="sager" class="section">
@@ -1696,6 +1691,7 @@ let liquiditySubtab = 'overview';
 let inboxFilter = 'alle';
 let selectedEmailId = null;
 let priorityView = 'todos';
+let priorityTaskScope = 'today';
 let editingPriorityTaskId = null;
 let selectedAgentId = 'chief-of-staff';
 let handledEmailIds = [];
@@ -2049,6 +2045,7 @@ function persistUiState(){
       currentTab,
       liquiditySubtab,
       priorityView,
+      priorityTaskScope,
       customerView,
       inboxFilter,
     }));
@@ -2058,6 +2055,11 @@ function loadUiState(){
   try{
     const saved = JSON.parse(localStorage.getItem(UI_STATE_KEY) || '{}');
     currentTab = saved.currentTab || currentTab;
+    priorityTaskScope = saved.priorityTaskScope === 'all' ? 'all' : 'today';
+    if(currentTab === 'idag'){
+      currentTab = 'prioriteringer';
+      priorityTaskScope = 'today';
+    }
     liquiditySubtab = saved.liquiditySubtab || liquiditySubtab;
     priorityView = saved.priorityView || priorityView;
     customerView = saved.customerView || customerView;
@@ -2194,7 +2196,7 @@ async function syncGmail(manual=false){
   }
 }
 loadState();
-function setActiveTab(tab){ currentTab = tab; persistUiState(); document.querySelectorAll('.tab-btn').forEach((btn)=>btn.classList.toggle('active', btn.dataset.tab === tab)); document.querySelectorAll('.section').forEach((section)=>section.classList.toggle('active', section.id === tab)); if(tab === 'likviditet') setLiquiditySubtab(liquiditySubtab); }
+function setActiveTab(tab){ if(tab === 'idag'){ tab = 'prioriteringer'; priorityTaskScope = 'today'; renderPriorities(); } currentTab = tab; persistUiState(); document.querySelectorAll('.tab-btn').forEach((btn)=>btn.classList.toggle('active', btn.dataset.tab === tab)); document.querySelectorAll('.section').forEach((section)=>section.classList.toggle('active', section.id === tab)); if(tab === 'likviditet') setLiquiditySubtab(liquiditySubtab); }
 function setLiquiditySubtab(subtab){ liquiditySubtab = subtab === 'marginer' ? 'marginer' : 'overview'; persistUiState(); document.querySelectorAll('.subtab-btn').forEach((btn)=>btn.classList.toggle('active', btn.dataset.subtab === liquiditySubtab)); const overview = document.getElementById('likviditetOverview'); const marginer = document.getElementById('likviditetMarginer'); if(overview) overview.classList.toggle('active', liquiditySubtab === 'overview'); if(marginer) marginer.classList.toggle('active', liquiditySubtab === 'marginer'); }
 function openSettings(){ if(!authUser) return; setActiveTab('settings'); }
 function updateAuthUi(){ const idEl = document.getElementById('authIdentity'); const logoutBtn = document.getElementById('logoutBtn'); const adminPanel = document.getElementById('adminPanel'); const adminLocked = document.getElementById('adminLocked'); const settingsBtn = document.getElementById('settingsBtn'); if(idEl) idEl.textContent = authUser ? `${authUser.name} · ${authUser.email}` : 'Ikke logget ind'; if(logoutBtn) logoutBtn.style.display = authUser ? 'inline-flex' : 'none'; if(settingsBtn) settingsBtn.classList.toggle('hidden', !authUser); if(adminPanel) adminPanel.classList.toggle('visible', !!authUser && authUser.role === 'admin'); if(adminLocked) adminLocked.style.display = authUser && authUser.role !== 'admin' ? 'block' : 'none'; document.body.classList.toggle('login-mode', !authUser); if(!authUser && currentTab === 'settings') setActiveTab('dashboard'); }
@@ -2985,7 +2987,6 @@ function resetSidebarTaskForm(){
 function openPriorityTaskComposer(){
   editingPriorityTaskId = null;
   resetSidebarTaskForm();
-  if(currentTab === 'idag') setActiveTab('prioriteringer');
   const section = document.getElementById('priorityTaskSection');
   const title = document.getElementById('priorityTaskPanelTitle');
   if(section) section.classList.remove('hidden');
@@ -3066,43 +3067,47 @@ function setPriorityView(view){
   if(archiveView) archiveView.classList.toggle('active', archiveActive);
   if(inboxView) inboxView.classList.toggle('active', inboxActive);
 }
+function setPriorityTaskScope(scope){
+  priorityTaskScope = scope === 'all' ? 'all' : 'today';
+  priorityView = 'todos';
+  persistUiState();
+  renderPriorities();
+}
 function priorityBoardTemplate(config){
   const c = {
     hostId:'',
-    title:'Opgaver',
+    title:"To-do's & gøremål",
     subtitle:'Samlet prioriteringsvisning.',
     stampId:'',
     updateBtnId:'',
-    mode:'all',
     ...config
   };
-  const isToday = c.mode === 'today';
   return `<div class="priority-shell">
     <div class="priority-topbar">
       <div class="priority-topbar-copy">
         <span class="priority-topbar-title">${escapeAttr(c.title)}</span>
         <div class="priority-topbar-sub">${escapeAttr(c.subtitle)}</div>
+        <div class="priority-toggle" style="margin-top:10px;width:max-content">
+          <button id="priorityScopeToday" onclick="setPriorityTaskScope('today')">I dag</button>
+          <button id="priorityScopeAll" onclick="setPriorityTaskScope('all')">Alle opgaver</button>
+        </div>
       </div>
       <div class="priority-topbar-right">
         <span class="priority-updated" id="${c.stampId}"></span>
         <button class="btn primary" onclick="openPriorityTaskComposer()">Ny opgave</button>
         <button class="btn" id="${c.updateBtnId}" onclick="updatePriorities(true)">Opdatér Sager</button>
         <div class="priority-toggle">
-          ${isToday
-            ? `<button class="active" disabled>I dag</button><button onclick="setActiveTab('prioriteringer')">Opgaver</button><button onclick="setActiveTab('prioriteringer'); setPriorityView('archive')">Arkiv</button>`
-            : `<button class="active" id="priorityBtnTodos" onclick="setPriorityView('todos')">Aktive</button><button id="priorityBtnArchive" onclick="setPriorityView('archive')">Arkiv</button><button id="priorityBtnInbox" onclick="setPriorityView('indbakke')">Indbakke</button>`}
+          <button class="active" id="priorityBtnTodos" onclick="setPriorityView('todos')">Aktive</button><button id="priorityBtnArchive" onclick="setPriorityView('archive')">Arkiv</button><button id="priorityBtnInbox" onclick="setPriorityView('indbakke')">Indbakke</button>
         </div>
       </div>
     </div>
     <div class="priority-layout">
       <div class="priority-main">
-        ${isToday
-          ? `<div class="priority-main-head"><div class="priority-main-title">Dagens handlinger</div><div class="priority-main-sub">Forfaldne betalinger, frister i dag, akutte mails og opgaver markeret som Nu.</div></div><div class="priority-divider">Nu</div><div id="todayPriorityNow"></div><div class="priority-divider">I dag</div><div id="todayPriorityToday"></div>`
-          : `<div class="priority-view active" id="priorityViewTodos"><div class="priority-main-head"><div class="priority-main-title">Aktive opgaver</div><div class="priority-main-sub">Fremdrift, KS, mangler, afleveringer, godkendelser og andre konkrete handlinger.</div></div><div class="priority-divider">Nu</div><div id="priorityTodoNow"></div><div class="priority-divider">Senere</div><div id="priorityTodoToday"></div></div><div class="priority-view" id="priorityViewArchive"><div class="priority-main-head"><div class="priority-main-title">Arkiverede opgaver</div><div class="priority-main-sub">Færdige, slettede eller ellers parkerede opgaver og handlinger.</div></div><div id="priorityArchiveList"></div></div><div class="priority-view priority-inbox-view" id="priorityViewInbox"><div class="priority-main-head"><div class="priority-main-title">Indbakke</div><div class="priority-main-sub">Brug kun mailsporet når du mangler kontekst til en konkret sag eller vil se om noget er overset.</div></div><div class="priority-inbox-wrap"><div class="inbox-list"><div class="inbox-hd"><div><div class="title">Indbakke</div><div class="addr">SMG / NSTSF</div></div><div style="display:flex;align-items:center;gap:8px"><button class="btn" onclick="syncGmail(true)">Synk Gmail</button><span class="chip chip-red" id="inboxNewCount">0 nye</span></div></div><div class="inbox-tabs"><button class="inbox-tab active" data-filter="alle">Alle</button><button class="inbox-tab" data-filter="uhaandteret">Uhåndteret <span class="badge" id="inboxUnhandledBadge">0</span></button><button class="inbox-tab" data-filter="haandteret">Håndteret</button></div><div id="priorityEmailList"></div></div><div id="priorityEmailView" class="inbox-view"></div></div></div>`}
+        <div class="priority-view active" id="priorityViewTodos"><div class="priority-main-head"><div class="priority-main-title" id="priorityTodoTitle">Aktive opgaver</div><div class="priority-main-sub" id="priorityTodoSubtitle">Fremdrift, KS, mangler, afleveringer, godkendelser og andre konkrete handlinger.</div></div><div class="priority-divider">Nu</div><div id="priorityTodoNow"></div><div class="priority-divider" id="prioritySecondaryDivider">Senere</div><div id="priorityTodoToday"></div></div><div class="priority-view" id="priorityViewArchive"><div class="priority-main-head"><div class="priority-main-title">Arkiverede opgaver</div><div class="priority-main-sub">Færdige, slettede eller ellers parkerede opgaver og handlinger.</div></div><div id="priorityArchiveList"></div></div><div class="priority-view priority-inbox-view" id="priorityViewInbox"><div class="priority-main-head"><div class="priority-main-title">Indbakke</div><div class="priority-main-sub">Brug kun mailsporet når du mangler kontekst til en konkret sag eller vil se om noget er overset.</div></div><div class="priority-inbox-wrap"><div class="inbox-list"><div class="inbox-hd"><div><div class="title">Indbakke</div><div class="addr">SMG / NSTSF</div></div><div style="display:flex;align-items:center;gap:8px"><button class="btn" onclick="syncGmail(true)">Synk Gmail</button><span class="chip chip-red" id="inboxNewCount">0 nye</span></div></div><div class="inbox-tabs"><button class="inbox-tab active" data-filter="alle">Alle</button><button class="inbox-tab" data-filter="uhaandteret">Uhåndteret <span class="badge" id="inboxUnhandledBadge">0</span></button><button class="inbox-tab" data-filter="haandteret">Håndteret</button></div><div id="priorityEmailList"></div></div><div id="priorityEmailView" class="inbox-view"></div></div></div>
       </div>
       <aside class="priority-side">
-        ${isToday ? '' : `<div class="priority-sidebar-section hidden" id="priorityTaskSection"><div class="priority-sidebar-title" id="priorityTaskPanelTitle">Opgave</div><div class="priority-sidebar-form"><input id="priorityTaskTitle" type="text" placeholder="Beskriv opgaven..."><input id="priorityTaskDueDate" type="date"><input id="priorityTaskOwner" type="text" placeholder="Ansvarlig"><select id="priorityTaskDomain"><option value="arbejde">Arbejde</option><option value="hr">HR</option><option value="drift">Drift</option></select><select id="priorityTaskBucket"><option value="today">Aktiv</option><option value="week">Kommende</option><option value="now">Nu</option></select><textarea id="priorityTaskNotes" placeholder="Kontekst eller note"></textarea><div class="priority-sidebar-actions"><button class="btn primary" id="priorityTaskSubmitBtn" onclick="saveSidebarTask()">Tilføj</button><button class="btn ghost" id="priorityTaskCancelBtn" onclick="cancelSidebarTaskEdit()" style="display:none">Annuller</button></div><div class="priority-sidebar-helper" id="priorityTaskHelper">Opret interne opgaver direkte herfra, eller brug Edit på en eksisterende opgave.</div></div></div>`}
-        <div class="priority-sidebar-section"><div class="priority-sidebar-title">Opdateringer</div><div id="${isToday ? 'todayUpdatesList' : 'priorityUpdatesList'}" class="priority-mini-list"></div></div>
+        <div class="priority-sidebar-section hidden" id="priorityTaskSection"><div class="priority-sidebar-title" id="priorityTaskPanelTitle">Opgave</div><div class="priority-sidebar-form"><input id="priorityTaskTitle" type="text" placeholder="Beskriv opgaven..."><input id="priorityTaskDueDate" type="date"><input id="priorityTaskOwner" type="text" placeholder="Ansvarlig"><select id="priorityTaskDomain"><option value="arbejde">Arbejde</option><option value="hr">HR</option><option value="drift">Drift</option></select><select id="priorityTaskBucket"><option value="today">Aktiv</option><option value="week">Kommende</option><option value="now">Nu</option></select><textarea id="priorityTaskNotes" placeholder="Kontekst eller note"></textarea><div class="priority-sidebar-actions"><button class="btn primary" id="priorityTaskSubmitBtn" onclick="saveSidebarTask()">Tilføj</button><button class="btn ghost" id="priorityTaskCancelBtn" onclick="cancelSidebarTaskEdit()" style="display:none">Annuller</button></div><div class="priority-sidebar-helper" id="priorityTaskHelper">Opret interne opgaver direkte herfra, eller brug Edit på en eksisterende opgave.</div></div></div>
+        <div class="priority-sidebar-section"><div class="priority-sidebar-title">Opdateringer</div><div id="priorityUpdatesList" class="priority-mini-list"></div></div>
       </aside>
     </div>
   </div>`;
@@ -3114,37 +3119,32 @@ function mountPriorityBoards(){
       title:"To-do's & gøremål",
       subtitle:'Samlet prioriteringsvisning · auto-sorteret efter signaler fra mail, sager og GPT-input.',
       stampId:'priorityGeneratedAt',
-      updateBtnId:'updatePrioritiesBtn',
-      mode:'all'
+      updateBtnId:'updatePrioritiesBtn'
     });
     priorityHost.dataset.mounted = 'true';
-  }
-  const todayHost = document.getElementById('todayBoardHost');
-  if(todayHost && !todayHost.dataset.mounted){
-    todayHost.innerHTML = priorityBoardTemplate({
-      title:'I dag',
-      subtitle:'Samme logik som Opgaver · kun Nu og I dag.',
-      stampId:'todayGeneratedAt',
-      updateBtnId:'updateTodayBtn',
-      mode:'today'
-    });
-    todayHost.dataset.mounted = 'true';
   }
 }
 function renderPriorities(){
   mountPriorityBoards();
   const priorities = buildPriorities();
   const activeItems = [...priorities.todos, ...priorities.sales].sort((a,b)=>Number(a.completed)-Number(b.completed) || b.score-a.score || a.title.localeCompare(b.title));
+  const todayScope = priorityTaskScope === 'today';
   renderPriorityRows('priorityTodoNow', activeItems, ['now'], 'todo');
-  renderPriorityRows('priorityTodoToday', activeItems, ['today','week'], 'todo');
-  renderPriorityRows('todayPriorityNow', activeItems, ['now'], 'todo');
-  renderPriorityRows('todayPriorityToday', activeItems, ['today'], 'todo');
+  renderPriorityRows('priorityTodoToday', activeItems, todayScope ? ['today'] : ['today','week'], 'todo');
   renderPriorityArchive();
   renderSidebarSummaries(priorities);
   const stamp = document.getElementById('priorityGeneratedAt');
   if(stamp) stamp.textContent = `Opdateret ${new Date().toLocaleString('da-DK')}`;
-  const todayStamp = document.getElementById('todayGeneratedAt');
-  if(todayStamp) todayStamp.textContent = `Opdateret ${new Date().toLocaleString('da-DK')}`;
+  const todayBtn = document.getElementById('priorityScopeToday');
+  const allBtn = document.getElementById('priorityScopeAll');
+  if(todayBtn) todayBtn.classList.toggle('active', todayScope);
+  if(allBtn) allBtn.classList.toggle('active', !todayScope);
+  const title = document.getElementById('priorityTodoTitle');
+  const subtitle = document.getElementById('priorityTodoSubtitle');
+  const divider = document.getElementById('prioritySecondaryDivider');
+  if(title) title.textContent = todayScope ? 'Dagens handlinger' : 'Aktive opgaver';
+  if(subtitle) subtitle.textContent = todayScope ? 'Forfaldne betalinger, frister i dag, akutte mails og opgaver markeret som Nu.' : 'Fremdrift, KS, mangler, afleveringer, godkendelser og andre konkrete handlinger.';
+  if(divider) divider.textContent = todayScope ? 'I dag' : 'Senere';
   renderPriorityInbox();
   setPriorityView(priorityView);
 }
@@ -3161,10 +3161,8 @@ function updateCaseTabCount(){
   const counts = buildPriorityCounts();
   const customerTab = document.querySelector('.tab-btn[data-tab="sager"]');
   const priorityTab = document.querySelector('.tab-btn[data-tab="prioriteringer"]');
-  const todayTab = document.querySelector('.tab-btn[data-tab="idag"]');
   if(customerTab) customerTab.innerHTML = `Kunder <span style="opacity:.6">(${counts.customerCount})</span>`;
   if(priorityTab) priorityTab.innerHTML = `Opgaver <span style="opacity:.6">(${counts.taskCount})</span>`;
-  if(todayTab) todayTab.innerHTML = `I dag <span style="opacity:.6">(${counts.todayCount})</span>`;
 }
 let selectedCustomerIndex = null;
 function setCustomerView(view){
