@@ -74,7 +74,12 @@ function dedupeThreads(threads: any[]) {
 }
 
 function formatSyncError(error: unknown) {
-  const message = textValue((error as Error)?.message, "archive_failed");
+  const message = typeof error === "string"
+    ? textValue(error, "archive_failed")
+    : textValue((error as Error)?.message, "archive_failed");
+  if (message === "case_not_matched") return "Mailen kunne ikke matches sikkert til en eksisterende sag.";
+  if (message === "invoice_match_low_confidence") return "Fakturaen kunne ikke matches sikkert til en sag ud fra mailtekst, filnavn, adresse, sagsID eller kendt fakturanummer.";
+  if (message === "invoice_match_ambiguous") return "Fakturaen matcher flere mulige sager og kræver manuel afklaring.";
   if (message.startsWith("google_token_error:")) return "Google OAuth-token kunne ikke fornyes.";
   const googleHit = message.match(/^google_api_error:([^:]+):(\d+):(.*)$/);
   if (googleHit) {
@@ -168,6 +173,8 @@ function plainCompactText(value = "") {
   return String(value || "")
     .replace(/\bN\s*\.?\s*V\s*\.?\s*Gadesvej/gi, "NV Gadesvej")
     .replace(/\bNW[\s_.-]*Gadesvej/gi, "NV Gadesvej")
+    .replace(/\blejlighed\b/gi, "lej")
+    .replace(/\blejl?\./gi, "lej")
     .replace(/[æÆ]/g, "ae")
     .replace(/[øØ]/g, "o")
     .replace(/[åÅ]/g, "a")
