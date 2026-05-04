@@ -110,41 +110,84 @@ function parseMessageDate(summary: any) {
   return Number.isNaN(parsed.getTime()) ? new Date().toISOString() : parsed.toISOString();
 }
 
-function matchCaseFromText(sager: any[], haystack: string) {
+function scoreCaseFromText(entry: any, haystack: string) {
   const lower = String(haystack || "").toLowerCase();
   const compact = plainCompactText(haystack);
+  let score = 0;
+  const reasons: string[] = [];
+  const kunde = String(entry?.kunde || "").toLowerCase();
+  const adr = String(entry?.adr || "").toLowerCase();
+  const nr = String(entry?.nr || "").toLowerCase();
+  const sid = String(entry?.sid || "").toLowerCase();
+  const opg = String(entry?.opg || "").toLowerCase();
+  const compactKunde = plainCompactText(kunde);
+  const compactAdr = plainCompactText(adr);
+  const compactNr = plainCompactText(nr);
+  const compactSid = plainCompactText(sid);
+  const compactOpg = plainCompactText(opg);
+  if (kunde && lower.includes(kunde)) {
+    score += 3;
+    reasons.push("kunde");
+  }
+  if (adr && lower.includes(adr)) {
+    score += 5;
+    reasons.push("adresse");
+  }
+  if (nr && lower.includes(nr)) {
+    score += 2;
+    reasons.push("sagsnr");
+  }
+  if (sid && lower.includes(sid)) {
+    score += 4;
+    reasons.push("sagsID");
+  }
+  if (opg && opg.length > 12 && lower.includes(opg)) {
+    score += 1;
+    reasons.push("opgave");
+  }
+  if (compactKunde && compact.includes(compactKunde)) {
+    score += 3;
+    reasons.push("kunde");
+  }
+  if (compactAdr && compact.includes(compactAdr)) {
+    score += 10;
+    reasons.push("adresse");
+  }
+  if (compactNr && compact.includes(compactNr)) {
+    score += 4;
+    reasons.push("sagsnr");
+  }
+  if (compactSid && compact.includes(compactSid)) {
+    score += 6;
+    reasons.push("sagsID");
+  }
+  if (compactOpg && compactOpg.length > 12 && compact.includes(compactOpg)) {
+    score += 2;
+    reasons.push("opgave");
+  }
+  return { score, reasons: [...new Set(reasons)] };
+}
+
+function matchCaseFromText(sager: any[], haystack: string) {
   let best: any = null;
   let bestScore = 0;
+  let bestReasons: string[] = [];
+  let secondScore = 0;
   for (const entry of sager) {
-    let score = 0;
-    const kunde = String(entry?.kunde || "").toLowerCase();
-    const adr = String(entry?.adr || "").toLowerCase();
-    const nr = String(entry?.nr || "").toLowerCase();
-    const sid = String(entry?.sid || "").toLowerCase();
-    const opg = String(entry?.opg || "").toLowerCase();
-    const compactKunde = plainCompactText(kunde);
-    const compactAdr = plainCompactText(adr);
-    const compactNr = plainCompactText(nr);
-    const compactSid = plainCompactText(sid);
-    const compactPrimary = primaryCaseNumber(entry);
-    const compactOpg = plainCompactText(opg);
-    if (kunde && lower.includes(kunde)) score += 3;
-    if (adr && lower.includes(adr)) score += 5;
-    if (nr && lower.includes(nr)) score += 2;
-    if (sid && lower.includes(sid)) score += 4;
-    if (opg && opg.length > 12 && lower.includes(opg)) score += 1;
-    if (compactKunde && compact.includes(compactKunde)) score += 3;
-    if (compactAdr && compact.includes(compactAdr)) score += 8;
-    if (compactNr && compact.includes(compactNr)) score += 4;
-    if (compactSid && compact.includes(compactSid)) score += 5;
-    if (compactPrimary && compact.includes(compactPrimary)) score += 5;
-    if (compactOpg && compactOpg.length > 12 && compact.includes(compactOpg)) score += 2;
+    const { score, reasons } = scoreCaseFromText(entry, haystack);
     if (score > bestScore) {
+      secondScore = bestScore;
       best = entry;
       bestScore = score;
+      bestReasons = reasons;
+    } else if (score > secondScore) {
+      secondScore = score;
     }
   }
-  return bestScore > 0 ? best : null;
+  const hasStrongReason = bestReasons.includes("adresse") || bestReasons.includes("sagsID");
+  const ambiguous = secondScore >= bestScore - 2;
+  if (!best || bestScore < 8 || !hasStrongReason || ambiguous) return null;
+  return best;
 }
 
 function normalizeCaseKey(value: unknown) {
@@ -162,11 +205,12 @@ function primaryCaseNumber(entry: any) {
 }
 
 function formatCaseIdForDisplay(entry: any) {
-  const primary = primaryCaseNumber(entry);
-  if (primary) return primary;
   const raw = textValue(entry?.sid || entry?.nr, "").trim();
-  if (!raw) return "";
-  return raw.toUpperCase();
+  const compact = raw.replace(/\s+/g, "");
+  const full = compact.match(/^(\d+)([a-z]+)$/i);
+  if (full) return `${full[1]} ${full[2].toUpperCase()}`;
+  const primary = primaryCaseNumber(entry);
+  return primary || raw.toUpperCase();
 }
 
 function plainCompactText(value = "") {

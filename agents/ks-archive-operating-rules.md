@@ -24,10 +24,13 @@ En mail må kun arkiveres automatisk når:
 3. kundenavn + opgavetitel
 4. eksisterende Drive-link eller sagsdokumenter
 
+Kundenavn eller kundenummer alene er ikke nok til automatisk arkivering, når kunden har flere poster/sager. For porteføljekunder som DKE / Charlotte skal agenten ramme en konkret post via fuldt sagsID, adresse eller anden stærk post-identifikation.
+
 ## Outputregel
 - kategori: `referater`
 - filformat: markdown
-- filnavn: `YYYY-MM-DD - Byggemodereferat - SagsID.md`
+- filnavn: `YYYY-MM-DD - SagsID - Dokumenttype.md`
+- `SagsID` skal være fuldt ID med postbogstav, når det findes, fx `1002 C`
 
 ## Dedupe
 Samme mailtråd må ikke blive arkiveret to gange for:

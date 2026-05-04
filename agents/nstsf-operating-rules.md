@@ -297,6 +297,9 @@ Felter:
 ### Dedupe-regel
 Før et dokument uploades til Drive, skal agenten tjekke om samme filnavn allerede findes i målmappe. Hvis ja, bruges eksisterende Drive-fil og linket skrives tilbage til state.
 
+### Porteføljekunder
+For kunder med flere poster/sager under samme kundenr., fx DKE / Charlotte, må agenten ikke arkivere på kundenummer alene. Automatisk arkivering kræver fuldt `SagsID`, sikker adresse eller anden stærk post-identifikation. Filnavne og opdateringskort skal bruge fuldt `SagsID` med bogstav, når det findes, fx `1002 C`.
+
 ### Fakturamatch
 Fakturaer må ikke matches via gæt eller PDF-tekst som primær kilde. Automatisk match kræver eksisterende fakturanr. i state, sikkert `SagsID`, sikker adresse eller dokumenthistorik på sagen. Ellers skal fakturaen blive en manuel afklaring i `Opdateringer`.
 
