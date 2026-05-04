@@ -2545,6 +2545,15 @@ function isPassiveOfferFollowupTask(task={}){
   const text = `${task.title || ''} ${task.notes || ''}`;
   return /følg op på (revideret )?tilbud/i.test(text) && /afgivet .*tilbud|senest syv dage|tilbudsdatoen/i.test(text);
 }
+function needsContractTask(s={}){
+  const compact = `${s.kunde || ''} ${s.adr || ''} ${s.opg || ''} ${s.info || ''} ${s.workflow?.nextAction || ''}`.toLowerCase();
+  if(!/henrik|jyllinge|helt nyt hus/.test(compact)) return false;
+  const hasExistingContractTask = effectiveCaseTasks(s).some((task)=>
+    /kontrakt|ab92|underskrift/i.test(`${task?.title || ''} ${task?.notes || ''}`) &&
+    String(task?.status || '').toLowerCase() !== 'fuldført'
+  );
+  return !hasExistingContractTask;
+}
 function emailSignal(mail){
   const subject = `${mail.subject || ''} ${mail.preview || ''} ${mail.body || ''}`.toLowerCase();
   return {
@@ -2619,6 +2628,7 @@ function buildPriorities(includeDismissed=false){
     const concreteActivity = hasConcreteActivity(latestActivity);
     const pendingDraft = hasPendingDraft(s);
     const openCaseTasks = effectiveCaseTasks(s).filter((task)=>String(task.status || '').toLowerCase() !== 'fuldført' && !isPassiveOfferFollowupTask(task));
+    const contractNeeded = needsContractTask(s);
     const nearCaseTasks = openCaseTasks.filter((task)=>{
       const d = daysUntil(task.dueDate);
       return !task.dueDate || (d !== null && d <= 7);
@@ -2640,6 +2650,7 @@ function buildPriorities(includeDismissed=false){
     const paymentWeight = urgentPayments.length ? 2 : nearDuePayments.length ? 1 : 0;
     const hasTodoTrigger =
       incomingTodos.length > 0 ||
+      contractNeeded ||
       pendingDraft ||
       concreteActivity ||
       urgentPayments.length > 0 ||
@@ -2688,6 +2699,8 @@ function buildPriorities(includeDismissed=false){
       });
       const reason = pendingDraft
         ? 'Der ligger et udkast eller en handling klar til godkendelse'
+        : contractNeeded
+          ? 'Kontrakt skal laves med kunden'
         : strongestSignal?.asksForPictures
           ? 'Kunden venter på billeder eller dokumentation'
           : strongestSignal?.asksForDate
@@ -2706,7 +2719,7 @@ function buildPriorities(includeDismissed=false){
         caseIndex: i,
         emailId: strongestMail?.id || '',
         bucket,
-        score: 3 + mailWeight + paymentWeight + gptWeight + (pendingDraft ? 3 : 0) + (strongestSignal?.hasIssue ? 2 : 0),
+        score: 3 + mailWeight + paymentWeight + gptWeight + (pendingDraft ? 3 : 0) + (contractNeeded ? 3 : 0) + (strongestSignal?.hasIssue ? 2 : 0),
         title: casePriorityTitle(s),
         meta: casePriorityMeta(s, {
           openMailsText: incoming.length ? `${incoming.length} uløste mails` : 'ingen åbne mails',
@@ -2714,7 +2727,7 @@ function buildPriorities(includeDismissed=false){
           latestActivity
         }),
         reason,
-        actionText: pendingDraft ? 'Gennemgå og godkend draftet, eller fjern det hvis det ikke længere er relevant.' : strongestMail ? priorityActionText(strongestMail, strongestSignal, reason) : reason,
+        actionText: contractNeeded ? '- Lav kontrakt med kunden.\n- Afklar kontraktgrundlag og send til underskrift.' : pendingDraft ? 'Gennemgå og godkend draftet, eller fjern det hvis det ikke længere er relevant.' : strongestMail ? priorityActionText(strongestMail, strongestSignal, reason) : reason,
         links: `${priorityLink('sag', i, 'Åbn sag')}${strongestMail ? priorityLink('mail', strongestMail.id, 'Relevant mail') : ''}`
       });
     }
