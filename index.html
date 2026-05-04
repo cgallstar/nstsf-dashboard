@@ -2446,8 +2446,21 @@ function buildDerivedPaymentsFromCases(){
       category: +s.k,
     }));
 }
+function normalizePaymentAmountFromCase(row){
+  const sag = sager.find((entry)=>paymentMatchesCase(row, entry));
+  if(!sag) return row;
+  const rowInvoice = String(row.fak || '').trim();
+  const caseInvoice = String(sag.fak || sag.workflow?.invoiceNumber || '').trim();
+  const isOpen = String(row.status || '').toLowerCase() !== 'betalt';
+  const caseAmount = parseNumber(sag.u);
+  const rowAmount = parseNumber(row.beloeb);
+  if(isOpen && rowInvoice && caseInvoice && rowInvoice === caseInvoice && caseAmount > rowAmount){
+    return {...row, beloeb:String(caseAmount)};
+  }
+  return row;
+}
 function paymentSummaryRows(){
-  const explicit = betalinger.filter((b)=>String(b.status || '').toLowerCase() !== 'betalt').map((b)=>({...b, source:'betaling'}));
+  const explicit = betalinger.filter((b)=>String(b.status || '').toLowerCase() !== 'betalt').map((b)=>normalizePaymentAmountFromCase({...b, source:'betaling'}));
   return [...explicit, ...buildDerivedPaymentsFromCases()].sort((a,b)=> String(a.dato || '').localeCompare(String(b.dato || '')));
 }
 function getSagPayments(s){
@@ -2456,7 +2469,7 @@ function getSagPayments(s){
 function getSagPaymentHistory(s){
   const explicit = betalinger
     .filter((b)=>paymentMatchesCase(b, s))
-    .map((b, index)=>({
+    .map((b, index)=>normalizePaymentAmountFromCase({
       ...b,
       source:'betaling',
       historyKey:`betaling-${index}-${b.nr || b.dato || b.beloeb}`,

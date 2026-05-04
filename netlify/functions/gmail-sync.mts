@@ -1088,6 +1088,26 @@ function amountAsVatInclusive(value: number, context = "") {
   return amountContextIsExVat(context) ? Math.round(value * 1.25) : value;
 }
 
+function invoiceLikeMoneyValues(text = "") {
+  const source = String(text || "");
+  return [...source.matchAll(/(\d{1,3}(?:[.\s]\d{3})*(?:,\d{2})?|\d{4,})(?:\s*kr\.?)?/gi)]
+    .map((match) => parseMoneyValue(match[1]))
+    .filter((value) => value >= 1000);
+}
+
+function vatInclusiveFromMoneyValues(values: number[], fallbackToLargest = false) {
+  const unique = [...new Set(values)].filter((value) => value >= 1000).sort((a, b) => b - a);
+  if (!unique.length) return 0;
+  for (const subtotal of unique) {
+    const vat = unique.find((value) => value < subtotal && value / subtotal >= 0.249 && value / subtotal <= 0.251);
+    if (!vat) continue;
+    const calculatedTotal = Math.round(subtotal + vat);
+    const existingTotal = unique.find((value) => Math.abs(value - calculatedTotal) <= 2);
+    return existingTotal || calculatedTotal;
+  }
+  return fallbackToLargest ? unique[0] : 0;
+}
+
 function extractEnterpriseAmount(text = "") {
   const source = String(text || "");
   const budgetRange = source.match(/budget[^\d]{0,40}(\d{1,3})\s*[-–]\s*(\d{1,3})\s*k\b/i);
@@ -1133,12 +1153,11 @@ function extractInvoiceAmount(text = "") {
     const value = parseMoneyValue(match[1]);
     if (value >= 1000) krValues.push(value);
   }
+  const vatInclusive = vatInclusiveFromMoneyValues(invoiceLikeMoneyValues(source), false);
+  if (vatInclusive) totalValues.push(vatInclusive);
   if (totalValues.length) return Math.max(...totalValues);
   if (!krValues.length) return 0;
-  const sorted = [...new Set(krValues)].sort((a, b) => b - a);
-  const subtotal = sorted[0];
-  const vat = sorted.find((value) => value < subtotal && value / subtotal >= 0.24 && value / subtotal <= 0.26);
-  return vat ? subtotal + vat : subtotal;
+  return vatInclusiveFromMoneyValues(krValues, true);
 }
 
 function ensureTask(matched: any, title: string, payload: Record<string, unknown>) {
