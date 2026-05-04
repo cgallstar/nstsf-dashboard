@@ -301,14 +301,15 @@ Før et dokument uploades til Drive, skal agenten tjekke om samme filnavn allere
 For kunder med flere poster/sager under samme kundenr., fx DKE / Charlotte, må agenten ikke arkivere på kundenummer alene. Automatisk arkivering kræver fuldt `SagsID`, sikker adresse eller anden stærk post-identifikation. Filnavne og opdateringskort skal bruge fuldt `SagsID` med bogstav, når det findes, fx `1002 C`.
 
 ### Fakturamatch
-Fakturaer må ikke matches via gæt eller PDF-tekst som primær kilde. Automatisk match kræver eksisterende fakturanr. i state, sikkert `SagsID`, sikker adresse eller dokumenthistorik på sagen. Ellers skal fakturaen blive en manuel afklaring i `Opdateringer`.
+Fakturaer må ikke matches via gæt eller PDF-tekst som primær kilde. Automatisk match kræver eksisterende fakturanr. i state, sikkert `SagsID`, sikker adresse, stærkt entydigt kundenavn i mailtekst/filnavn eller dokumenthistorik på sagen. Ellers skal fakturaen blive en manuel afklaring i `Opdateringer`.
 
 ## Prioriteringsregler
 
 ### Grundregler
 - kategori `06. Afsluttet` og `07. Ikke relevant` må ikke vises i aktive opgaver
 - kategori `04. Tilbud sendt` må ikke alene oprette en opgave
-- tilbudsopfølgning bliver kun en aktiv opgave, hvis der findes en eksplicit opgave eller uløst mail; automatisk/afledt tilbudsdato må ikke alene skabe opgave
+- tilbudsopfølgning bliver kun en aktiv opgave, hvis der findes en uløst mail, der konkret beder om svar, dato, godkendelse eller afklaring; passive syv-dages followups og afledt tilbudsdato må ikke alene skabe opgave
+- arkiverede/håndterede mails og `gmail_archive`-aktivitet må ikke genaktivere en sag som opgave
 - en opgave markeret `Fuldført` skal ligge i arkiv og må ikke vises i aktive opgaver igen
 - samme mail må kun vises én gang: enten som del af en konkret sag eller som løs mailopgave, ikke begge steder
 - porteføljekunder må ikke matches på kundenavn alene; kræv adresse, fuldt sagsID eller tydelig opgavetitel

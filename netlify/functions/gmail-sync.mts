@@ -244,6 +244,11 @@ function plainCompactText(value = "") {
     .toLowerCase();
 }
 
+function meaningfulTokens(value = "") {
+  const stop = new Set(["aps", "as", "dke", "charlotte", "kunde", "faktura", "vedrorende", "vedr"]);
+  return plainCompactText(value).split(/\s+/).filter((token) => token.length >= 3 && !stop.has(token));
+}
+
 function isGadesvejArchiveThread(signal: any, text = "") {
   if (!signal || signal.category !== "referater") return false;
   const compact = plainCompactText(text);
@@ -416,6 +421,7 @@ function scoreInvoiceCase(entry: any, invoiceText: string, invoiceNumber = "") {
   const sid = normalizeCaseKey(entry?.sid || "");
   const nr = normalizeCaseKey(entry?.nr || "");
   const primary = primaryCaseNumber(entry);
+  const customerTokens = meaningfulTokens(entry?.kunde || "");
   if (invoiceNumber && existingInvoices.includes(invoiceNumber)) {
     score += 20;
     reasons.push("eksisterende fakturanr.");
@@ -440,6 +446,10 @@ function scoreInvoiceCase(entry: any, invoiceText: string, invoiceNumber = "") {
     score += 4;
     reasons.push("kunde");
   }
+  if (customerTokens.length >= 2 && customerTokens.every((token) => source.includes(token))) {
+    score += 9;
+    reasons.push("kunde");
+  }
   if (task && task.length >= 10 && source.includes(task)) {
     score += 2;
     reasons.push("opgave");
@@ -457,7 +467,7 @@ function matchInvoiceToCase(state: any, invoiceText: string, invoiceNumber = "")
   const second = ranked[1];
   if (!best) return { matched: null, score: 0, reasons: [], ambiguous: false };
   const ambiguous = Boolean(second && second.score >= best.score - 2);
-  const hasStrongReason = best.reasons.includes("eksisterende fakturanr.") || best.reasons.includes("adresse") || best.reasons.includes("sagsID");
+  const hasStrongReason = best.reasons.includes("eksisterende fakturanr.") || best.reasons.includes("adresse") || best.reasons.includes("sagsID") || best.reasons.includes("kunde");
   if (best.score < 8 || !hasStrongReason || ambiguous) {
     return { matched: null, score: best.score, reasons: best.reasons, ambiguous };
   }
@@ -469,7 +479,13 @@ function registerInvoicesFromThreads(state: any, threads: any[]) {
   for (const thread of threads) {
     const summaries = Array.isArray(thread?.messages) ? thread.messages.map(gmailMessageSummary) : [];
     const threadText = summaries
-      .map((message) => [message.subject, message.from, message.snippet, message.body].filter(Boolean).join("\n"))
+      .map((message) => [
+        message.subject,
+        message.from,
+        message.snippet,
+        message.body,
+        ...(Array.isArray(message.attachments) ? message.attachments.map((attachment: any) => attachment?.filename) : []),
+      ].filter(Boolean).join("\n"))
       .join("\n\n");
     const invoiceMatch = threadText.match(/\bfaktura\s*(?:nr\.?|nummer)?\s*[:#-]?\s*(\d{3,})\b/i);
     if (!invoiceMatch) continue;

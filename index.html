@@ -2506,6 +2506,10 @@ function classifyActivity(activity){
   if(activity.type === 'drive_archive') return 'Dokumentation arkiveret';
   return activity.type || '';
 }
+function isPassiveOfferFollowupTask(task={}){
+  const text = `${task.title || ''} ${task.notes || ''}`;
+  return /følg op på (revideret )?tilbud/i.test(text) && /afgivet .*tilbud|senest syv dage|tilbudsdatoen/i.test(text);
+}
 function emailSignal(mail){
   const subject = `${mail.subject || ''} ${mail.preview || ''} ${mail.body || ''}`.toLowerCase();
   return {
@@ -2577,16 +2581,20 @@ function buildPriorities(includeDismissed=false){
     const latestActivity = latestCaseActivity(s);
     const concreteActivity = hasConcreteActivity(latestActivity);
     const pendingDraft = hasPendingDraft(s);
-    const openCaseTasks = effectiveCaseTasks(s).filter((task)=>String(task.status || '').toLowerCase() !== 'fuldført');
+    const openCaseTasks = effectiveCaseTasks(s).filter((task)=>String(task.status || '').toLowerCase() !== 'fuldført' && !isPassiveOfferFollowupTask(task));
     const nearCaseTasks = openCaseTasks.filter((task)=>{
       const d = daysUntil(task.dueDate);
       return !task.dueDate || (d !== null && d <= 7);
     });
     const nearOfferTask = nearCaseTasks.find((task)=>!task.derived && /tilbud/i.test(`${task.title || ''} ${task.notes || ''}`));
     const incoming = relatedEmails.filter((mail)=>!isEmailHandled(mail));
-    const incomingSales = incoming.filter((mail)=>mail.type === 'sales');
+    const incomingSales = incoming.filter((mail)=>{
+      if(mail.type !== 'sales') return false;
+      const signal = emailSignal(mail);
+      return signal.asksForApproval || signal.asksForReply || signal.asksForDate || signal.hasIssue;
+    });
     const incomingTodos = incoming.filter((mail)=>mail.type === 'todo');
-    const strongestMail = incoming[0] || relatedEmails[0];
+    const strongestMail = incoming[0] || null;
     const strongestSignal = strongestMail ? emailSignal(strongestMail) : null;
     const nearOfferDays = nearOfferTask ? daysUntil(nearOfferTask.dueDate) : null;
     const offerFollowupDue = nearOfferDays !== null && nearOfferDays <= 0;
@@ -2682,6 +2690,8 @@ function buildPriorities(includeDismissed=false){
     const alreadyRepresented = [...sales, ...todos].some((item)=>item.links.includes(mail.id));
     if(alreadyRepresented) return;
     const signal = emailSignal(mail);
+    const actionableSalesMail = mail.type !== 'sales' || signal.asksForApproval || signal.asksForReply || signal.asksForDate || signal.hasIssue;
+    if(!actionableSalesMail) return;
     const item = {
       key: `mail-${mail.id}`,
       emailId: mail.id,
