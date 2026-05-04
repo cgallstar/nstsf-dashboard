@@ -2646,15 +2646,13 @@ function buildPriorities(includeDismissed=false){
       nearDuePayments.length > 0 ||
       !!(strongestSignal && (strongestSignal.hasIssue || strongestSignal.asksForDate || strongestSignal.asksForPictures));
 
-    if(incomingSales.length || pendingDraft || (nearOfferTask && offerFollowupDue)){
+    if(incomingSales.length || pendingDraft){
       const bucket = resolvePriorityBucket({
-        now: pendingDraft || offerFollowupDue || !!(strongestSignal && (strongestSignal.asksForApproval || strongestSignal.asksForReply)),
+        now: pendingDraft || !!(strongestSignal && (strongestSignal.asksForApproval || strongestSignal.asksForReply)),
         today: !!incomingSales.length || !!(latestActivity && latestActivity.type === 'gmail_draft') || !!strongestSignal?.asksForDate,
       });
       const reason = pendingDraft
         ? 'Mailudkast eller tilbud afventer godkendelse'
-        : nearOfferTask
-          ? 'Tilbud skal følges op senest syv dage efter afgivelse'
         : incomingSales.length
           ? 'Ny salgsdialog eller kundeafklaring kræver svar'
           : 'Tilbud er sendt og bør følges op';
@@ -2671,7 +2669,7 @@ function buildPriorities(includeDismissed=false){
           pendingDraft
         }),
         reason,
-        actionText: pendingDraft ? 'Gennemgå og godkend udkastet, hvis det stadig er relevant.' : nearOfferTask ? (nearOfferTask.notes || 'Følg op på tilbuddet og aftal næste skridt med kunden.') : priorityActionText(strongestMail, strongestSignal, 'Følg op på tilbuddet og aftal næste skridt med kunden.'),
+        actionText: pendingDraft ? 'Gennemgå og godkend udkastet, hvis det stadig er relevant.' : priorityActionText(strongestMail, strongestSignal, 'Svar på den konkrete kundeafklaring.'),
         links: `${priorityLink('sag', i, 'Åbn sag')}${strongestMail ? priorityLink('mail', strongestMail.id, 'Seneste mail') : ''}`
       });
     }
@@ -2768,8 +2766,8 @@ function buildPriorities(includeDismissed=false){
     });
   });
   const sortItems = (items)=>items
-    .filter((item)=>includeDismissed ? true : !dismissedPriorityKeys.includes(item.key))
-    .map((item)=>({...item, completed: completedPriorityKeys().has(item.key)}))
+    .filter((item)=>includeDismissed ? true : !isPriorityDismissed(item))
+    .map((item)=>({...item, completed: isPriorityCompleted(item)}))
     .filter((item)=>includeDismissed ? true : !item.completed)
     .sort((a,b)=>Number(a.completed)-Number(b.completed) || b.score-a.score || a.title.localeCompare(b.title));
   return { sales: sortItems(sales), todos: sortItems(todos) };
@@ -2824,9 +2822,11 @@ function findPriorityByKey(key=''){
 }
 function archivePriorityItem(item, mode='arkiv'){
   if(!item || !item.key) return;
-  if(archivedPriorityItems.some((entry)=>entry.key === item.key)) return;
+  const scopes = priorityArchiveScopes(item);
+  if(archivedPriorityItems.some((entry)=>entry.key === item.key || scopes.some((scope)=>Array.isArray(entry.scopes) && entry.scopes.includes(scope)))) return;
   archivedPriorityItems.unshift({
     key:item.key,
+    scopes,
     title:item.title,
     meta:item.meta,
     reason:item.actionText || item.reason || '',
@@ -2837,6 +2837,42 @@ function archivePriorityItem(item, mode='arkiv'){
 }
 function completedPriorityKeys(){
   return new Set(archivedPriorityItems.filter((entry)=>entry.mode === 'fuldført').map((entry)=>entry.key));
+}
+function completedPriorityScopes(){
+  return new Set(archivedPriorityItems
+    .filter((entry)=>entry.mode === 'fuldført')
+    .flatMap((entry)=>Array.isArray(entry.scopes) ? entry.scopes : []));
+}
+function dismissedPriorityScopes(){
+  return new Set(archivedPriorityItems
+    .filter((entry)=>entry.mode === 'slettet')
+    .flatMap((entry)=>Array.isArray(entry.scopes) ? entry.scopes : []));
+}
+function priorityArchiveScopes(item={}){
+  const scopes = [];
+  if(item.key) scopes.push(`key:${item.key}`);
+  if(item.emailId) scopes.push(`mail:${item.emailId}`);
+  if(item.internalTaskId) scopes.push(`internal:${item.internalTaskId}`);
+  if(typeof item.caseIndex === 'number' && item.caseIndex >= 0){
+    const s = sager[item.caseIndex];
+    const ref = getCaseRef(s);
+    const customer = getCustomerNumber(s);
+    const kind = String(item.key || '').includes('case-sales-') ? 'sales' : String(item.key || '').includes('case-todo-') ? 'todo' : '';
+    const reason = String(item.reason || item.actionText || '').toLowerCase().replace(/[^\p{L}\p{N}]+/gu, '-').replace(/^-|-$/g, '').slice(0, 80);
+    if(kind && ref && reason) scopes.push(`${kind}:case:${String(ref).replace(/\s+/g,'').toLowerCase()}:${reason}`);
+    if(kind && customer && reason) scopes.push(`${kind}:customer:${customer}:${reason}`);
+  }
+  return [...new Set(scopes)];
+}
+function priorityHasArchivedScope(item={}, mode='fuldført'){
+  const archivedScopes = mode === 'fuldført' ? completedPriorityScopes() : dismissedPriorityScopes();
+  return priorityArchiveScopes(item).some((scope)=>archivedScopes.has(scope));
+}
+function isPriorityCompleted(item={}){
+  return completedPriorityKeys().has(item.key) || priorityHasArchivedScope(item, 'fuldført');
+}
+function isPriorityDismissed(item={}){
+  return dismissedPriorityKeys.includes(item.key) || priorityHasArchivedScope(item, 'slettet');
 }
 function restoreArchivedPriority(key=''){
   if(!key) return;
