@@ -399,6 +399,34 @@ export async function findDriveFileByName(parentId: string, name: string) {
   return Array.isArray(payload.files) && payload.files[0] ? payload.files[0] : null;
 }
 
+export async function listDriveFilesByName(parentId: string, name: string) {
+  const query = [
+    `name='${String(name).replace(/'/g, "\\'")}'`,
+    "trashed=false",
+    `'${parentId}' in parents`,
+  ].join(" and ");
+  const params = new URLSearchParams({
+    q: query,
+    fields: "files(id,name,webViewLink,mimeType,modifiedTime,createdTime,size)",
+    pageSize: "20",
+    orderBy: "modifiedTime desc",
+    supportsAllDrives: "true",
+    includeItemsFromAllDrives: "true",
+  });
+  const response = await googleFetch(`${DRIVE_FILES_URL}?${params.toString()}`);
+  const payload = await response.json();
+  return Array.isArray(payload.files) ? payload.files : [];
+}
+
+export async function trashDriveFile(fileId: string) {
+  const response = await googleFetch(`${DRIVE_FILES_URL}/${encodeURIComponent(fileId)}?supportsAllDrives=true`, {
+    method: "PATCH",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ trashed: true }),
+  });
+  return response.json();
+}
+
 export async function ensureDriveFolder(name: string, parentId: string) {
   const existing = await listDriveFolderByName(parentId, name);
   if (existing) return existing;
