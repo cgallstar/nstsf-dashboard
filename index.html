@@ -1703,6 +1703,7 @@ let handledEmailIds = [];
 let dismissedPriorityKeys = [];
 let archivedPriorityItems = [];
 let prioritySuggestionOverrides = {};
+let manualTaskSeed20260504 = false;
 let customerView = 'active';
 let lastUpdatedAt = null;
 const ACTIVE_CASE_CATEGORIES = new Set([1,2,3,4,5]);
@@ -2057,7 +2058,7 @@ function addLocalSyncLogEntries(entries=[]){
   syncLog.splice(80);
 }
 function stripDemoEmails(items=[]){ return items.filter((item)=>!DEMO_EMAIL_IDS.has(textValue(item?.id, ''))); }
-function collectState(){ ensureCaseIds(); const capacityHours = document.getElementById('capacityHours') ? +document.getElementById('capacityHours').value || 37 : 37; return { schema:'nstsf-dashboard-state-v1', savedFrom:location.hostname || 'local-file', savedAt:new Date().toISOString(), sager:sager, betalinger:betalinger, emails:emails.filter(isAllowedNstsfMail), employees:employees, internalTasks:internalTasks, syncLog:syncLog.filter(isAllowedNstsfSyncLog), settings:{capacityHours, handledEmailIds, dismissedPriorityKeys, archivedPriorityItems, prioritySuggestionOverrides} }; }
+function collectState(){ ensureCaseIds(); const capacityHours = document.getElementById('capacityHours') ? +document.getElementById('capacityHours').value || 37 : 37; return { schema:'nstsf-dashboard-state-v1', savedFrom:location.hostname || 'local-file', savedAt:new Date().toISOString(), sager:sager, betalinger:betalinger, emails:emails.filter(isAllowedNstsfMail), employees:employees, internalTasks:internalTasks, syncLog:syncLog.filter(isAllowedNstsfSyncLog), settings:{capacityHours, handledEmailIds, dismissedPriorityKeys, archivedPriorityItems, prioritySuggestionOverrides, manualTaskSeed20260504} }; }
 function formatHeaderUpdated(value){
   const date = parseDateValue(value) || new Date();
   return `Pipeline, sager og økonomi — opdateret ${date.toLocaleDateString('da-DK', { day:'numeric', month:'short', year:'numeric' })}`;
@@ -2099,7 +2100,53 @@ function loadUiState(){
     inboxFilter = saved.inboxFilter || inboxFilter;
   }catch(e){}
 }
-function applyState(state){ if(!state || typeof state !== 'object') return; stateWasSanitized = false; if(Array.isArray(state.sager)){ sager.splice(0, sager.length, ...state.sager.map(normalizeSag)); ensureCaseIds(); } if(Array.isArray(state.betalinger)){ betalinger.splice(0, betalinger.length, ...state.betalinger.map(normalizeBetaling)); } if(Array.isArray(state.emails)){ const rawEmails = stripDemoEmails(state.emails).map(normalizeEmail); const allowedEmails = rawEmails.filter(isAllowedNstsfMail); if(rawEmails.length !== allowedEmails.length) stateWasSanitized = true; emails.splice(0, emails.length, ...allowedEmails); } if(Array.isArray(state.employees)){ employees.splice(0, employees.length, ...state.employees.map(normalizeEmployee)); } if(Array.isArray(state.internalTasks)){ internalTasks.splice(0, internalTasks.length, ...state.internalTasks.map(normalizeInternalTask)); } if(Array.isArray(state.syncLog)){ const rawSyncLog = state.syncLog.map(normalizeSyncLogEntry); const allowedSyncLog = rawSyncLog.filter(isAllowedNstsfSyncLog); const dedupedSyncLog = dedupeSyncLogEntries(allowedSyncLog); if(rawSyncLog.length !== allowedSyncLog.length || allowedSyncLog.length !== dedupedSyncLog.length) stateWasSanitized = true; syncLog.splice(0, syncLog.length, ...dedupedSyncLog); } if(state.settings && document.getElementById('capacityHours')){ document.getElementById('capacityHours').value = state.settings.capacityHours || 37; handledEmailIds = Array.isArray(state.settings.handledEmailIds) ? state.settings.handledEmailIds : []; dismissedPriorityKeys = Array.isArray(state.settings.dismissedPriorityKeys) ? state.settings.dismissedPriorityKeys : []; archivedPriorityItems = Array.isArray(state.settings.archivedPriorityItems) ? state.settings.archivedPriorityItems : []; prioritySuggestionOverrides = state.settings.prioritySuggestionOverrides && typeof state.settings.prioritySuggestionOverrides === 'object' && !Array.isArray(state.settings.prioritySuggestionOverrides) ? state.settings.prioritySuggestionOverrides : {}; } if(state.savedAt) updateHeaderTimestamp(state.savedAt); }
+function seedManualTasks20260504(){
+  if(manualTaskSeed20260504) return;
+  const createdAt = '2026-05-04T12:00:00.000Z';
+  const tasks = [
+    {
+      id:'manual-2026-05-04-julie-kunde',
+      title:'Opret Julie som kunde',
+      notes:'Opret Julie som ny kunde i kundesystemet.',
+      bucket:'week',
+      domain:'arbejde',
+      owner:'',
+    },
+    {
+      id:'manual-2026-05-04-skur-fredensborg',
+      title:'Skur i Fredensborg',
+      notes:'Afklar og opret opgave/kundesag vedr. skur i Fredensborg.',
+      bucket:'week',
+      domain:'arbejde',
+      owner:'',
+    },
+    {
+      id:'manual-2026-05-04-ryesgade-koekken',
+      title:'Ryd lejlighed 30 før køkkenlevering',
+      notes:'Der kommer køkken til Ryesgade i morgen. Lejlighed 30 skal ryddes, så køkkenet kan sættes ind.',
+      dueDate:'2026-05-05',
+      bucket:'now',
+      domain:'arbejde',
+      owner:'',
+    },
+    {
+      id:'manual-2026-05-04-loensnak',
+      title:'Afklar løn med Jarek, Tomasz og Tomasz',
+      notes:'Jarek, Tomasz og Tomasz vil tale løn. Murer skal have 200 kr. i timen. Lojko 190 kr. i timen. Afklar med Jarek.',
+      bucket:'week',
+      domain:'hr',
+      owner:'',
+    },
+  ];
+  const existingIds = new Set(internalTasks.map((task)=>task.id));
+  tasks.reverse().forEach((task)=>{
+    if(existingIds.has(task.id)) return;
+    internalTasks.unshift(normalizeInternalTask({ ...task, status:'Åben', source:'manual_codex', createdAt }));
+  });
+  manualTaskSeed20260504 = true;
+  stateWasSanitized = true;
+}
+function applyState(state){ if(!state || typeof state !== 'object') return; stateWasSanitized = false; if(Array.isArray(state.sager)){ sager.splice(0, sager.length, ...state.sager.map(normalizeSag)); ensureCaseIds(); } if(Array.isArray(state.betalinger)){ betalinger.splice(0, betalinger.length, ...state.betalinger.map(normalizeBetaling)); } if(Array.isArray(state.emails)){ const rawEmails = stripDemoEmails(state.emails).map(normalizeEmail); const allowedEmails = rawEmails.filter(isAllowedNstsfMail); if(rawEmails.length !== allowedEmails.length) stateWasSanitized = true; emails.splice(0, emails.length, ...allowedEmails); } if(Array.isArray(state.employees)){ employees.splice(0, employees.length, ...state.employees.map(normalizeEmployee)); } if(Array.isArray(state.internalTasks)){ internalTasks.splice(0, internalTasks.length, ...state.internalTasks.map(normalizeInternalTask)); } if(Array.isArray(state.syncLog)){ const rawSyncLog = state.syncLog.map(normalizeSyncLogEntry); const allowedSyncLog = rawSyncLog.filter(isAllowedNstsfSyncLog); const dedupedSyncLog = dedupeSyncLogEntries(allowedSyncLog); if(rawSyncLog.length !== allowedSyncLog.length || allowedSyncLog.length !== dedupedSyncLog.length) stateWasSanitized = true; syncLog.splice(0, syncLog.length, ...dedupedSyncLog); } if(state.settings && document.getElementById('capacityHours')){ document.getElementById('capacityHours').value = state.settings.capacityHours || 37; handledEmailIds = Array.isArray(state.settings.handledEmailIds) ? state.settings.handledEmailIds : []; dismissedPriorityKeys = Array.isArray(state.settings.dismissedPriorityKeys) ? state.settings.dismissedPriorityKeys : []; archivedPriorityItems = Array.isArray(state.settings.archivedPriorityItems) ? state.settings.archivedPriorityItems : []; prioritySuggestionOverrides = state.settings.prioritySuggestionOverrides && typeof state.settings.prioritySuggestionOverrides === 'object' && !Array.isArray(state.settings.prioritySuggestionOverrides) ? state.settings.prioritySuggestionOverrides : {}; manualTaskSeed20260504 = !!state.settings.manualTaskSeed20260504; } seedManualTasks20260504(); if(state.savedAt) updateHeaderTimestamp(state.savedAt); }
 function persistLocalState(){ const state = collectState(); localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); updateHeaderTimestamp(state.savedAt); }
 function loadState(){ try{ const state = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}'); const hadDemoEmails = Array.isArray(state?.emails) && state.emails.some((item)=>DEMO_EMAIL_IDS.has(textValue(item?.id, ''))); applyState(state); if(hadDemoEmails) persistLocalState(); }catch(e){} loadUiState(); updateHeaderTimestamp(lastUpdatedAt || new Date().toISOString()); updatePreviewNotice(); }
 async function saveRemoteState(manual=false){ if(!authUser){ if(manual) setSyncStatus('Du skal være logget ind for at gemme centralt.', 'error'); return; } if(location.protocol === 'file:'){ if(manual) setSyncStatus('Backend virker først på Netlify eller via netlify dev. Lokal fil er kun browser-kopi.', 'error'); return; } try{ setSyncStatus('Gemmer til central backend...'); const payload = collectState(); const res = await fetch(STATE_API, { method:'PUT', credentials:'include', headers:{'content-type':'application/json'}, body:JSON.stringify(payload) }); const data = await res.json().catch(()=>({})); if(!res.ok) throw new Error(data.error || `HTTP ${res.status}`); updateHeaderTimestamp(data.savedAt || payload.savedAt); setSyncStatus(`Gemt centralt ${new Date(data.savedAt || Date.now()).toLocaleString('da-DK')}`, 'ok'); }catch(err){ setSyncStatus(`Kun lokal kopi gemt. Backend-fejl: ${err.message}`, 'error'); } }
