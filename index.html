@@ -2638,6 +2638,7 @@ function buildPriorities(includeDismissed=false){
     const incomingSales = incoming.filter((mail)=>{
       if(mail.type !== 'sales') return false;
       const signal = emailSignal(mail);
+      if(signal.isInternal) return false;
       return signal.asksForApproval || signal.asksForReply || signal.asksForDate || signal.hasIssue;
     });
     const incomingTodos = incoming.filter((mail)=>mail.type === 'todo');
@@ -3492,6 +3493,8 @@ function renderSagDetail(i){
   const offerDate = latestOfferDate(s);
   const wf = s.workflow || {};
   const meetingNotes = s.docs.referater.length ? s.docs.referater : s.docs.byggereferater;
+  const offerDocs = s.docs.tilbud || [];
+  const mailDocs = s.docs.mails || [];
   const transcriptTitles = (s.docs.transkripter || []).map((item)=>item.titel).slice(0,2).join(' · ') || 'Ingen registreret endnu';
   caseDetail.classList.add('active');
   if(customerLayout) customerLayout.classList.add('detail-open');
@@ -3534,6 +3537,8 @@ function renderSagDetail(i){
         <h3>Noter og mødereferater</h3>
         <div class="case-bullet-list">
           <div class="case-bullet-item"><span class="dot"></span><div><strong>Referater</strong>${renderMeetingNotes(meetingNotes)}</div></div>
+          <div class="case-bullet-item"><span class="dot"></span><div><strong>Tilbud</strong>${renderMeetingNotes(offerDocs)}</div></div>
+          <div class="case-bullet-item"><span class="dot"></span><div><strong>Mails</strong>${renderMeetingNotes(mailDocs)}</div></div>
           <div class="case-bullet-item"><span class="dot"></span><div><strong>Transkripter</strong><span class="meta">${transcriptTitles}</span></div></div>
         </div>
       </div>

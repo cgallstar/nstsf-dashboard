@@ -1388,6 +1388,24 @@ async function archiveQualifiedThread(thread: any, item: any, state: any, integr
   }
 
   if (foundExistingDriveFile) {
+    pushDocs(matched.docs[signal.category] || [], [document]);
+    if (signal.category === "referater") {
+      pushDocs(matched.docs.byggereferater, [document]);
+    }
+    appendActivity(matched, actor, {
+      type: "gmail_archive",
+      archiveKey,
+      threadId: textValue(item?.threadId || thread?.id, ""),
+      subject: textValue(item?.subject, ""),
+      archiveCategory: signal.category,
+      documentType: signal.documentType,
+      documentDate,
+      fileName: document.fileName,
+      driveUrl: textValue(document.url, ""),
+      sourceType: signal.sourceType,
+      attachmentCount: attachmentContext.documents.length,
+      skippedUpload: true,
+    });
     return {
       ok: true,
       skipped: true,
