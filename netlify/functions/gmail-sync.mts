@@ -1047,14 +1047,13 @@ function extractEnterpriseAmount(text = "") {
 
 function extractInvoiceAmount(text = "") {
   const source = String(text || "");
-  const labelledValues: number[] = [];
-  const labelledPattern = /(?:total|i alt|beløb|beloeb|saldo|at betale)[^\d]{0,80}(\d{1,3}(?:[.\s]\d{3})*(?:,\d{2})?|\d{4,})(?:\s*kr\.?)?/gi;
+  const totalValues: number[] = [];
+  const totalPattern = /(?:total(?:\s+inkl\.?\s+moms)?|i alt(?:\s+inkl\.?\s+moms)?|beløb\s+inkl\.?\s+moms|beloeb\s+inkl\.?\s+moms|saldo|at betale)[^\d]{0,80}(\d{1,3}(?:[.\s]\d{3})*(?:,\d{2})?|\d{4,})(?:\s*kr\.?)?/gi;
   let match: RegExpExecArray | null;
-  while ((match = labelledPattern.exec(source))) {
+  while ((match = totalPattern.exec(source))) {
     const value = parseMoneyValue(match[1]);
-    if (value >= 1000) labelledValues.push(value);
+    if (value >= 1000) totalValues.push(value);
   }
-  if (labelledValues.length) return Math.max(...labelledValues);
 
   const krValues: number[] = [];
   const krPattern = /(\d{1,3}(?:[.\s]\d{3})*(?:,\d{2})?|\d{4,})\s*kr\.?/gi;
@@ -1064,6 +1063,7 @@ function extractInvoiceAmount(text = "") {
   }
   if (!krValues.length) return 0;
   const sorted = [...new Set(krValues)].sort((a, b) => b - a);
+  if (totalValues.length) return Math.max(...totalValues);
   const subtotal = sorted[0];
   const vat = sorted.find((value) => value < subtotal && value / subtotal >= 0.24 && value / subtotal <= 0.26);
   return vat ? subtotal + vat : subtotal;

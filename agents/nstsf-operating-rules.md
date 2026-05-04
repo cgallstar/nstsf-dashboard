@@ -305,6 +305,8 @@ Fakturaer må ikke matches via gæt eller PDF-tekst som primær kilde. Automatis
 
 Når en faktura matches sikkert, skal fakturabeløbet fra fakturaen opdatere sagens udestående beløb. Eksisterende estimater eller tidligere aconto-beløb må ikke vinde over et sikkert fakturabeløb.
 
+Alle fakturabeløb i kundesystemet skal behandles som beløb inkl. moms. Hvis fakturaen kun viser subtotal og moms adskilt, skal agenten registrere subtotal + moms.
+
 Hvis en relevant mail ikke kan matches sikkert til en eksisterende kunde/sag, må den ikke forsvinde som ren fejl. Den skal oprettes som en intern opgave uden dato med mailens emne og forklaring, så den kan matches manuelt senere.
 
 Opdateringskort for fakturaer skal være konkrete pr. sag/kunde. De må ikke stå som generisk `Fakturaer · Ukendt sag`, når sync faktisk har opdateret en bestemt sag.
