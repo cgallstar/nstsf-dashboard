@@ -41,7 +41,7 @@ export default async (request: Request) => {
 
   const task = normalizeInternalTask({
     ...body,
-    unlinkedRef: textValue(body.unlinkedRef, `K-${stableThreeDigitHash(`${body.title || body.name || ""}|${Date.now()}`)}`),
+    unlinkedRef: textValue(body.unlinkedRef, `S-${stableThreeDigitHash(`${body.title || body.name || ""}|${Date.now()}`)}`),
   });
   state.internalTasks.unshift(task);
   state.internalTaskActivity = Array.isArray(state.internalTaskActivity) ? state.internalTaskActivity : [];

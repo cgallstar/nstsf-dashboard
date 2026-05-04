@@ -1835,6 +1835,10 @@ function formatSagIdDisplay(value=''){
   const raw = String(value || '').trim().replace(/^S-/i, '');
   return raw ? `S-${raw}` : '';
 }
+function formatLooseSagRef(value=''){
+  const raw = String(value || '').trim().replace(/^[SK]-/i, '');
+  return raw ? `S-${raw}` : '';
+}
 function formatCaseRefDisplay(ref=''){
   const raw = String(ref || '').trim();
   if(!raw) return '';
@@ -2047,10 +2051,17 @@ function stableThreeDigitHash(value=''){
   String(value || '').split('').forEach((char)=>{ hash = ((hash * 31) + char.charCodeAt(0)) % 900; });
   return String(100 + hash).padStart(3, '0').slice(-3);
 }
-function internalTaskCustomerRef(task={}){
-  const explicit = textValue(task.customerId || task.kundeId || task.customerRef || task.unlinkedRef, '');
-  if(explicit) return explicit.startsWith('K-') ? explicit : `K-${explicit.replace(/^K-/i, '')}`;
-  return `K-${stableThreeDigitHash(task.id || task.title || task.createdAt)}`;
+function inferInternalTaskCustomerId(task={}){
+  const hay = `${task.title || ''} ${task.notes || ''}`.toLowerCase();
+  if(/lejlighed\s*30|ryesgade/.test(hay)) return '1002';
+  if(/henrik|jyllinge/.test(hay)) return '1005';
+  return '';
+}
+function internalTaskReference(task={}){
+  const customerId = textValue(task.customerId || task.kundeId || task.customerRef || inferInternalTaskCustomerId(task), '').replace(/^K-/i, '');
+  if(customerId) return formatCustomerIdDisplay(customerId);
+  const sagId = textValue(task.sagId || task.unlinkedRef, '').replace(/^S-/i, '').replace(/^K-/i, '');
+  return formatLooseSagRef(sagId || stableThreeDigitHash(task.id || task.title || task.createdAt));
 }
 function normalizeInternalTask(saved={}){ return { id:textValue(saved.id, `internal-${Date.now()}`), title:textValue(saved.title || saved.name, 'Intern opgave'), status:textValue(saved.status, 'Åben'), dueDate:textValue(saved.dueDate, ''), owner:textValue(saved.owner, ''), notes:textValue(saved.notes, ''), source:textValue(saved.source, 'custom-gpt'), bucket:textValue(saved.bucket, ''), domain:textValue(saved.domain, 'intern'), threadId:textValue(saved.threadId, ''), customerId:textValue(saved.customerId || saved.kundeId, ''), sagId:textValue(saved.sagId, ''), unlinkedRef:textValue(saved.unlinkedRef, ''), createdAt:textValue(saved.createdAt, new Date().toISOString()) }; }
 function normalizeEmail(saved={}){ return { id:textValue(saved.id, `mail-${Date.now()}`), threadId:textValue(saved.threadId, ''), kunde:textValue(saved.kunde, ''), from:textValue(saved.from, ''), subject:textValue(saved.subject, ''), date:textValue(saved.date, ''), preview:textValue(saved.preview, ''), body:textValue(saved.body, ''), tags:Array.isArray(saved.tags) ? saved.tags.map((tag)=>String(tag)) : [], handled:!!saved.handled, type:textValue(saved.type, 'todo'), latestSenderType:textValue(saved.latestSenderType, ''), repliedAt:textValue(saved.repliedAt, ''), archivedAt:textValue(saved.archivedAt, ''), archivedUrl:textValue(saved.archivedUrl, ''), archivedCaseId:textValue(saved.archivedCaseId, ''), archivedCustomer:textValue(saved.archivedCustomer, ''), archivedType:textValue(saved.archivedType, ''), archivedDate:textValue(saved.archivedDate, ''), syncedAt:textValue(saved.syncedAt, '') }; }
@@ -2168,6 +2179,7 @@ function seedManualTasks20260504(){
       dueDate:'2026-05-05',
       bucket:'now',
       domain:'arbejde',
+      customerId:'1002',
       owner:'',
     },
     {
@@ -2861,7 +2873,7 @@ function buildPriorities(includeDismissed=false){
       bucket,
       score: bucket === 'now' ? 9 : bucket === 'today' ? 7 : 5,
       title: task.title,
-      meta: `${internalTaskCustomerRef(task)} · Intern opgave${task.owner ? ` · ${task.owner}` : ''}${task.dueDate ? ` · frist ${displayDate(task.dueDate)}` : ''}`,
+      meta: `${internalTaskReference(task)} · Intern opgave${task.owner ? ` · ${task.owner}` : ''}${task.dueDate ? ` · frist ${displayDate(task.dueDate)}` : ''}`,
       reason: task.notes || 'Intern opgave fra Custom GPT',
       actionText: task.notes || 'Løs den interne opgave og marker den derefter som fuldført.',
       links: '',
@@ -3324,7 +3336,7 @@ function saveSidebarTask(){
       notes,
       domain,
       bucket,
-      unlinkedRef:`K-${stableThreeDigitHash(`${title}|${Date.now()}`)}`,
+      unlinkedRef:`S-${stableThreeDigitHash(`${title}|${Date.now()}`)}`,
       source:'dashboard',
       status:'Åben'
     }));

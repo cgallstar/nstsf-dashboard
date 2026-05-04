@@ -223,8 +223,32 @@ function matchCaseFromText(sager: any[], haystack: string) {
   return best;
 }
 
+function matchCaseWithConfidence(sager: any[], haystack: string) {
+  const ranked = (Array.isArray(sager) ? sager : [])
+    .map((entry: any) => ({ entry, ...scoreCaseFromText(entry, haystack) }))
+    .filter((result: any) => result.score > 0)
+    .sort((a: any, b: any) => b.score - a.score);
+  const best = ranked[0];
+  if (!best) return { entry: null, score: 0, reasons: [], confident: false };
+  const second = ranked[1];
+  const hasStrongReason = best.reasons.includes("adresse") || best.reasons.includes("sagsID");
+  const ambiguous = Boolean(second && second.score >= best.score - 2);
+  return {
+    entry: best.entry,
+    score: best.score,
+    reasons: best.reasons,
+    confident: Boolean(best.score >= 8 && hasStrongReason && !ambiguous),
+  };
+}
+
 function normalizeCaseKey(value: unknown) {
   return String(value || "").replace(/\s+/g, "").trim().toLowerCase();
+}
+
+function stableThreeDigitHash(value = "") {
+  let hash = 0;
+  for (const char of String(value || "")) hash = ((hash * 31) + char.charCodeAt(0)) % 900;
+  return String(100 + hash).padStart(3, "0").slice(-3);
 }
 
 function primaryCaseNumberFromValue(value: unknown) {
@@ -1175,7 +1199,7 @@ function addDaysIso(dateIso: string, days: number) {
   return base.toISOString().slice(0, 10);
 }
 
-function ensureUnmatchedMailTask(state: any, result: any, item: any, errorText: string) {
+function ensureUnmatchedMailTask(state: any, result: any, item: any, errorText: string, possibleCase: any = null) {
   if (result?.error !== "case_not_matched") return false;
   state.internalTasks = Array.isArray(state.internalTasks) ? state.internalTasks : [];
   const threadId = textValue(result?.threadId || item?.threadId || item?.id, "");
@@ -1196,6 +1220,8 @@ function ensureUnmatchedMailTask(state: any, result: any, item: any, errorText: 
     domain: "mail",
     bucket: "week",
     threadId,
+    customerId: possibleCase ? primaryCaseNumber(possibleCase) : "",
+    unlinkedRef: possibleCase ? "" : `S-${stableThreeDigitHash(`${title}|${threadId}`)}`,
     notes: `${errorText} Opret eller match kunden/sagen manuelt, og arkivér derefter mailen korrekt.`,
   }));
   return true;
@@ -1344,6 +1370,7 @@ async function archiveQualifiedThread(thread: any, item: any, state: any, integr
       documentType: signal.documentType,
       category: signal.category,
       error: "case_not_matched",
+      possibleCase: matchCaseWithConfidence(state.sager || [], archiveText).entry,
     };
   }
 
@@ -1635,7 +1662,7 @@ export default async (request: Request) => {
           }
         } else {
           const errorText = formatSyncError(result.error);
-          const taskCreated = ensureUnmatchedMailTask(state, result, item, errorText);
+          const taskCreated = ensureUnmatchedMailTask(state, result, item, errorText, result.possibleCase);
           appendSyncLog(state, {
             status: "error",
             threadId: textValue(result.threadId || item?.threadId || thread?.id, ""),

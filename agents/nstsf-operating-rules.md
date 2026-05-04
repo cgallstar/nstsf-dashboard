@@ -239,7 +239,9 @@ Inputregler:
 - `S-` prefix skal slå op i sager
 - `K-` prefix skal slå op i kunder
 - input kun med tal, fx `123`, er uklart og skal afvises eller kræve afklaring
-- en opgave uden sikker kundekobling må oprettes som ukoblet opgave og vises med en midlertidig `K-xxx` reference, indtil den matches manuelt
+- en opgave uden sikker kundekobling må oprettes som ukoblet opgave og vises med en midlertidig `S-xxx` reference, indtil den matches manuelt
+- en intern opgave, der kan matches til en kunde, skal vise kundens `K-` nummer i opgavekortet, fx `K-1002`
+- et opgavekort må ikke vise en midlertidig `K-xxx` hash; `K-` er kun til kendte kunder
 
 ### Kundesag
 Felter:
