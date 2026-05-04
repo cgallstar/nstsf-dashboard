@@ -7,6 +7,11 @@ const GMAIL_MESSAGES_URL = "https://gmail.googleapis.com/gmail/v1/users/me/messa
 const DRIVE_FILES_URL = "https://www.googleapis.com/drive/v3/files";
 const DRIVE_UPLOAD_URL = "https://www.googleapis.com/upload/drive/v3/files";
 const GOOGLE_DRIVE_FOLDER_MIME = "application/vnd.google-apps.folder";
+const GOOGLE_FETCH_TIMEOUT_MS = 8000;
+
+let cachedAccessToken = "";
+let cachedAccessTokenExpiresAt = 0;
+let tokenRefreshPromise: Promise<string> | null = null;
 
 function env(name: string) {
   return String(Netlify.env.get(name) || "").trim();
@@ -15,6 +20,21 @@ function env(name: string) {
 function text(value: unknown, fallback = "") {
   if (value === null || value === undefined) return fallback;
   return String(value);
+}
+
+async function fetchWithTimeout(url: string, init: RequestInit = {}, timeoutMs = GOOGLE_FETCH_TIMEOUT_MS) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    return await fetch(url, { ...init, signal: controller.signal });
+  } catch (error) {
+    if ((error as Error)?.name === "AbortError") {
+      throw new Error(`google_fetch_timeout:${googleOperationFromUrl(url)}`);
+    }
+    throw error;
+  } finally {
+    clearTimeout(timer);
+  }
 }
 
 function toBase64Url(input: string | Buffer) {
@@ -156,7 +176,7 @@ async function googleFetch(url: string, init: RequestInit = {}) {
   const accessToken = await getGoogleAccessToken();
   const headers = new Headers(init.headers || {});
   headers.set("Authorization", `Bearer ${accessToken}`);
-  const response = await fetch(url, { ...init, headers });
+  const response = await fetchWithTimeout(url, { ...init, headers });
   if (!response.ok) {
     const details = await parseJsonResponse(response);
     throw new Error(`google_api_error:${googleOperationFromUrl(url)}:${response.status}:${JSON.stringify(details)}`);
@@ -283,6 +303,14 @@ function resolveCustomerRootFolderId(caseEntry: any) {
 }
 
 export async function getGoogleAccessToken() {
+  const now = Date.now();
+  if (cachedAccessToken && cachedAccessTokenExpiresAt > now + 60_000) {
+    return cachedAccessToken;
+  }
+  if (tokenRefreshPromise) {
+    return tokenRefreshPromise;
+  }
+
   const clientId = env("GOOGLE_CLIENT_ID");
   const clientSecret = env("GOOGLE_CLIENT_SECRET");
   const refreshToken = env("GOOGLE_REFRESH_TOKEN");
@@ -290,28 +318,38 @@ export async function getGoogleAccessToken() {
     throw new Error("google_not_configured");
   }
 
-  const response = await fetch(GOOGLE_TOKEN_URL, {
-    method: "POST",
-    headers: { "content-type": "application/x-www-form-urlencoded" },
-    body: new URLSearchParams({
-      client_id: clientId,
-      client_secret: clientSecret,
-      refresh_token: refreshToken,
-      grant_type: "refresh_token",
-    }),
-  });
+  tokenRefreshPromise = (async () => {
+    const response = await fetchWithTimeout(GOOGLE_TOKEN_URL, {
+      method: "POST",
+      headers: { "content-type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams({
+        client_id: clientId,
+        client_secret: clientSecret,
+        refresh_token: refreshToken,
+        grant_type: "refresh_token",
+      }),
+    });
 
-  if (!response.ok) {
-    const details = await parseJsonResponse(response);
-    throw new Error(`google_token_error:${response.status}:${JSON.stringify(details)}`);
+    if (!response.ok) {
+      const details = await parseJsonResponse(response);
+      throw new Error(`google_token_error:${response.status}:${JSON.stringify(details)}`);
+    }
+
+    const payload = await response.json();
+    if (!payload.access_token) {
+      throw new Error("google_token_missing");
+    }
+
+    cachedAccessToken = String(payload.access_token);
+    cachedAccessTokenExpiresAt = Date.now() + Math.max(60, Number(payload.expires_in || 3600) - 120) * 1000;
+    return cachedAccessToken;
+  })();
+
+  try {
+    return await tokenRefreshPromise;
+  } finally {
+    tokenRefreshPromise = null;
   }
-
-  const payload = await response.json();
-  if (!payload.access_token) {
-    throw new Error("google_token_missing");
-  }
-
-  return String(payload.access_token);
 }
 
 export async function createGmailDraft(body: any) {

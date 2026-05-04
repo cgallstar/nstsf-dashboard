@@ -105,6 +105,7 @@ function formatSyncError(error: unknown) {
   if (message === "invoice_match_low_confidence") return "Fakturaen kunne ikke matches sikkert til en sag ud fra mailtekst, filnavn, adresse, sagsID eller kendt fakturanummer.";
   if (message === "invoice_match_ambiguous") return "Fakturaen matcher flere mulige sager og kræver manuel afklaring.";
   if (message.startsWith("google_token_error:")) return "Google OAuth-token kunne ikke fornyes.";
+  if (message.startsWith("google_fetch_timeout:")) return "Google API svarede for langsomt. Sync blev stoppet for at undgå Netlify-timeout.";
   const googleHit = message.match(/^google_api_error:([^:]+):(\d+):(.*)$/);
   if (googleHit) {
     const operation = googleHit[1];
@@ -1450,17 +1451,34 @@ export default async (request: Request) => {
 
   const state = await loadDashboardState();
   if (!state) return json({ ok: false, error: "no_state" }, 404);
+  const syncStartedAt = Date.now();
+  const isNearFunctionTimeout = () => Date.now() - syncStartedAt > 8500;
   const archivedResults: any[] = [];
   const archiveErrors: any[] = [];
-  const ensuredFolders = await ensureDriveFoldersForLinkedCases(state);
+  const ensuredFolders: any[] = [];
 
   try {
-    const archiveThreadBatches = await Promise.all(
-      ARCHIVE_QUERIES.map((query) => listRecentGmailThreads(query, 6)),
+    const archiveThreadBatches = await Promise.allSettled(
+      ARCHIVE_QUERIES.map((query) => listRecentGmailThreads(query, 4)),
     );
-    const archiveThreads = dedupeThreads(archiveThreadBatches.flat()).slice(0, 12);
-    const inboxThreads = await listRecentGmailThreads(SYNC_QUERY, 8);
-    const threads = dedupeThreads([...archiveThreads, ...inboxThreads]).slice(0, 16);
+    const archiveThreads = dedupeThreads(archiveThreadBatches
+      .filter((result): result is PromiseFulfilledResult<any[]> => result.status === "fulfilled")
+      .flatMap((result) => result.value)).slice(0, 8);
+    archiveThreadBatches.forEach((result, index) => {
+      if (result.status === "fulfilled") return;
+      appendSyncLog(state, {
+        status: "error",
+        subject: "Opdatér Sager",
+        customerName: "",
+        caseId: "",
+        documentType: "Gmail-søgning",
+        category: "gmail",
+        error: formatSyncError(result.reason),
+        notes: `Gmail-søgning ${index + 1} svarede ikke korrekt. Sync fortsatte med de øvrige søgninger.`,
+      });
+    });
+    const inboxThreads = isNearFunctionTimeout() ? [] : await listRecentGmailThreads(SYNC_QUERY, 6);
+    const threads = dedupeThreads([...archiveThreads, ...inboxThreads]).slice(0, 10);
     const fullThreadResults = await Promise.allSettled(
       threads.map((thread: any) => getGmailThread(String(thread.id))),
     );
@@ -1513,6 +1531,19 @@ export default async (request: Request) => {
     const itemByThreadId = new Map(items.map((item: any) => [textValue(item.threadId || item.id, ""), item]));
 
     for (const thread of fullThreads) {
+      if (isNearFunctionTimeout()) {
+        appendSyncLog(state, {
+          status: "error",
+          subject: "Opdatér Sager",
+          customerName: "",
+          caseId: "",
+          documentType: "Tidsbudget",
+          category: "sync",
+          error: "Google API svarede for langsomt. Sync blev stoppet kontrolleret.",
+          notes: "Ikke alle tråde blev behandlet i dette kald. Tryk Opdatér Sager igen for næste batch.",
+        });
+        break;
+      }
       const threadId = textValue(thread?.id, "");
       const item = itemByThreadId.get(threadId);
       if (!item) continue;
@@ -1668,4 +1699,5 @@ function signalCategoryFromResult(result: any) {
 
 export const config = {
   path: "/api/gmail-sync",
+  maxDuration: 26,
 };
