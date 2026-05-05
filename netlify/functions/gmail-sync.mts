@@ -30,6 +30,7 @@ const EXCLUDED_MAIL_QUERY = "-from:cgallstar@gmail.com -from:christian@scventure
 const OWNER_QUERY = `${NSTSF_QUERY} ${EXCLUDED_MAIL_QUERY}`;
 const GADESVEJ_DRIVE_URL = "https://drive.google.com/drive/folders/1IPXK472x8-Peasfv7kKU-JrG9oUNb6-4";
 const SYNC_QUERY = `newer_than:30d -in:spam -in:trash ${OWNER_QUERY}`;
+const DKE_QUESTION_QUERY = `newer_than:14d -in:spam -in:trash ${OWNER_QUERY} ("DJ-pult" OR "DJ pult" OR "uge 19" OR "endelig aflevering" OR "Bülowsvej 9" OR "Bulowsvej 9" OR "Blågårdsgade 14" OR "Blaagaardsgade 14")`;
 const ARCHIVE_QUERIES = [
   `newer_than:90d -in:spam -in:trash ${OWNER_QUERY} ("Faktura" OR "faktura")`,
   `newer_than:45d -in:spam -in:trash ${OWNER_QUERY} ("Byggemødereferat" OR "Byggemodereferat" OR "byggemøde" OR "byggemode")`,
@@ -38,7 +39,7 @@ const ARCHIVE_QUERIES = [
   `newer_than:45d -in:spam -in:trash ${OWNER_QUERY} ("Faktura" "Nordsjællands Tømrer")`,
   `newer_than:45d -in:spam -in:trash ${OWNER_QUERY} ("Bülowsvej" OR "Bulowsvej" OR "NV Gadesvej" OR "N. V. Gadesvej")`,
   `newer_than:45d -in:spam -in:trash ${OWNER_QUERY} ("Pladebutik" OR "Blågårdsgade 14" OR "Blaagaardsgade 14" OR "Kingosvej 1B")`,
-  `newer_than:14d -in:spam -in:trash ${OWNER_QUERY} ("DJ-pult" OR "DJ pult" OR "uge 19" OR "endelig aflevering" OR "Bülowsvej 9" OR "Bulowsvej 9" OR "Blågårdsgade 14" OR "Blaagaardsgade 14")`,
+  DKE_QUESTION_QUERY,
 ];
 const DANISH_MONTHS: Record<string, string> = {
   januar: "01",
@@ -1662,6 +1663,19 @@ export default async (request: Request) => {
   const ensuredFolders: any[] = [];
 
   try {
+    const dkeQuestionThreads = await listRecentGmailThreads(DKE_QUESTION_QUERY, 8).catch((error) => {
+      appendSyncLog(state, {
+        status: "error",
+        subject: "DKE/Charlotte Gmail-søgning",
+        customerName: "DKE / Charlotte",
+        caseId: "1002",
+        documentType: "Gmail-søgning",
+        category: "gmail",
+        error: formatSyncError(error),
+        notes: "Den prioriterede DKE/Charlotte-søgning svarede ikke korrekt.",
+      });
+      return [];
+    });
     const archiveThreadBatches = await Promise.allSettled(
       ARCHIVE_QUERIES.map((query) => listRecentGmailThreads(query, 4)),
     );
@@ -1682,7 +1696,7 @@ export default async (request: Request) => {
       });
     });
     const inboxThreads = isNearFunctionTimeout() ? [] : await listRecentGmailThreads(SYNC_QUERY, 6);
-    const threads = dedupeThreads([...archiveThreads, ...inboxThreads]).slice(0, 10);
+    const threads = dedupeThreads([...dkeQuestionThreads, ...archiveThreads, ...inboxThreads]).slice(0, 14);
     const fullThreadResults = await Promise.allSettled(
       threads.map((thread: any) => getGmailThread(String(thread.id))),
     );
