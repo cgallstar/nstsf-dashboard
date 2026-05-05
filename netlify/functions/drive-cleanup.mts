@@ -9,6 +9,7 @@ import {
 import {
   ensureCaseDriveFolders,
   googleIntegrationStatus,
+  listDriveFilesInFolder,
   listDriveFilesByName,
   trashDriveFile,
 } from "./_lib/google.mts";
@@ -69,6 +70,22 @@ function pickKeeper(files: any[]) {
   })[0];
 }
 
+function addDuplicatePlan(plans: any[], plan: any) {
+  const key = [
+    textValue(plan.caseId, ""),
+    textValue(plan.category, ""),
+    textValue(plan.folderId, ""),
+    normalizeFileName(textValue(plan.fileName, "")).toLowerCase(),
+  ].join("|");
+  const exists = plans.some((entry) => [
+    textValue(entry.caseId, ""),
+    textValue(entry.category, ""),
+    textValue(entry.folderId, ""),
+    normalizeFileName(textValue(entry.fileName, "")).toLowerCase(),
+  ].join("|") === key);
+  if (!exists) plans.push(plan);
+}
+
 export default async (request: Request) => {
   const auth = authorizeDashboardRequest(request, { allowActionsToken: true });
   if (!auth.ok) return auth.response;
@@ -124,7 +141,7 @@ export default async (request: Request) => {
       if (files.length <= 1) continue;
       const keeper = pickKeeper(files);
       const duplicates = files.filter((file) => textValue(file?.id, "") !== textValue(keeper?.id, ""));
-      plans.push({
+      addDuplicatePlan(plans, {
         caseId,
         customerName,
         category: entry.category,
@@ -133,6 +150,35 @@ export default async (request: Request) => {
         keeper,
         duplicates,
       });
+    }
+
+    for (const category of DOC_CATEGORIES) {
+      const folderId = textValue(folderInfo?.folders?.[category]?.id, "");
+      if (!folderId) continue;
+      const files = await listDriveFilesInFolder(folderId);
+      const groups = new Map<string, any[]>();
+      for (const file of files) {
+        const mimeType = textValue(file?.mimeType, "");
+        if (mimeType === "application/vnd.google-apps.folder") continue;
+        const fileName = normalizeFileName(textValue(file?.name, ""));
+        if (!fileName) continue;
+        const key = fileName.toLowerCase();
+        groups.set(key, [...(groups.get(key) || []), file]);
+      }
+      for (const [fileName, filesWithName] of groups) {
+        if (filesWithName.length <= 1) continue;
+        const keeper = pickKeeper(filesWithName);
+        const duplicates = filesWithName.filter((file) => textValue(file?.id, "") !== textValue(keeper?.id, ""));
+        addDuplicatePlan(plans, {
+          caseId,
+          customerName,
+          category,
+          fileName,
+          folderId,
+          keeper,
+          duplicates,
+        });
+      }
     }
   }
 
