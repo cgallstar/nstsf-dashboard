@@ -151,7 +151,7 @@ function queueDiscoveredThreads(state: any, groups: Array<{ lane: string; priori
 
 function selectQueuedThreads(state: any, max = 14) {
   const syncState = ensureGmailSyncState(state);
-  return syncState.gmailQueue
+  const eligible = syncState.gmailQueue
     .filter((item: any) => {
       const id = textValue(item?.id, "");
       const historyId = textValue(item?.historyId, "");
@@ -161,8 +161,30 @@ function selectQueuedThreads(state: any, max = 14) {
       Number(b.priority || 0) - Number(a.priority || 0) ||
       Number(a.attempts || 0) - Number(b.attempts || 0) ||
       String(a.discoveredAt || "").localeCompare(String(b.discoveredAt || ""))
-    )
-    .slice(0, max);
+    );
+  const selected: any[] = [];
+  const seen = new Set<string>();
+  const takeLane = (lane: string, count: number) => {
+    for (const item of eligible) {
+      if (selected.length >= max || count <= 0) break;
+      const id = textValue(item?.id, "");
+      if (!id || seen.has(id) || textValue(item?.lane, "") !== lane) continue;
+      selected.push(item);
+      seen.add(id);
+      count -= 1;
+    }
+  };
+
+  takeLane("internal_inbox", 4);
+  takeLane("dke_questions", 2);
+  for (const item of eligible) {
+    if (selected.length >= max) break;
+    const id = textValue(item?.id, "");
+    if (!id || seen.has(id)) continue;
+    selected.push(item);
+    seen.add(id);
+  }
+  return selected;
 }
 
 function markQueuedThreadAttempt(state: any, id = "") {
@@ -2160,6 +2182,16 @@ export default async (request: Request) => {
             : "Intern/SMG-mail i indbakken er oprettet som intern opgave uden kundematch.",
         });
       }
+    } else if (internalInboxThreads.length) {
+      appendSyncLog(state, {
+        status: "archived",
+        subject: "Intern indbakke gennemgået",
+        customerName: "SMG / NSTSF",
+        caseId: "",
+        documentType: "Opgave-screening",
+        category: "sager",
+        notes: `${internalInboxThreads.length} interne/SMG-indbakke-mails blev hentet. Ingen nye opgaver blev oprettet, enten fordi de allerede fandtes, eller fordi de ikke havde konkret handlingssignal.`,
+      });
     }
 
     fullThreadResults.forEach((result, index) => {
