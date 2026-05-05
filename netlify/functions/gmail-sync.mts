@@ -29,6 +29,9 @@ const NSTSF_QUERY = `(from:${MAILBOX_OWNER} OR from:smg@nstsf.dk OR from:nstsf.d
 const EXCLUDED_MAIL_QUERY = "-from:cgallstar@gmail.com -from:christian@scventures.vc -to:christian@scventures.vc -cc:christian@scventures.vc -werkhaus";
 const OWNER_QUERY = `${NSTSF_QUERY} ${EXCLUDED_MAIL_QUERY}`;
 const GADESVEJ_DRIVE_URL = "https://drive.google.com/drive/folders/1IPXK472x8-Peasfv7kKU-JrG9oUNb6-4";
+const KNOWN_INVOICE_CASES: Record<string, string> = {
+  "1158": "1009",
+};
 const SYNC_QUERY = `newer_than:30d -in:spam -in:trash ${OWNER_QUERY}`;
 const DKE_QUESTION_QUERY = `newer_than:14d -in:spam -in:trash ${OWNER_QUERY} ("DJ-pult" OR "DJ pult" OR "uge 19" OR "endelig aflevering" OR "Bülowsvej 9" OR "Bül. 9" OR "Bulowsvej 9" OR "Bul. 9" OR "Blågårdsgade 14" OR "Blå. 14" OR "Blaagaardsgade 14" OR "Blaa. 14")`;
 const ARCHIVE_QUERIES = [
@@ -576,6 +579,9 @@ function labelInvoiceDocs(matched: any, invoiceNumber: string, date: string) {
 
 function applyInvoiceToCase(matched: any, invoiceNumber: string, date = "", amount = 0) {
   ensureCaseShape(matched);
+  const currentInvoice = textValue(matched.fak || matched.workflow?.invoiceNumber, "");
+  const alreadyPaidSameInvoice = currentInvoice === invoiceNumber &&
+    (textValue(matched.status, "").toLowerCase().includes("betalt") || textValue(matched.workflow?.invoicePaidDate, ""));
   const before = JSON.stringify({
     fak: matched.fak,
     status: matched.status,
@@ -585,12 +591,12 @@ function applyInvoiceToCase(matched: any, invoiceNumber: string, date = "", amou
     docs: matched.docs?.betaling,
   });
   matched.fak = invoiceNumber;
-  matched.status = "Faktura sendt";
+  matched.status = alreadyPaidSameInvoice ? "Faktura betalt" : "Faktura sendt";
   matched.workflow = matched.workflow && typeof matched.workflow === "object" ? matched.workflow : {};
   matched.workflow.invoiceNumber = invoiceNumber;
   matched.workflow.invoiceSentDate = date || matched.workflow.invoiceSentDate || new Date().toISOString().slice(0, 10);
   if (!textValue(matched.dato, "")) matched.dato = matched.workflow.invoiceSentDate;
-  if (amount) matched.u = formatAmount(amount);
+  if (amount && !alreadyPaidSameInvoice) matched.u = formatAmount(amount);
   const docsChanged = labelInvoiceDocs(matched, invoiceNumber, matched.workflow.invoiceSentDate);
   const after = JSON.stringify({
     fak: matched.fak,
@@ -601,6 +607,83 @@ function applyInvoiceToCase(matched: any, invoiceNumber: string, date = "", amou
     docs: matched.docs?.betaling,
   });
   return docsChanged || after !== before;
+}
+
+function findCaseByCustomerNumber(state: any, customerNumber = "") {
+  const wanted = normalizeCaseKey(customerNumber);
+  if (!wanted) return null;
+  return (Array.isArray(state?.sager) ? state.sager : []).find((entry: any) => primaryCaseNumber(entry) === wanted) || null;
+}
+
+function invoicePaidConfirmed(text = "") {
+  const compact = plainCompactText(text);
+  if (!compact) return false;
+  if (/\b(ikke|ej)\s+betalt\b/.test(compact)) return false;
+  return /\b(er|blevet|nu)\s+betalt\b/.test(compact) ||
+    /\bbetalt\b/.test(compact) && /\b(tak|kvittering|overfort|overfoert|har)\b/.test(compact);
+}
+
+function ensurePaymentRowPaid(state: any, matched: any, invoiceNumber: string, date = "", amount = 0) {
+  state.betalinger = Array.isArray(state?.betalinger) ? state.betalinger : [];
+  const caseNumber = primaryCaseNumber(matched);
+  const existing = state.betalinger.find((entry: any) => {
+    const sameInvoice = invoiceNumber && textValue(entry?.fak, "") === invoiceNumber;
+    const sameCase = caseNumber && primaryCaseNumberFromValue(entry?.nr) === caseNumber;
+    return sameInvoice && sameCase;
+  });
+  const payload = {
+    nr: caseNumber,
+    kunde: textValue(matched?.kunde, ""),
+    milepael: textValue(matched?.adr || matched?.opg, "Faktura betalt"),
+    dato: date || new Date().toISOString().slice(0, 10),
+    beloeb: amount ? formatAmount(amount) : textValue(existing?.beloeb || matched?.u, "0"),
+    fak: invoiceNumber,
+    status: "betalt",
+  };
+  if (existing) {
+    const before = JSON.stringify(existing);
+    Object.assign(existing, payload);
+    return JSON.stringify(existing) !== before;
+  }
+  state.betalinger.unshift(payload);
+  return true;
+}
+
+function applyInvoicePaidToCase(state: any, matched: any, invoiceNumber: string, date = "", amount = 0, reason = "Gmail-sync") {
+  ensureCaseShape(matched);
+  const before = JSON.stringify({
+    fak: matched.fak,
+    status: matched.status,
+    workflow: matched.workflow,
+    dato: matched.dato,
+    u: matched.u,
+    betalinger: state.betalinger,
+  });
+  if (invoiceNumber) matched.fak = invoiceNumber;
+  matched.status = "Faktura betalt";
+  matched.workflow = matched.workflow && typeof matched.workflow === "object" ? matched.workflow : {};
+  matched.workflow.invoiceNumber = invoiceNumber || matched.workflow.invoiceNumber;
+  matched.workflow.invoicePaidDate = date || new Date().toISOString().slice(0, 10);
+  if (amount) matched.workflow.invoicePaidAmount = formatAmount(amount);
+  matched.u = "0";
+  const paymentChanged = ensurePaymentRowPaid(state, matched, invoiceNumber, matched.workflow.invoicePaidDate, amount);
+  const after = JSON.stringify({
+    fak: matched.fak,
+    status: matched.status,
+    workflow: matched.workflow,
+    dato: matched.dato,
+    u: matched.u,
+    betalinger: state.betalinger,
+  });
+  const changed = paymentChanged || after !== before;
+  if (changed) {
+    appendActivity(matched, { name: "Gmail-sync", email: MAILBOX_OWNER }, {
+      type: "payment_paid",
+      title: `Faktura ${invoiceNumber} betalt`,
+      summary: `Kunden har bekræftet betaling af faktura ${invoiceNumber}${amount ? ` (${formatAmount(amount)} kr. inkl. moms)` : ""}. Registreret via ${reason}.`,
+    });
+  }
+  return changed;
 }
 
 function invoiceNumbersForCase(entry: any) {
@@ -678,6 +761,18 @@ function scoreInvoiceCase(entry: any, invoiceText: string, invoiceNumber = "") {
 }
 
 function matchInvoiceToCase(state: any, invoiceText: string, invoiceNumber = "") {
+  const knownCustomerNumber = textValue(KNOWN_INVOICE_CASES[invoiceNumber], "");
+  if (knownCustomerNumber) {
+    const known = findCaseByCustomerNumber(state, knownCustomerNumber);
+    if (known) {
+      return {
+        matched: known,
+        score: 30,
+        reasons: [`kendt faktura->K-${knownCustomerNumber}`],
+        ambiguous: false,
+      };
+    }
+  }
   const entries = Array.isArray(state?.sager) ? state.sager : [];
   const ranked = entries
     .map((entry: any) => ({ entry, ...scoreInvoiceCase(entry, invoiceText, invoiceNumber) }))
@@ -753,12 +848,18 @@ async function registerInvoicesFromThreads(state: any, threads: any[]) {
     const date = extractDocumentDate(summaries[0]?.subject || "", threadText, summaries[0]?.date);
     const amount = extractInvoiceAmount(threadText);
     const didApply = applyInvoiceToCase(matched, invoiceMatch[1], date, amount);
+    const paidConfirmed = invoicePaidConfirmed(threadText);
+    const didMarkPaid = paidConfirmed
+      ? applyInvoicePaidToCase(state, matched, invoiceMatch[1], date, amount, "betalingsbekræftelse i mail")
+      : false;
     if (didApply) {
       appendActivity(matched, { name: "Gmail-sync", email: MAILBOX_OWNER }, {
         type: "invoice_update",
         title: `Faktura ${invoiceMatch[1]} registreret`,
         summary: `Faktura ${invoiceMatch[1]} er registreret på sagen via Gmail-sync (${match.reasons.join(", ")}).`,
       });
+    }
+    if (didApply || didMarkPaid) {
       changed += 1;
       changedCases.push({
         threadId: textValue(thread?.id, ""),
@@ -766,6 +867,7 @@ async function registerInvoicesFromThreads(state: any, threads: any[]) {
         customerName: textValue(matched?.kunde, ""),
         invoiceNumber: invoiceMatch[1],
         amount,
+        paid: paidConfirmed,
       });
     }
   }
@@ -1409,11 +1511,20 @@ function applyArchiveSideEffects(matched: any, signal: any, archiveText = "", do
   }
   if (signal.category === "betaling") {
     if (signal.invoiceNumber) matched.fak = String(signal.invoiceNumber);
-    matched.status = "Faktura sendt";
+    const paidConfirmed = invoicePaidConfirmed(archiveText);
+    const alreadyPaidSameInvoice = textValue(matched.status, "").toLowerCase().includes("betalt") &&
+      (!signal.invoiceNumber || textValue(matched.fak || matched.workflow?.invoiceNumber, "") === textValue(signal.invoiceNumber, ""));
+    matched.status = paidConfirmed || alreadyPaidSameInvoice ? "Faktura betalt" : "Faktura sendt";
     matched.workflow.invoiceNumber = textValue(signal.invoiceNumber, matched.workflow.invoiceNumber);
     matched.workflow.invoiceSentDate = documentDate || new Date().toISOString().slice(0, 10);
     const invoiceAmount = extractInvoiceAmount(archiveText);
-    if (invoiceAmount) matched.u = formatAmount(invoiceAmount);
+    if (paidConfirmed) {
+      matched.workflow.invoicePaidDate = documentDate || new Date().toISOString().slice(0, 10);
+      if (invoiceAmount) matched.workflow.invoicePaidAmount = formatAmount(invoiceAmount);
+      matched.u = "0";
+    } else if (invoiceAmount && !alreadyPaidSameInvoice) {
+      matched.u = formatAmount(invoiceAmount);
+    }
     matched.dato = documentDate || matched.dato || new Date().toISOString().slice(0, 10);
     return;
   }
@@ -1846,7 +1957,9 @@ export default async (request: Request) => {
           caseId: textValue(entry.caseId, ""),
           documentType: "Faktura",
           category: "betaling",
-          notes: `${entry.invoiceNumber ? `Faktura ${entry.invoiceNumber}` : "Faktura"} er registreret på sagen via sikker Gmail/state-match${entry.amount ? ` med beløb ${entry.amount} kr.` : ""}.`,
+          notes: entry.paid
+            ? `${entry.invoiceNumber ? `Faktura ${entry.invoiceNumber}` : "Faktura"} er registreret som betalt på sagen via betalingsbekræftelse i mail${entry.amount ? ` med beløb ${entry.amount} kr. inkl. moms` : ""}.`
+            : `${entry.invoiceNumber ? `Faktura ${entry.invoiceNumber}` : "Faktura"} er registreret på sagen via sikker Gmail/state-match${entry.amount ? ` med beløb ${entry.amount} kr. inkl. moms` : ""}.`,
         });
       }
     }
