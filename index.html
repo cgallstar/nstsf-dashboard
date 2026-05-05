@@ -2311,7 +2311,7 @@ function seedCustomerTasks20260504(){
       markers:['henrik', 'jyllinge', 'smedestræde 4', 'smedestraede 4'],
       customerId:'1005',
       title:'Åbn masterplan for Smedestræde 4',
-      notes:'Masterplanen er lagt ind som klikbart link på kunden.',
+      notes:'Masterplanen er opdateret til version 3 og ligger som klikbart link på kunden.',
       dueDate:'',
       owner:'Søren',
       url:'smedestrade4_masterplan.html',
@@ -2338,7 +2338,16 @@ function seedCustomerTasks20260504(){
       const internalIndex = internalTasks.findIndex((entry)=>String(entry.id || '') === task.id);
       if(internalIndex >= 0){ internalTasks.splice(internalIndex, 1); changed = true; }
       matched.tasks = Array.isArray(matched.tasks) ? matched.tasks : [];
-      if(!matched.tasks.some((entry)=>String(entry.id || '') === task.id)){
+      const existingTask = matched.tasks.find((entry)=>String(entry.id || '') === task.id);
+      if(existingTask){
+        ['title', 'notes', 'dueDate', 'owner', 'url'].forEach((field)=>{
+          const nextValue = field === 'url' ? task.url || '' : task[field];
+          if(nextValue !== undefined && String(existingTask[field] || '') !== String(nextValue || '')){
+            existingTask[field] = nextValue;
+            changed = true;
+          }
+        });
+      } else {
         matched.tasks.unshift({
           id:task.id,
           title:task.title,

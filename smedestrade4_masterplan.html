@@ -658,470 +658,174 @@
   <!-- GANTT -->
   <div class="section-title">OVERBLIK — FASEPLAN UGE FOR UGE</div>
 
-  <div class="gantt">
+  <style>
+    .gantt-section-divider {
+      color: white;
+      font-family: Consolas, monospace;
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      padding: 5px 12px;
+      margin-top: 6px;
+    }
+    .week-summer { background: #fffbea !important; }
+    .week-poland { background: #fde8e8 !important; }
+    .bar-ul { background: #2980B9; }
+    .bar-os { background: #1E3A5F; }
+    .bar-os-dim { background: #4a7ba8; }
+    .bar-maler { background: #D35400; }
+    .bar-garage { background: #888; }
+    .bar-vvs { background: #C0392B; }
+    .gantt-week-label.summer { color: #b7860b !important; font-weight: 700; }
+    .gantt-week-label.poland { color: #C0392B !important; font-weight: 700; }
+    .gantt-week-label.yr27 { color: #1E6B4A !important; font-weight: 700; border-left: 2px solid #1E6B4A; }
+    .who { display:inline-block; font-family:Consolas,monospace; font-size:8px; font-weight:700; padding:1px 4px; border-radius:2px; margin-left:4px; vertical-align:middle; }
+    .who-ul { background:#D6EAF8; color:#1a5276; }
+    .who-os { background:#D5F5E3; color:#1a5c35; }
+    .who-both { background:#EDE9E0; color:#555; border:1px solid #ccc; }
+  </style>
+
+  <div style="display:flex;align-items:center;gap:16px;margin-bottom:8px;font-size:10px;flex-wrap:wrap;padding:0 4px">
+    <span style="display:inline-flex;align-items:center;gap:5px"><span style="width:14px;height:10px;background:#1E3A5F;border-radius:2px;display:inline-block"></span>Eget hold (OS)</span>
+    <span style="display:inline-flex;align-items:center;gap:5px"><span style="width:14px;height:10px;background:#4a7ba8;border-radius:2px;display:inline-block"></span>OS reduceret (Polen)</span>
+    <span style="display:inline-flex;align-items:center;gap:5px"><span style="width:14px;height:10px;background:#2980B9;border-radius:2px;display:inline-block"></span>Underleverandør (UL)</span>
+    <span style="display:inline-flex;align-items:center;gap:5px"><span style="width:14px;height:10px;background:#C0392B;border-radius:2px;display:inline-block"></span>VVS (UL)</span>
+    <span style="display:inline-flex;align-items:center;gap:5px"><span style="width:14px;height:10px;background:#D35400;border-radius:2px;display:inline-block"></span>Maler (OS)</span>
+    <span style="display:inline-flex;align-items:center;gap:5px"><span style="width:14px;height:10px;background:#888;border-radius:2px;display:inline-block"></span>Garage</span>
+    <span style="display:inline-flex;align-items:center;gap:5px"><span style="width:14px;height:10px;background:#fffbea;border:1px solid #b7860b;border-radius:2px;display:inline-block"></span>Sommerferie U28-32</span>
+    <span style="display:inline-flex;align-items:center;gap:5px"><span style="width:14px;height:10px;background:#fde8e8;border:1px solid #c0392b66;border-radius:2px;display:inline-block"></span>Polen / fraværende</span>
+    <span style="display:inline-flex;align-items:center;gap:5px"><span style="font-family:Consolas,monospace;font-size:9px;font-weight:700;color:#1E6B4A">U1'27</span>= 2027</span>
+  </div>
+
+  <div class="gantt" style="overflow-x:auto">
     <div class="gantt-header">
       <div class="gantt-header-label">FASE / ENTREPRISE</div>
       <div class="gantt-header-weeks">
         <div class="gantt-week-label highlight">U20</div>
         <div class="gantt-week-label highlight">U21</div>
-        <div class="gantt-week-label">U22</div>
+        <div class="gantt-week-label poland">U22</div>
         <div class="gantt-week-label">U23</div>
         <div class="gantt-week-label">U24</div>
         <div class="gantt-week-label">U25</div>
         <div class="gantt-week-label">U26</div>
         <div class="gantt-week-label">U27</div>
-        <div class="gantt-week-label">U28</div>
-        <div class="gantt-week-label">U29</div>
-        <div class="gantt-week-label">U30</div>
-        <div class="gantt-week-label">U31</div>
-        <div class="gantt-week-label">U32</div>
+        <div class="gantt-week-label summer">U28</div>
+        <div class="gantt-week-label summer poland">U29</div>
+        <div class="gantt-week-label summer">U30</div>
+        <div class="gantt-week-label summer">U31</div>
+        <div class="gantt-week-label summer">U32</div>
         <div class="gantt-week-label">U33</div>
         <div class="gantt-week-label">U34</div>
         <div class="gantt-week-label">U35</div>
         <div class="gantt-week-label">U36</div>
-        <div class="gantt-week-label">U37</div>
+        <div class="gantt-week-label poland">U37</div>
         <div class="gantt-week-label">U38</div>
         <div class="gantt-week-label">U39</div>
         <div class="gantt-week-label">U40</div>
         <div class="gantt-week-label">U41</div>
         <div class="gantt-week-label">U42</div>
         <div class="gantt-week-label">U43</div>
+        <div class="gantt-week-label poland">U44</div>
+        <div class="gantt-week-label">U45</div>
+        <div class="gantt-week-label poland">U46</div>
+        <div class="gantt-week-label">U47</div>
+        <div class="gantt-week-label">U48</div>
+        <div class="gantt-week-label">U49</div>
+        <div class="gantt-week-label">U50</div>
+        <div class="gantt-week-label">U51</div>
+        <div class="gantt-week-label poland">U52</div>
+        <div class="gantt-week-label yr27">U1'27</div>
+        <div class="gantt-week-label yr27">U2'27</div>
+        <div class="gantt-week-label yr27">U3'27</div>
+        <div class="gantt-week-label yr27">U4'27</div>
       </div>
     </div>
-
-    <!-- Forberedelse -->
-    <div class="gantt-row">
-      <div class="gantt-label">Stillads<div class="sub">T8 - UL</div></div>
-      <div class="gantt-weeks">
-        <div class="gantt-week"><div class="gantt-bar bar-red" style="margin-left:0%;width:100%"></div></div>
-        <div class="gantt-week"><div class="gantt-bar bar-red"></div></div>
-        <div class="gantt-week"><div class="gantt-bar bar-red"></div></div>
-        <div class="gantt-week"><div class="gantt-bar bar-red"></div></div>
-        <div class="gantt-week"><div class="gantt-bar bar-red"></div></div>
-        <div class="gantt-week"><div class="gantt-bar bar-red"></div></div>
-        <div class="gantt-week"><div class="gantt-bar bar-red"></div></div>
-        <div class="gantt-week"><div class="gantt-bar bar-red"></div></div>
-        <div class="gantt-week"><div class="gantt-bar bar-red"></div></div>
-        <div class="gantt-week"><div class="gantt-bar bar-red"></div></div>
-        <div class="gantt-week"><div class="gantt-bar bar-red"></div></div>
-        <div class="gantt-week"><div class="gantt-bar bar-red"></div></div>
-        <div class="gantt-week"><div class="gantt-bar bar-red"></div></div>
-        <div class="gantt-week"><div class="gantt-bar bar-red"></div></div>
-        <div class="gantt-week"><div class="gantt-bar bar-red"></div></div>
-        <div class="gantt-week"><div class="gantt-bar bar-red"></div></div>
-        <div class="gantt-week"></div>
-        <div class="gantt-week"></div>
-        <div class="gantt-week"></div>
-        <div class="gantt-week"></div>
-        <div class="gantt-week"></div>
-        <div class="gantt-week"></div>
-        <div class="gantt-week"></div>
-        <div class="gantt-week"></div>
-      </div>
-    </div>
+    <div class="gantt-section-divider" style="background:var(--navy)">— UNDERLEVERANDØRER (UL) —</div>
 
     <div class="gantt-row">
-      <div class="gantt-label">Asbest + tag-afdækning<div class="sub">T9/T10 - UL</div></div>
-      <div class="gantt-weeks">
-        <div class="gantt-week"><div class="gantt-bar bar-navy"></div></div>
-        <div class="gantt-week"><div class="gantt-bar bar-navy"></div></div>
-        <div class="gantt-week"></div>
-        <div class="gantt-week"></div>
-        <div class="gantt-week"></div>
-        <div class="gantt-week"></div>
-        <div class="gantt-week"></div>
-        <div class="gantt-week"></div>
-        <div class="gantt-week"></div>
-        <div class="gantt-week"></div>
-        <div class="gantt-week"></div>
-        <div class="gantt-week"></div>
-        <div class="gantt-week"></div>
-        <div class="gantt-week"></div>
-        <div class="gantt-week"></div>
-        <div class="gantt-week"></div>
-        <div class="gantt-week"></div>
-        <div class="gantt-week"></div>
-        <div class="gantt-week"></div>
-        <div class="gantt-week"></div>
-        <div class="gantt-week"></div>
-        <div class="gantt-week"></div>
-        <div class="gantt-week"></div>
-        <div class="gantt-week"></div>
-      </div>
+      <div class="gantt-label">Stillads<span class="who who-ul">UL</span><div class="sub">T8 — UL</div></div>
+      <div class="gantt-weeks"><div class="gantt-week"><div class="gantt-bar bar-ul"></div></div><div class="gantt-week"><div class="gantt-bar bar-ul"></div></div><div class="gantt-week week-poland"><div class="gantt-bar bar-ul"></div></div><div class="gantt-week"><div class="gantt-bar bar-ul"></div></div><div class="gantt-week"><div class="gantt-bar bar-ul"></div></div><div class="gantt-week"><div class="gantt-bar bar-ul"></div></div><div class="gantt-week"><div class="gantt-bar bar-ul"></div></div><div class="gantt-week"><div class="gantt-bar bar-ul"></div></div><div class="gantt-week week-summer"><div class="gantt-bar bar-ul"></div></div><div class="gantt-week week-summer week-poland"><div class="gantt-bar bar-ul"></div></div><div class="gantt-week week-summer"><div class="gantt-bar bar-ul"></div></div><div class="gantt-week week-summer"><div class="gantt-bar bar-ul"></div></div><div class="gantt-week week-summer"><div class="gantt-bar bar-ul"></div></div><div class="gantt-week"><div class="gantt-bar bar-ul"></div></div><div class="gantt-week"><div class="gantt-bar bar-ul"></div></div><div class="gantt-week"><div class="gantt-bar bar-ul"></div></div><div class="gantt-week"><div class="gantt-bar bar-ul"></div></div><div class="gantt-week week-poland"></div><div class="gantt-week"></div><div class="gantt-week"></div><div class="gantt-week"></div><div class="gantt-week"></div><div class="gantt-week"></div><div class="gantt-week"></div><div class="gantt-week week-poland"></div><div class="gantt-week"></div><div class="gantt-week week-poland"></div><div class="gantt-week"></div><div class="gantt-week"></div><div class="gantt-week"></div><div class="gantt-week"></div><div class="gantt-week"></div><div class="gantt-week week-poland"></div><div class="gantt-week"></div><div class="gantt-week"></div><div class="gantt-week"></div><div class="gantt-week"></div></div>
     </div>
+    <div class="gantt-row">
+      <div class="gantt-label">Asbest + tag-afdækning<span class="who who-ul">UL</span><div class="sub">T9/T10 — UL — start + sommer</div></div>
+      <div class="gantt-weeks"><div class="gantt-week"><div class="gantt-bar bar-ul"></div></div><div class="gantt-week"><div class="gantt-bar bar-ul"></div></div><div class="gantt-week week-poland"></div><div class="gantt-week"></div><div class="gantt-week"></div><div class="gantt-week"></div><div class="gantt-week"></div><div class="gantt-week"></div><div class="gantt-week week-summer"><div class="gantt-bar bar-ul"></div></div><div class="gantt-week week-summer week-poland"><div class="gantt-bar bar-ul"></div></div><div class="gantt-week week-summer"></div><div class="gantt-week week-summer"></div><div class="gantt-week week-summer"></div><div class="gantt-week"></div><div class="gantt-week"></div><div class="gantt-week"></div><div class="gantt-week"></div><div class="gantt-week week-poland"></div><div class="gantt-week"></div><div class="gantt-week"></div><div class="gantt-week"></div><div class="gantt-week"></div><div class="gantt-week"></div><div class="gantt-week"></div><div class="gantt-week week-poland"></div><div class="gantt-week"></div><div class="gantt-week week-poland"></div><div class="gantt-week"></div><div class="gantt-week"></div><div class="gantt-week"></div><div class="gantt-week"></div><div class="gantt-week"></div><div class="gantt-week week-poland"></div><div class="gantt-week"></div><div class="gantt-week"></div><div class="gantt-week"></div><div class="gantt-week"></div></div>
+    </div>
+    <div class="gantt-row">
+      <div class="gantt-label">VVS installationer + bad<span class="who who-ul">UL</span><div class="sub">T7 — UL — install. U27-32, bad U43-44, slut U52-U4'27</div></div>
+      <div class="gantt-weeks"><div class="gantt-week"></div><div class="gantt-week"></div><div class="gantt-week week-poland"></div><div class="gantt-week"></div><div class="gantt-week"></div><div class="gantt-week"></div><div class="gantt-week"></div><div class="gantt-week"><div class="gantt-bar bar-vvs"></div></div><div class="gantt-week week-summer"><div class="gantt-bar bar-vvs"></div></div><div class="gantt-week week-summer week-poland"><div class="gantt-bar bar-vvs"></div></div><div class="gantt-week week-summer"><div class="gantt-bar bar-vvs"></div></div><div class="gantt-week week-summer"><div class="gantt-bar bar-vvs"></div></div><div class="gantt-week week-summer"><div class="gantt-bar bar-vvs"></div></div><div class="gantt-week"></div><div class="gantt-week"></div><div class="gantt-week"></div><div class="gantt-week"></div><div class="gantt-week week-poland"></div><div class="gantt-week"></div><div class="gantt-week"></div><div class="gantt-week"></div><div class="gantt-week"></div><div class="gantt-week"></div><div class="gantt-week"><div class="gantt-bar bar-vvs"></div></div><div class="gantt-week week-poland"><div class="gantt-bar bar-vvs"></div></div><div class="gantt-week"></div><div class="gantt-week week-poland"></div><div class="gantt-week"></div><div class="gantt-week"></div><div class="gantt-week"></div><div class="gantt-week"></div><div class="gantt-week"></div><div class="gantt-week week-poland"><div class="gantt-bar bar-vvs"></div></div><div class="gantt-week"><div class="gantt-bar bar-vvs"></div></div><div class="gantt-week"><div class="gantt-bar bar-vvs"></div></div><div class="gantt-week"><div class="gantt-bar bar-vvs"></div></div><div class="gantt-week"><div class="gantt-bar bar-vvs"></div></div></div>
+    </div>
+    <div class="gantt-row">
+      <div class="gantt-label">El-installationer<span class="who who-ul">UL</span><div class="sub">T11 — UL — løbende U30–U4'27 m. pauser</div></div>
+      <div class="gantt-weeks"><div class="gantt-week"></div><div class="gantt-week"></div><div class="gantt-week week-poland"></div><div class="gantt-week"></div><div class="gantt-week"></div><div class="gantt-week"></div><div class="gantt-week"></div><div class="gantt-week"></div><div class="gantt-week week-summer"></div><div class="gantt-week week-summer week-poland"></div><div class="gantt-week week-summer"><div class="gantt-bar bar-ul"></div></div><div class="gantt-week week-summer"><div class="gantt-bar bar-ul"></div></div><div class="gantt-week week-summer"><div class="gantt-bar bar-ul"></div></div><div class="gantt-week"><div class="gantt-bar bar-ul"></div></div><div class="gantt-week"><div class="gantt-bar bar-ul"></div></div><div class="gantt-week"></div><div class="gantt-week"><div class="gantt-bar bar-ul"></div></div><div class="gantt-week week-poland"></div><div class="gantt-week"><div class="gantt-bar bar-ul"></div></div><div class="gantt-week"></div><div class="gantt-week"><div class="gantt-bar bar-ul"></div></div><div class="gantt-week"><div class="gantt-bar bar-ul"></div></div><div class="gantt-week"></div><div class="gantt-week"><div class="gantt-bar bar-ul"></div></div><div class="gantt-week week-poland"><div class="gantt-bar bar-ul"></div></div><div class="gantt-week"></div><div class="gantt-week week-poland"></div><div class="gantt-week"><div class="gantt-bar bar-ul"></div></div><div class="gantt-week"></div><div class="gantt-week"></div><div class="gantt-week"><div class="gantt-bar bar-ul"></div></div><div class="gantt-week"></div><div class="gantt-week week-poland"></div><div class="gantt-week"><div class="gantt-bar bar-ul"></div></div><div class="gantt-week"><div class="gantt-bar bar-ul"></div></div><div class="gantt-week"><div class="gantt-bar bar-ul"></div></div><div class="gantt-week"><div class="gantt-bar bar-ul"></div></div></div>
+    </div>
+    <div class="gantt-section-divider" style="background:#1E6B4A">— EGET HOLD (OS) — 6 svende + 4 lærlinge — min. 2 altid på andre projekter —</div>
 
     <div class="gantt-row">
-      <div class="gantt-label">Tag — ny konstruktion<div class="sub">T8 - TØM + UL</div></div>
-      <div class="gantt-weeks">
-        <div class="gantt-week"></div>
-        <div class="gantt-week"></div>
-        <div class="gantt-week"><div class="gantt-bar bar-navy"></div></div>
-        <div class="gantt-week"><div class="gantt-bar bar-navy"></div></div>
-        <div class="gantt-week"><div class="gantt-bar bar-navy"></div></div>
-        <div class="gantt-week"><div class="gantt-bar bar-navy"></div></div>
-        <div class="gantt-week"><div class="gantt-bar bar-navy"></div></div>
-        <div class="gantt-week"><div class="gantt-bar bar-navy"></div></div>
-        <div class="gantt-week"></div>
-        <div class="gantt-week"></div>
-        <div class="gantt-week"></div>
-        <div class="gantt-week"></div>
-        <div class="gantt-week"></div>
-        <div class="gantt-week"></div>
-        <div class="gantt-week"></div>
-        <div class="gantt-week"></div>
-        <div class="gantt-week"></div>
-        <div class="gantt-week"></div>
-        <div class="gantt-week"></div>
-        <div class="gantt-week"></div>
-        <div class="gantt-week"></div>
-        <div class="gantt-week"></div>
-        <div class="gantt-week"></div>
-        <div class="gantt-week"></div>
-      </div>
+      <div class="gantt-label">Tag — ny konstruktion<span class="who who-os">OS</span><div class="sub">T8 — OS U23-27, UL sommer U28-32</div></div>
+      <div class="gantt-weeks"><div class="gantt-week"></div><div class="gantt-week"></div><div class="gantt-week week-poland"></div><div class="gantt-week"><div class="gantt-bar bar-os"></div></div><div class="gantt-week"><div class="gantt-bar bar-os"></div></div><div class="gantt-week"><div class="gantt-bar bar-os"></div></div><div class="gantt-week"><div class="gantt-bar bar-os"></div></div><div class="gantt-week"><div class="gantt-bar bar-os"></div></div><div class="gantt-week week-summer"></div><div class="gantt-week week-summer week-poland"></div><div class="gantt-week week-summer"></div><div class="gantt-week week-summer"></div><div class="gantt-week week-summer"></div><div class="gantt-week"></div><div class="gantt-week"></div><div class="gantt-week"></div><div class="gantt-week"></div><div class="gantt-week week-poland"></div><div class="gantt-week"></div><div class="gantt-week"></div><div class="gantt-week"></div><div class="gantt-week"></div><div class="gantt-week"></div><div class="gantt-week"></div><div class="gantt-week week-poland"></div><div class="gantt-week"></div><div class="gantt-week week-poland"></div><div class="gantt-week"></div><div class="gantt-week"></div><div class="gantt-week"></div><div class="gantt-week"></div><div class="gantt-week"></div><div class="gantt-week week-poland"></div><div class="gantt-week"></div><div class="gantt-week"></div><div class="gantt-week"></div><div class="gantt-week"></div></div>
     </div>
+    <div class="gantt-row">
+      <div class="gantt-label">Hanebåndsloft isolation<span class="who who-os">OS</span><div class="sub">T5 — OS U43-U50</div></div>
+      <div class="gantt-weeks"><div class="gantt-week"></div><div class="gantt-week"></div><div class="gantt-week week-poland"></div><div class="gantt-week"></div><div class="gantt-week"></div><div class="gantt-week"></div><div class="gantt-week"></div><div class="gantt-week"></div><div class="gantt-week week-summer"></div><div class="gantt-week week-summer week-poland"></div><div class="gantt-week week-summer"></div><div class="gantt-week week-summer"></div><div class="gantt-week week-summer"></div><div class="gantt-week"></div><div class="gantt-week"></div><div class="gantt-week"></div><div class="gantt-week"></div><div class="gantt-week week-poland"></div><div class="gantt-week"></div><div class="gantt-week"></div><div class="gantt-week"></div><div class="gantt-week"></div><div class="gantt-week"></div><div class="gantt-week"><div class="gantt-bar bar-os"></div></div><div class="gantt-week week-poland"><div class="gantt-bar bar-os-dim"></div></div><div class="gantt-week"><div class="gantt-bar bar-os"></div></div><div class="gantt-week week-poland"><div class="gantt-bar bar-os-dim"></div></div><div class="gantt-week"><div class="gantt-bar bar-os"></div></div><div class="gantt-week"><div class="gantt-bar bar-os"></div></div><div class="gantt-week"><div class="gantt-bar bar-os"></div></div><div class="gantt-week"><div class="gantt-bar bar-os"></div></div><div class="gantt-week"></div><div class="gantt-week week-poland"></div><div class="gantt-week"></div><div class="gantt-week"></div><div class="gantt-week"></div><div class="gantt-week"></div></div>
+    </div>
+    <div class="gantt-row">
+      <div class="gantt-label">1. sal — rå (vægge, gulv, skråv.)<span class="who who-os">OS</span><div class="sub">T3 — OS U33-U40</div></div>
+      <div class="gantt-weeks"><div class="gantt-week"></div><div class="gantt-week"></div><div class="gantt-week week-poland"></div><div class="gantt-week"></div><div class="gantt-week"></div><div class="gantt-week"></div><div class="gantt-week"></div><div class="gantt-week"></div><div class="gantt-week week-summer"></div><div class="gantt-week week-summer week-poland"></div><div class="gantt-week week-summer"></div><div class="gantt-week week-summer"></div><div class="gantt-week week-summer"></div><div class="gantt-week"><div class="gantt-bar bar-os"></div></div><div class="gantt-week"><div class="gantt-bar bar-os"></div></div><div class="gantt-week"><div class="gantt-bar bar-os"></div></div><div class="gantt-week"><div class="gantt-bar bar-os"></div></div><div class="gantt-week week-poland"><div class="gantt-bar bar-os-dim"></div></div><div class="gantt-week"><div class="gantt-bar bar-os"></div></div><div class="gantt-week"><div class="gantt-bar bar-os"></div></div><div class="gantt-week"><div class="gantt-bar bar-os"></div></div><div class="gantt-week"></div><div class="gantt-week"></div><div class="gantt-week"></div><div class="gantt-week week-poland"></div><div class="gantt-week"></div><div class="gantt-week week-poland"></div><div class="gantt-week"></div><div class="gantt-week"></div><div class="gantt-week"></div><div class="gantt-week"></div><div class="gantt-week"></div><div class="gantt-week week-poland"></div><div class="gantt-week"></div><div class="gantt-week"></div><div class="gantt-week"></div><div class="gantt-week"></div></div>
+    </div>
+    <div class="gantt-row">
+      <div class="gantt-label">1. sal bad x2<span class="who who-both">BOTH</span><div class="sub">T4 — OS+VVS — U36 klargøring, VVS U43-44</div></div>
+      <div class="gantt-weeks"><div class="gantt-week"></div><div class="gantt-week"></div><div class="gantt-week week-poland"></div><div class="gantt-week"></div><div class="gantt-week"></div><div class="gantt-week"></div><div class="gantt-week"></div><div class="gantt-week"></div><div class="gantt-week week-summer"></div><div class="gantt-week week-summer week-poland"></div><div class="gantt-week week-summer"></div><div class="gantt-week week-summer"></div><div class="gantt-week week-summer"></div><div class="gantt-week"></div><div class="gantt-week"></div><div class="gantt-week"></div><div class="gantt-week"><div class="gantt-bar bar-os"></div></div><div class="gantt-week week-poland"></div><div class="gantt-week"></div><div class="gantt-week"></div><div class="gantt-week"></div><div class="gantt-week"></div><div class="gantt-week"></div><div class="gantt-week"><div class="gantt-bar bar-os"></div></div><div class="gantt-week week-poland"><div class="gantt-bar bar-vvs"></div></div><div class="gantt-week"></div><div class="gantt-week week-poland"></div><div class="gantt-week"></div><div class="gantt-week"></div><div class="gantt-week"></div><div class="gantt-week"></div><div class="gantt-week"></div><div class="gantt-week week-poland"></div><div class="gantt-week"></div><div class="gantt-week"></div><div class="gantt-week"></div><div class="gantt-week"></div></div>
+    </div>
+    <div class="gantt-row">
+      <div class="gantt-label">Stueetage — rå (vægge, gulv)<span class="who who-os">OS</span><div class="sub">T2 — OS U23-27, STØB U28 inden ferie</div></div>
+      <div class="gantt-weeks"><div class="gantt-week"></div><div class="gantt-week"></div><div class="gantt-week week-poland"></div><div class="gantt-week"><div class="gantt-bar bar-os"></div></div><div class="gantt-week"><div class="gantt-bar bar-os"></div></div><div class="gantt-week"><div class="gantt-bar bar-os"></div></div><div class="gantt-week"><div class="gantt-bar bar-os"></div></div><div class="gantt-week"><div class="gantt-bar bar-os"></div></div><div class="gantt-week week-summer"><div class="gantt-bar bar-os-dim"></div></div><div class="gantt-week week-summer week-poland"></div><div class="gantt-week week-summer"></div><div class="gantt-week week-summer"></div><div class="gantt-week week-summer"></div><div class="gantt-week"></div><div class="gantt-week"></div><div class="gantt-week"></div><div class="gantt-week"></div><div class="gantt-week week-poland"></div><div class="gantt-week"></div><div class="gantt-week"></div><div class="gantt-week"></div><div class="gantt-week"></div><div class="gantt-week"></div><div class="gantt-week"></div><div class="gantt-week week-poland"></div><div class="gantt-week"></div><div class="gantt-week week-poland"></div><div class="gantt-week"></div><div class="gantt-week"></div><div class="gantt-week"></div><div class="gantt-week"></div><div class="gantt-week"></div><div class="gantt-week week-poland"></div><div class="gantt-week"></div><div class="gantt-week"></div><div class="gantt-week"></div><div class="gantt-week"></div></div>
+    </div>
+    <div class="gantt-row">
+      <div class="gantt-label">Vinduer + døre<span class="who who-os">OS</span><div class="sub">T1 — OS U23-U43</div></div>
+      <div class="gantt-weeks"><div class="gantt-week"></div><div class="gantt-week"></div><div class="gantt-week week-poland"></div><div class="gantt-week"><div class="gantt-bar bar-os"></div></div><div class="gantt-week"><div class="gantt-bar bar-os"></div></div><div class="gantt-week"><div class="gantt-bar bar-os"></div></div><div class="gantt-week"><div class="gantt-bar bar-os"></div></div><div class="gantt-week"><div class="gantt-bar bar-os"></div></div><div class="gantt-week week-summer"></div><div class="gantt-week week-summer week-poland"></div><div class="gantt-week week-summer"></div><div class="gantt-week week-summer"></div><div class="gantt-week week-summer"></div><div class="gantt-week"><div class="gantt-bar bar-os"></div></div><div class="gantt-week"><div class="gantt-bar bar-os"></div></div><div class="gantt-week"><div class="gantt-bar bar-os"></div></div><div class="gantt-week"><div class="gantt-bar bar-os"></div></div><div class="gantt-week week-poland"><div class="gantt-bar bar-os-dim"></div></div><div class="gantt-week"><div class="gantt-bar bar-os"></div></div><div class="gantt-week"><div class="gantt-bar bar-os"></div></div><div class="gantt-week"><div class="gantt-bar bar-os"></div></div><div class="gantt-week"><div class="gantt-bar bar-os"></div></div><div class="gantt-week"><div class="gantt-bar bar-os"></div></div><div class="gantt-week"><div class="gantt-bar bar-os"></div></div><div class="gantt-week week-poland"></div><div class="gantt-week"></div><div class="gantt-week week-poland"></div><div class="gantt-week"></div><div class="gantt-week"></div><div class="gantt-week"></div><div class="gantt-week"></div><div class="gantt-week"></div><div class="gantt-week week-poland"></div><div class="gantt-week"></div><div class="gantt-week"></div><div class="gantt-week"></div><div class="gantt-week"></div></div>
+    </div>
+    <div class="gantt-row">
+      <div class="gantt-label">Facadeisolering<span class="who who-both">BOTH</span><div class="sub">T12 — OS+UL U36, U38</div></div>
+      <div class="gantt-weeks"><div class="gantt-week"></div><div class="gantt-week"></div><div class="gantt-week week-poland"></div><div class="gantt-week"></div><div class="gantt-week"></div><div class="gantt-week"></div><div class="gantt-week"></div><div class="gantt-week"></div><div class="gantt-week week-summer"></div><div class="gantt-week week-summer week-poland"></div><div class="gantt-week week-summer"></div><div class="gantt-week week-summer"></div><div class="gantt-week week-summer"></div><div class="gantt-week"></div><div class="gantt-week"></div><div class="gantt-week"></div><div class="gantt-week"><div class="gantt-bar bar-os"></div></div><div class="gantt-week week-poland"></div><div class="gantt-week"><div class="gantt-bar bar-os"></div></div><div class="gantt-week"></div><div class="gantt-week"></div><div class="gantt-week"></div><div class="gantt-week"></div><div class="gantt-week"></div><div class="gantt-week week-poland"></div><div class="gantt-week"></div><div class="gantt-week week-poland"></div><div class="gantt-week"></div><div class="gantt-week"></div><div class="gantt-week"></div><div class="gantt-week"></div><div class="gantt-week"></div><div class="gantt-week week-poland"></div><div class="gantt-week"></div><div class="gantt-week"></div><div class="gantt-week"></div><div class="gantt-week"></div></div>
+    </div>
+    <div class="gantt-row">
+      <div class="gantt-label">Garage ny opbygning<span class="who who-os">OS</span><div class="sub">T13 — OS — vægge U28, opbygning U40-44</div></div>
+      <div class="gantt-weeks"><div class="gantt-week"></div><div class="gantt-week"></div><div class="gantt-week week-poland"></div><div class="gantt-week"></div><div class="gantt-week"></div><div class="gantt-week"></div><div class="gantt-week"></div><div class="gantt-week"></div><div class="gantt-week week-summer"><div class="gantt-bar bar-garage"></div></div><div class="gantt-week week-summer week-poland"></div><div class="gantt-week week-summer"></div><div class="gantt-week week-summer"></div><div class="gantt-week week-summer"></div><div class="gantt-week"></div><div class="gantt-week"></div><div class="gantt-week"></div><div class="gantt-week"></div><div class="gantt-week week-poland"></div><div class="gantt-week"></div><div class="gantt-week"></div><div class="gantt-week"><div class="gantt-bar bar-garage"></div></div><div class="gantt-week"><div class="gantt-bar bar-garage"></div></div><div class="gantt-week"><div class="gantt-bar bar-garage"></div></div><div class="gantt-week"><div class="gantt-bar bar-garage"></div></div><div class="gantt-week week-poland"><div class="gantt-bar bar-garage"></div></div><div class="gantt-week"></div><div class="gantt-week week-poland"></div><div class="gantt-week"></div><div class="gantt-week"></div><div class="gantt-week"></div><div class="gantt-week"></div><div class="gantt-week"></div><div class="gantt-week week-poland"></div><div class="gantt-week"></div><div class="gantt-week"></div><div class="gantt-week"></div><div class="gantt-week"></div></div>
+    </div>
+    <div class="gantt-row">
+      <div class="gantt-label">Maler — udv. + indv.<span class="who who-os">OS</span><div class="sub">T6 — OS — udv. U42-44, indv. U4-10'27</div></div>
+      <div class="gantt-weeks"><div class="gantt-week"></div><div class="gantt-week"></div><div class="gantt-week week-poland"></div><div class="gantt-week"></div><div class="gantt-week"></div><div class="gantt-week"></div><div class="gantt-week"></div><div class="gantt-week"></div><div class="gantt-week week-summer"></div><div class="gantt-week week-summer week-poland"></div><div class="gantt-week week-summer"></div><div class="gantt-week week-summer"></div><div class="gantt-week week-summer"></div><div class="gantt-week"></div><div class="gantt-week"></div><div class="gantt-week"></div><div class="gantt-week"></div><div class="gantt-week week-poland"></div><div class="gantt-week"></div><div class="gantt-week"></div><div class="gantt-week"></div><div class="gantt-week"></div><div class="gantt-week"><div class="gantt-bar bar-maler"></div></div><div class="gantt-week"><div class="gantt-bar bar-maler"></div></div><div class="gantt-week week-poland"><div class="gantt-bar bar-maler"></div></div><div class="gantt-week"></div><div class="gantt-week week-poland"></div><div class="gantt-week"></div><div class="gantt-week"></div><div class="gantt-week"></div><div class="gantt-week"></div><div class="gantt-week"></div><div class="gantt-week week-poland"></div><div class="gantt-week"></div><div class="gantt-week"></div><div class="gantt-week"></div><div class="gantt-week"><div class="gantt-bar bar-maler"></div></div></div>
+    </div>
+    <div class="gantt-section-divider" style="background:#C0392B">— MILEPÆLE —</div>
 
     <div class="gantt-row">
-      <div class="gantt-label">Hanebåndsloft isolation<div class="sub">T5 - TØM</div></div>
-      <div class="gantt-weeks">
-        <div class="gantt-week"></div>
-        <div class="gantt-week"></div>
-        <div class="gantt-week"></div>
-        <div class="gantt-week"></div>
-        <div class="gantt-week"></div>
-        <div class="gantt-week"></div>
-        <div class="gantt-week"></div>
-        <div class="gantt-week"><div class="gantt-bar bar-blue"></div></div>
-        <div class="gantt-week"></div>
-        <div class="gantt-week"></div>
-        <div class="gantt-week"></div>
-        <div class="gantt-week"></div>
-        <div class="gantt-week"></div>
-        <div class="gantt-week"></div>
-        <div class="gantt-week"></div>
-        <div class="gantt-week"></div>
-        <div class="gantt-week"></div>
-        <div class="gantt-week"></div>
-        <div class="gantt-week"></div>
-        <div class="gantt-week"></div>
-        <div class="gantt-week"></div>
-        <div class="gantt-week"></div>
-        <div class="gantt-week"></div>
-        <div class="gantt-week"></div>
-      </div>
+      <div class="gantt-label">Milepæle<div class="sub"></div></div>
+      <div class="gantt-weeks"><div class="gantt-week"></div><div class="gantt-week"></div><div class="gantt-week week-poland"></div><div class="gantt-week"></div><div class="gantt-week"></div><div class="gantt-week"></div><div class="gantt-week"></div><div class="gantt-week"><div style="background:#C0392B;color:white;font-family:Consolas,monospace;font-size:7px;font-weight:700;padding:2px 1px;text-align:center;border-radius:1px;height:18px;line-height:18px;overflow:hidden">UNDERTAG
+TÆT</div></div><div class="gantt-week week-summer"><div style="background:#C0392B;color:white;font-family:Consolas,monospace;font-size:7px;font-weight:700;padding:2px 1px;text-align:center;border-radius:1px;height:18px;line-height:18px;overflow:hidden">STØB
+GULV</div></div><div class="gantt-week week-summer week-poland"></div><div class="gantt-week week-summer"></div><div class="gantt-week week-summer"></div><div class="gantt-week week-summer"><div style="background:#C0392B;color:white;font-family:Consolas,monospace;font-size:7px;font-weight:700;padding:2px 1px;text-align:center;border-radius:1px;height:18px;line-height:18px;overflow:hidden">OS
+BACK</div></div><div class="gantt-week"></div><div class="gantt-week"></div><div class="gantt-week"></div><div class="gantt-week"><div style="background:#C0392B;color:white;font-family:Consolas,monospace;font-size:7px;font-weight:700;padding:2px 1px;text-align:center;border-radius:1px;height:18px;line-height:18px;overflow:hidden">STØB
+BEGGE</div></div><div class="gantt-week week-poland"></div><div class="gantt-week"></div><div class="gantt-week"></div><div class="gantt-week"></div><div class="gantt-week"></div><div class="gantt-week"></div><div class="gantt-week"></div><div class="gantt-week week-poland"></div><div class="gantt-week"></div><div class="gantt-week week-poland"></div><div class="gantt-week"></div><div class="gantt-week"></div><div class="gantt-week"></div><div class="gantt-week"></div><div class="gantt-week"></div><div class="gantt-week week-poland"></div><div class="gantt-week"></div><div class="gantt-week"></div><div class="gantt-week"></div><div class="gantt-week"><div style="background:#C0392B;color:white;font-family:Consolas,monospace;font-size:7px;font-weight:700;padding:2px 1px;text-align:center;border-radius:1px;height:18px;line-height:18px;overflow:hidden">SLUT</div></div></div>
     </div>
+    <div class="gantt-section-divider" style="background:#555">— BEMANDING (OS — max 8 tilgængelige, 2 altid på andre projekter) —</div>
 
     <div class="gantt-row">
-      <div class="gantt-label">1. sal — rå (vægge, gulv, skråv.)<div class="sub">T3 - TØM + MUR</div></div>
-      <div class="gantt-weeks">
-        <div class="gantt-week"></div>
-        <div class="gantt-week"></div>
-        <div class="gantt-week"><div class="gantt-bar bar-green"></div></div>
-        <div class="gantt-week"><div class="gantt-bar bar-green"></div></div>
-        <div class="gantt-week"><div class="gantt-bar bar-green"></div></div>
-        <div class="gantt-week"><div class="gantt-bar bar-green"></div></div>
-        <div class="gantt-week"></div>
-        <div class="gantt-week"></div>
-        <div class="gantt-week"></div>
-        <div class="gantt-week"></div>
-        <div class="gantt-week"></div>
-        <div class="gantt-week"></div>
-        <div class="gantt-week"></div>
-        <div class="gantt-week"></div>
-        <div class="gantt-week"></div>
-        <div class="gantt-week"></div>
-        <div class="gantt-week"></div>
-        <div class="gantt-week"></div>
-        <div class="gantt-week"></div>
-        <div class="gantt-week"></div>
-        <div class="gantt-week"></div>
-        <div class="gantt-week"></div>
-        <div class="gantt-week"></div>
-        <div class="gantt-week"></div>
-      </div>
+      <div class="gantt-label">Tilgængelige svende<div class="sub">ekskl. 2 altid på andre projekter</div></div>
+      <div class="gantt-weeks"><div class="gantt-week"><div style="background:#abebc6;font-family:Consolas,monospace;font-size:8px;font-weight:700;text-align:center;height:18px;line-height:18px;color:#1a1a1a">6-8</div></div><div class="gantt-week"><div style="background:#abebc6;font-family:Consolas,monospace;font-size:8px;font-weight:700;text-align:center;height:18px;line-height:18px;color:#1a1a1a">6-8</div></div><div class="gantt-week week-poland"><div style="background:#f1948a;font-family:Consolas,monospace;font-size:8px;font-weight:700;text-align:center;height:18px;line-height:18px;color:#1a1a1a">4-5</div></div><div class="gantt-week"><div style="background:#abebc6;font-family:Consolas,monospace;font-size:8px;font-weight:700;text-align:center;height:18px;line-height:18px;color:#1a1a1a">6-8</div></div><div class="gantt-week"><div style="background:#abebc6;font-family:Consolas,monospace;font-size:8px;font-weight:700;text-align:center;height:18px;line-height:18px;color:#1a1a1a">6-8</div></div><div class="gantt-week"><div style="background:#abebc6;font-family:Consolas,monospace;font-size:8px;font-weight:700;text-align:center;height:18px;line-height:18px;color:#1a1a1a">6-8</div></div><div class="gantt-week"><div style="background:#abebc6;font-family:Consolas,monospace;font-size:8px;font-weight:700;text-align:center;height:18px;line-height:18px;color:#1a1a1a">6-8</div></div><div class="gantt-week"><div style="background:#abebc6;font-family:Consolas,monospace;font-size:8px;font-weight:700;text-align:center;height:18px;line-height:18px;color:#1a1a1a">6-8</div></div><div class="gantt-week week-summer"><div style="background:#f7dc6f;font-family:Consolas,monospace;font-size:8px;font-weight:700;text-align:center;height:18px;line-height:18px;color:#1a1a1a">0</div></div><div class="gantt-week week-summer week-poland"><div style="background:#f1948a;font-family:Consolas,monospace;font-size:8px;font-weight:700;text-align:center;height:18px;line-height:18px;color:#1a1a1a">4-5</div></div><div class="gantt-week week-summer"><div style="background:#f7dc6f;font-family:Consolas,monospace;font-size:8px;font-weight:700;text-align:center;height:18px;line-height:18px;color:#1a1a1a">0</div></div><div class="gantt-week week-summer"><div style="background:#f7dc6f;font-family:Consolas,monospace;font-size:8px;font-weight:700;text-align:center;height:18px;line-height:18px;color:#1a1a1a">0</div></div><div class="gantt-week week-summer"><div style="background:#f7dc6f;font-family:Consolas,monospace;font-size:8px;font-weight:700;text-align:center;height:18px;line-height:18px;color:#1a1a1a">0</div></div><div class="gantt-week"><div style="background:#abebc6;font-family:Consolas,monospace;font-size:8px;font-weight:700;text-align:center;height:18px;line-height:18px;color:#1a1a1a">6-8</div></div><div class="gantt-week"><div style="background:#abebc6;font-family:Consolas,monospace;font-size:8px;font-weight:700;text-align:center;height:18px;line-height:18px;color:#1a1a1a">6-8</div></div><div class="gantt-week"><div style="background:#abebc6;font-family:Consolas,monospace;font-size:8px;font-weight:700;text-align:center;height:18px;line-height:18px;color:#1a1a1a">6-8</div></div><div class="gantt-week"><div style="background:#abebc6;font-family:Consolas,monospace;font-size:8px;font-weight:700;text-align:center;height:18px;line-height:18px;color:#1a1a1a">6-8</div></div><div class="gantt-week week-poland"><div style="background:#f1948a;font-family:Consolas,monospace;font-size:8px;font-weight:700;text-align:center;height:18px;line-height:18px;color:#1a1a1a">4-5</div></div><div class="gantt-week"><div style="background:#abebc6;font-family:Consolas,monospace;font-size:8px;font-weight:700;text-align:center;height:18px;line-height:18px;color:#1a1a1a">6-8</div></div><div class="gantt-week"><div style="background:#abebc6;font-family:Consolas,monospace;font-size:8px;font-weight:700;text-align:center;height:18px;line-height:18px;color:#1a1a1a">6-8</div></div><div class="gantt-week"><div style="background:#abebc6;font-family:Consolas,monospace;font-size:8px;font-weight:700;text-align:center;height:18px;line-height:18px;color:#1a1a1a">6-8</div></div><div class="gantt-week"><div style="background:#abebc6;font-family:Consolas,monospace;font-size:8px;font-weight:700;text-align:center;height:18px;line-height:18px;color:#1a1a1a">6-8</div></div><div class="gantt-week"><div style="background:#abebc6;font-family:Consolas,monospace;font-size:8px;font-weight:700;text-align:center;height:18px;line-height:18px;color:#1a1a1a">6-8</div></div><div class="gantt-week"><div style="background:#abebc6;font-family:Consolas,monospace;font-size:8px;font-weight:700;text-align:center;height:18px;line-height:18px;color:#1a1a1a">6-8</div></div><div class="gantt-week week-poland"><div style="background:#f1948a;font-family:Consolas,monospace;font-size:8px;font-weight:700;text-align:center;height:18px;line-height:18px;color:#1a1a1a">4-5</div></div><div class="gantt-week"><div style="background:#abebc6;font-family:Consolas,monospace;font-size:8px;font-weight:700;text-align:center;height:18px;line-height:18px;color:#1a1a1a">6-8</div></div><div class="gantt-week week-poland"><div style="background:#f1948a;font-family:Consolas,monospace;font-size:8px;font-weight:700;text-align:center;height:18px;line-height:18px;color:#1a1a1a">4-5</div></div><div class="gantt-week"><div style="background:#abebc6;font-family:Consolas,monospace;font-size:8px;font-weight:700;text-align:center;height:18px;line-height:18px;color:#1a1a1a">6-8</div></div><div class="gantt-week"><div style="background:#abebc6;font-family:Consolas,monospace;font-size:8px;font-weight:700;text-align:center;height:18px;line-height:18px;color:#1a1a1a">6-8</div></div><div class="gantt-week"><div style="background:#abebc6;font-family:Consolas,monospace;font-size:8px;font-weight:700;text-align:center;height:18px;line-height:18px;color:#1a1a1a">6-8</div></div><div class="gantt-week"><div style="background:#abebc6;font-family:Consolas,monospace;font-size:8px;font-weight:700;text-align:center;height:18px;line-height:18px;color:#1a1a1a">6-8</div></div><div class="gantt-week"><div style="background:#abebc6;font-family:Consolas,monospace;font-size:8px;font-weight:700;text-align:center;height:18px;line-height:18px;color:#1a1a1a">6-8</div></div><div class="gantt-week week-poland"><div style="background:#f1948a;font-family:Consolas,monospace;font-size:8px;font-weight:700;text-align:center;height:18px;line-height:18px;color:#1a1a1a">4-5</div></div><div class="gantt-week"><div style="background:#abebc6;font-family:Consolas,monospace;font-size:8px;font-weight:700;text-align:center;height:18px;line-height:18px;color:#1a1a1a">6-8</div></div><div class="gantt-week"><div style="background:#abebc6;font-family:Consolas,monospace;font-size:8px;font-weight:700;text-align:center;height:18px;line-height:18px;color:#1a1a1a">6-8</div></div><div class="gantt-week"><div style="background:#abebc6;font-family:Consolas,monospace;font-size:8px;font-weight:700;text-align:center;height:18px;line-height:18px;color:#1a1a1a">6-8</div></div><div class="gantt-week"><div style="background:#abebc6;font-family:Consolas,monospace;font-size:8px;font-weight:700;text-align:center;height:18px;line-height:18px;color:#1a1a1a">6-8</div></div></div>
     </div>
-
-    <div class="gantt-row">
-      <div class="gantt-label">1. sal bad x2<div class="sub">T4 - VVS + TØM + MUR</div></div>
-      <div class="gantt-weeks">
-        <div class="gantt-week"></div>
-        <div class="gantt-week"></div>
-        <div class="gantt-week"></div>
-        <div class="gantt-week"></div>
-        <div class="gantt-week"><div class="gantt-bar bar-orange"></div></div>
-        <div class="gantt-week"><div class="gantt-bar bar-orange"></div></div>
-        <div class="gantt-week"><div class="gantt-bar bar-orange"></div></div>
-        <div class="gantt-week"><div class="gantt-bar bar-orange"></div></div>
-        <div class="gantt-week"><div class="gantt-bar bar-orange"></div></div>
-        <div class="gantt-week"></div>
-        <div class="gantt-week"></div>
-        <div class="gantt-week"></div>
-        <div class="gantt-week"></div>
-        <div class="gantt-week"></div>
-        <div class="gantt-week"></div>
-        <div class="gantt-week"></div>
-        <div class="gantt-week"></div>
-        <div class="gantt-week"></div>
-        <div class="gantt-week"></div>
-        <div class="gantt-week"></div>
-        <div class="gantt-week"></div>
-        <div class="gantt-week"></div>
-        <div class="gantt-week"></div>
-        <div class="gantt-week"></div>
-      </div>
-    </div>
-
-    <div class="gantt-row">
-      <div class="gantt-label">Stueetage — rå (vægge, gulv)<div class="sub">T2 - TØM + MUR + VVS</div></div>
-      <div class="gantt-weeks">
-        <div class="gantt-week"></div>
-        <div class="gantt-week"></div>
-        <div class="gantt-week"><div class="gantt-bar bar-green"></div></div>
-        <div class="gantt-week"><div class="gantt-bar bar-green"></div></div>
-        <div class="gantt-week"><div class="gantt-bar bar-green"></div></div>
-        <div class="gantt-week"><div class="gantt-bar bar-green"></div></div>
-        <div class="gantt-week"><div class="gantt-bar bar-green"></div></div>
-        <div class="gantt-week"><div class="gantt-bar bar-green"></div></div>
-        <div class="gantt-week"><div class="gantt-bar bar-green"></div></div>
-        <div class="gantt-week"><div class="gantt-bar bar-green"></div></div>
-        <div class="gantt-week"></div>
-        <div class="gantt-week"></div>
-        <div class="gantt-week"></div>
-        <div class="gantt-week"></div>
-        <div class="gantt-week"></div>
-        <div class="gantt-week"></div>
-        <div class="gantt-week"></div>
-        <div class="gantt-week"></div>
-        <div class="gantt-week"></div>
-        <div class="gantt-week"></div>
-        <div class="gantt-week"></div>
-        <div class="gantt-week"></div>
-        <div class="gantt-week"></div>
-        <div class="gantt-week"></div>
-      </div>
-    </div>
-
-    <div class="gantt-row">
-      <div class="gantt-label">Vinduer + døre<div class="sub">T1 - TØM + MUR</div></div>
-      <div class="gantt-weeks">
-        <div class="gantt-week"></div>
-        <div class="gantt-week"></div>
-        <div class="gantt-week"></div>
-        <div class="gantt-week"></div>
-        <div class="gantt-week"></div>
-        <div class="gantt-week"></div>
-        <div class="gantt-week"></div>
-        <div class="gantt-week"></div>
-        <div class="gantt-week"><div class="gantt-bar bar-navy"></div></div>
-        <div class="gantt-week"><div class="gantt-bar bar-navy"></div></div>
-        <div class="gantt-week"><div class="gantt-bar bar-navy"></div></div>
-        <div class="gantt-week"></div>
-        <div class="gantt-week"></div>
-        <div class="gantt-week"></div>
-        <div class="gantt-week"></div>
-        <div class="gantt-week"></div>
-        <div class="gantt-week"></div>
-        <div class="gantt-week"></div>
-        <div class="gantt-week"></div>
-        <div class="gantt-week"></div>
-        <div class="gantt-week"></div>
-        <div class="gantt-week"></div>
-        <div class="gantt-week"></div>
-        <div class="gantt-week"></div>
-      </div>
-    </div>
-
-    <div class="gantt-row">
-      <div class="gantt-label">Varmepumpe<div class="sub">T7 - VVS</div></div>
-      <div class="gantt-weeks">
-        <div class="gantt-week"></div>
-        <div class="gantt-week"></div>
-        <div class="gantt-week"></div>
-        <div class="gantt-week"></div>
-        <div class="gantt-week"></div>
-        <div class="gantt-week"></div>
-        <div class="gantt-week"></div>
-        <div class="gantt-week"></div>
-        <div class="gantt-week"></div>
-        <div class="gantt-week"><div class="gantt-bar bar-orange"></div></div>
-        <div class="gantt-week"><div class="gantt-bar bar-orange"></div></div>
-        <div class="gantt-week"><div class="gantt-bar bar-orange"></div></div>
-        <div class="gantt-week"></div>
-        <div class="gantt-week"></div>
-        <div class="gantt-week"></div>
-        <div class="gantt-week"></div>
-        <div class="gantt-week"></div>
-        <div class="gantt-week"></div>
-        <div class="gantt-week"></div>
-        <div class="gantt-week"></div>
-        <div class="gantt-week"></div>
-        <div class="gantt-week"></div>
-        <div class="gantt-week"></div>
-        <div class="gantt-week"></div>
-      </div>
-    </div>
-
-    <div class="gantt-row">
-      <div class="gantt-label">Facadeisolering<div class="sub">T12 - MUR + UL</div></div>
-      <div class="gantt-weeks">
-        <div class="gantt-week"></div>
-        <div class="gantt-week"></div>
-        <div class="gantt-week"></div>
-        <div class="gantt-week"></div>
-        <div class="gantt-week"></div>
-        <div class="gantt-week"></div>
-        <div class="gantt-week"></div>
-        <div class="gantt-week"></div>
-        <div class="gantt-week"></div>
-        <div class="gantt-week"></div>
-        <div class="gantt-week"><div class="gantt-bar bar-green"></div></div>
-        <div class="gantt-week"><div class="gantt-bar bar-green"></div></div>
-        <div class="gantt-week"><div class="gantt-bar bar-green"></div></div>
-        <div class="gantt-week"><div class="gantt-bar bar-green"></div></div>
-        <div class="gantt-week"><div class="gantt-bar bar-green"></div></div>
-        <div class="gantt-week"><div class="gantt-bar bar-green"></div></div>
-        <div class="gantt-week"></div>
-        <div class="gantt-week"></div>
-        <div class="gantt-week"></div>
-        <div class="gantt-week"></div>
-        <div class="gantt-week"></div>
-        <div class="gantt-week"></div>
-        <div class="gantt-week"></div>
-        <div class="gantt-week"></div>
-      </div>
-    </div>
-
-    <div class="gantt-row">
-      <div class="gantt-label">El-installationer<div class="sub">T11 - EL</div></div>
-      <div class="gantt-weeks">
-        <div class="gantt-week"></div>
-        <div class="gantt-week"></div>
-        <div class="gantt-week"></div>
-        <div class="gantt-week"></div>
-        <div class="gantt-week"></div>
-        <div class="gantt-week"></div>
-        <div class="gantt-week"><div class="gantt-bar bar-blue"></div></div>
-        <div class="gantt-week"><div class="gantt-bar bar-blue"></div></div>
-        <div class="gantt-week"><div class="gantt-bar bar-blue"></div></div>
-        <div class="gantt-week"><div class="gantt-bar bar-blue"></div></div>
-        <div class="gantt-week"><div class="gantt-bar bar-blue"></div></div>
-        <div class="gantt-week"><div class="gantt-bar bar-blue"></div></div>
-        <div class="gantt-week"><div class="gantt-bar bar-blue"></div></div>
-        <div class="gantt-week"><div class="gantt-bar bar-blue"></div></div>
-        <div class="gantt-week"><div class="gantt-bar bar-blue"></div></div>
-        <div class="gantt-week"></div>
-        <div class="gantt-week"></div>
-        <div class="gantt-week"></div>
-        <div class="gantt-week"></div>
-        <div class="gantt-week"></div>
-        <div class="gantt-week"></div>
-        <div class="gantt-week"></div>
-        <div class="gantt-week"></div>
-        <div class="gantt-week"></div>
-      </div>
-    </div>
-
-    <div class="gantt-row">
-      <div class="gantt-label">Garage ny opbygning<div class="sub">T13 - TØM + MUR</div></div>
-      <div class="gantt-weeks">
-        <div class="gantt-week"></div>
-        <div class="gantt-week"></div>
-        <div class="gantt-week"></div>
-        <div class="gantt-week"></div>
-        <div class="gantt-week"></div>
-        <div class="gantt-week"></div>
-        <div class="gantt-week"></div>
-        <div class="gantt-week"></div>
-        <div class="gantt-week"></div>
-        <div class="gantt-week"></div>
-        <div class="gantt-week"></div>
-        <div class="gantt-week"><div class="gantt-bar bar-muted"></div></div>
-        <div class="gantt-week"><div class="gantt-bar bar-muted"></div></div>
-        <div class="gantt-week"><div class="gantt-bar bar-muted"></div></div>
-        <div class="gantt-week"><div class="gantt-bar bar-muted"></div></div>
-        <div class="gantt-week"><div class="gantt-bar bar-muted"></div></div>
-        <div class="gantt-week"><div class="gantt-bar bar-muted"></div></div>
-        <div class="gantt-week"><div class="gantt-bar bar-muted"></div></div>
-        <div class="gantt-week"></div>
-        <div class="gantt-week"></div>
-        <div class="gantt-week"></div>
-        <div class="gantt-week"></div>
-        <div class="gantt-week"></div>
-        <div class="gantt-week"></div>
-      </div>
-    </div>
-
-    <div class="gantt-row">
-      <div class="gantt-label">Maler — hele huset<div class="sub">T6 - MAL</div></div>
-      <div class="gantt-weeks">
-        <div class="gantt-week"></div>
-        <div class="gantt-week"></div>
-        <div class="gantt-week"></div>
-        <div class="gantt-week"></div>
-        <div class="gantt-week"></div>
-        <div class="gantt-week"></div>
-        <div class="gantt-week"></div>
-        <div class="gantt-week"></div>
-        <div class="gantt-week"></div>
-        <div class="gantt-week"></div>
-        <div class="gantt-week"></div>
-        <div class="gantt-week"></div>
-        <div class="gantt-week"></div>
-        <div class="gantt-week"></div>
-        <div class="gantt-week"></div>
-        <div class="gantt-week"><div class="gantt-bar bar-orange"></div></div>
-        <div class="gantt-week"><div class="gantt-bar bar-orange"></div></div>
-        <div class="gantt-week"><div class="gantt-bar bar-orange"></div></div>
-        <div class="gantt-week"><div class="gantt-bar bar-orange"></div></div>
-        <div class="gantt-week"><div class="gantt-bar bar-orange"></div></div>
-        <div class="gantt-week"></div>
-        <div class="gantt-week"></div>
-        <div class="gantt-week"></div>
-        <div class="gantt-week"></div>
-      </div>
-    </div>
-
-    <div class="gantt-row">
-      <div class="gantt-label">Finish + aflevering<div class="sub">ALLE</div></div>
-      <div class="gantt-weeks">
-        <div class="gantt-week"></div>
-        <div class="gantt-week"></div>
-        <div class="gantt-week"></div>
-        <div class="gantt-week"></div>
-        <div class="gantt-week"></div>
-        <div class="gantt-week"></div>
-        <div class="gantt-week"></div>
-        <div class="gantt-week"></div>
-        <div class="gantt-week"></div>
-        <div class="gantt-week"></div>
-        <div class="gantt-week"></div>
-        <div class="gantt-week"></div>
-        <div class="gantt-week"></div>
-        <div class="gantt-week"></div>
-        <div class="gantt-week"></div>
-        <div class="gantt-week"></div>
-        <div class="gantt-week"></div>
-        <div class="gantt-week"></div>
-        <div class="gantt-week"></div>
-        <div class="gantt-week"></div>
-        <div class="gantt-week"><div class="gantt-bar bar-navy"></div></div>
-        <div class="gantt-week"><div class="gantt-bar bar-navy"></div></div>
-        <div class="gantt-week"><div class="gantt-bar bar-navy"></div></div>
-        <div class="gantt-week"><div class="gantt-bar bar-navy"></div></div>
-      </div>
-    </div>
-
-    <div class="legend">
-      <div class="legend-item"><div class="legend-dot" style="background:var(--navy)"></div> Tømrer / Konstruktion</div>
-      <div class="legend-item"><div class="legend-dot" style="background:var(--red)"></div> Kritisk / Stillads</div>
-      <div class="legend-item"><div class="legend-dot" style="background:var(--green)"></div> Murer / Råbyg</div>
-      <div class="legend-item"><div class="legend-dot" style="background:var(--blue-mid)"></div> El / Loft</div>
-      <div class="legend-item"><div class="legend-dot" style="background:var(--orange)"></div> VVS / Maler / Finish</div>
-      <div class="legend-item"><div class="legend-dot" style="background:#aaa"></div> Garage</div>
+    <div class="legend" style="margin-top:12px;flex-wrap:wrap;gap:12px">
+      <div class="legend-item"><div class="legend-dot" style="background:#1E3A5F"></div> OS — eget hold</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#4a7ba8"></div> OS — reduceret (Polen)</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#2980B9"></div> UL — underleverandør</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#C0392B"></div> VVS (UL)</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#D35400"></div> Maler (OS)</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#888"></div> Garage</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#fffbea;border:1px solid #b7860b"></div> Sommerferie U28-32 (OS væk)</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#fde8e8;border:1px solid #c0392b66"></div> Polen / fraværende</div>
     </div>
   </div>
 
-  <!-- FASEPLAN -->
-  <div class="section-title">FASER I DETALJER</div>
+    <!-- FASEPLAN --> <div class="section-title">FASER I DETALJER</div>
 
   <button class="expand-all" onclick="toggleAll()">FOLD ALT UD / IND</button>
 
