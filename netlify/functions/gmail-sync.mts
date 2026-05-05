@@ -686,6 +686,39 @@ function applyInvoicePaidToCase(state: any, matched: any, invoiceNumber: string,
   return changed;
 }
 
+function backfillKnownPaidInvoices(state: any) {
+  let changed = 0;
+  const knownPaidInvoices = [
+    {
+      invoiceNumber: "1158",
+      customerNumber: "1009",
+      paidDate: new Date().toISOString().slice(0, 10),
+      amount: 0,
+      reason: "manuel bekræftelse fra bruger",
+    },
+  ];
+  for (const item of knownPaidInvoices) {
+    const matched = findCaseByCustomerNumber(state, item.customerNumber);
+    if (!matched) continue;
+    const alreadyPaid = textValue(matched.status, "").toLowerCase().includes("betalt") &&
+      textValue(matched.fak || matched.workflow?.invoiceNumber, "") === item.invoiceNumber;
+    if (alreadyPaid) continue;
+    if (applyInvoicePaidToCase(state, matched, item.invoiceNumber, item.paidDate, item.amount, item.reason)) {
+      changed += 1;
+      appendSyncLog(state, {
+        status: "archived",
+        subject: `Faktura ${item.invoiceNumber} betalt`,
+        customerName: textValue(matched?.kunde, ""),
+        caseId: formatCaseIdForDisplay(matched),
+        documentType: "Faktura",
+        category: "betaling",
+        notes: `Faktura ${item.invoiceNumber} er registreret som betalt på K-${item.customerNumber}.`,
+      });
+    }
+  }
+  return changed;
+}
+
 function invoiceNumbersForCase(entry: any) {
   const directValues = [
     entry?.fak,
@@ -2080,6 +2113,7 @@ export default async (request: Request) => {
     }
 
     const offerFollowupsCreated = backfillOfferFollowupsFromState(state);
+    const paidInvoicesBackfilled = backfillKnownPaidInvoices(state);
     if (dkeQuestionTasksCreated) {
       appendSyncLog(state, {
         status: "archived",
@@ -2114,6 +2148,7 @@ export default async (request: Request) => {
       archived: archivedResults.length,
       offerFollowupsCreated,
       dkeQuestionTasksCreated,
+      paidInvoicesBackfilled,
       invoicesUpdated,
       ensuredFolders: ensuredFolders.length,
       archiveErrors,
