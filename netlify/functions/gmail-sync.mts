@@ -1779,13 +1779,13 @@ export default async (request: Request) => {
   const state = await loadDashboardState();
   if (!state) return json({ ok: false, error: "no_state" }, 404);
   const syncStartedAt = Date.now();
-  const isNearFunctionTimeout = () => Date.now() - syncStartedAt > 8500;
+  const isNearFunctionTimeout = () => Date.now() - syncStartedAt > 6500;
   const archivedResults: any[] = [];
   const archiveErrors: any[] = [];
   const ensuredFolders: any[] = [];
 
   try {
-    const dkeQuestionThreads = await listRecentGmailThreads(DKE_QUESTION_QUERY, 8).catch((error) => {
+    const dkeQuestionThreads = await listRecentGmailThreads(DKE_QUESTION_QUERY, 6).catch((error) => {
       appendSyncLog(state, {
         status: "error",
         subject: "DKE/Charlotte Gmail-søgning",
@@ -1799,7 +1799,7 @@ export default async (request: Request) => {
       return [];
     });
     const archiveThreadBatches = await Promise.allSettled(
-      ARCHIVE_QUERIES.map((query) => listRecentGmailThreads(query, 8)),
+      ARCHIVE_QUERIES.map((query) => listRecentGmailThreads(query, 5)),
     );
     const archiveThreads = dedupeThreads(archiveThreadBatches
       .filter((result): result is PromiseFulfilledResult<any[]> => result.status === "fulfilled")
@@ -1817,13 +1817,13 @@ export default async (request: Request) => {
         notes: `Gmail-søgning ${index + 1} svarede ikke korrekt. Sync fortsatte med de øvrige søgninger.`,
       });
     });
-    const inboxThreads = isNearFunctionTimeout() ? [] : await listRecentGmailThreads(SYNC_QUERY, 12);
+    const inboxThreads = isNearFunctionTimeout() ? [] : await listRecentGmailThreads(SYNC_QUERY, 6);
     queueDiscoveredThreads(state, [
       { lane: "dke_questions", priority: 100, threads: dkeQuestionThreads },
       { lane: "archive", priority: 60, threads: archiveThreads },
       { lane: "inbox", priority: 30, threads: inboxThreads },
     ]);
-    const queuedThreads = selectQueuedThreads(state, 14);
+    const queuedThreads = selectQueuedThreads(state, 8);
     const threads = queuedThreads.map((thread: any) => ({ id: thread.id, historyId: thread.historyId }));
     const fullThreadResults = await Promise.allSettled(
       threads.map((thread: any) => getGmailThread(String(thread.id))),
