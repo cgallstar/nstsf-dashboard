@@ -99,6 +99,91 @@ function dedupeThreads(threads: any[]) {
   return result;
 }
 
+function ensureGmailSyncState(state: any) {
+  state.syncState = state.syncState && typeof state.syncState === "object" && !Array.isArray(state.syncState) ? state.syncState : {};
+  state.syncState.gmailQueue = Array.isArray(state.syncState.gmailQueue) ? state.syncState.gmailQueue : [];
+  state.syncState.processedThreadHistory = state.syncState.processedThreadHistory && typeof state.syncState.processedThreadHistory === "object" && !Array.isArray(state.syncState.processedThreadHistory)
+    ? state.syncState.processedThreadHistory
+    : {};
+  return state.syncState;
+}
+
+function queueDiscoveredThreads(state: any, groups: Array<{ lane: string; priority: number; threads: any[] }>) {
+  const syncState = ensureGmailSyncState(state);
+  const now = new Date().toISOString();
+  const byId = new Map(syncState.gmailQueue.map((item: any) => [textValue(item?.id, ""), item]).filter(([id]: any) => id));
+  for (const group of groups) {
+    for (const thread of group.threads || []) {
+      const id = textValue(thread?.id, "");
+      if (!id) continue;
+      const historyId = textValue(thread?.historyId, "");
+      if (historyId && textValue(syncState.processedThreadHistory?.[id], "") === historyId) continue;
+      const existing: any = byId.get(id);
+      if (existing) {
+        const previousPriority = Number(existing.priority || 0);
+        existing.historyId = historyId || existing.historyId || "";
+        existing.priority = Math.max(previousPriority, group.priority);
+        existing.lane = previousPriority >= group.priority ? existing.lane : group.lane;
+        existing.discoveredAt = existing.discoveredAt || now;
+        existing.updatedAt = now;
+      } else {
+        byId.set(id, {
+          id,
+          historyId,
+          lane: group.lane,
+          priority: group.priority,
+          attempts: 0,
+          discoveredAt: now,
+          updatedAt: now,
+        });
+      }
+    }
+  }
+  syncState.gmailQueue = [...byId.values()]
+    .sort((a: any, b: any) => Number(b.priority || 0) - Number(a.priority || 0) || String(b.updatedAt || "").localeCompare(String(a.updatedAt || "")))
+    .slice(0, 200);
+  return syncState.gmailQueue;
+}
+
+function selectQueuedThreads(state: any, max = 14) {
+  const syncState = ensureGmailSyncState(state);
+  return syncState.gmailQueue
+    .filter((item: any) => {
+      const id = textValue(item?.id, "");
+      const historyId = textValue(item?.historyId, "");
+      return id && (!historyId || textValue(syncState.processedThreadHistory?.[id], "") !== historyId);
+    })
+    .sort((a: any, b: any) =>
+      Number(b.priority || 0) - Number(a.priority || 0) ||
+      Number(a.attempts || 0) - Number(b.attempts || 0) ||
+      String(a.discoveredAt || "").localeCompare(String(b.discoveredAt || ""))
+    )
+    .slice(0, max);
+}
+
+function markQueuedThreadAttempt(state: any, id = "") {
+  if (!id) return;
+  const syncState = ensureGmailSyncState(state);
+  const item = syncState.gmailQueue.find((entry: any) => textValue(entry?.id, "") === id);
+  if (item) {
+    item.attempts = Number(item.attempts || 0) + 1;
+    item.updatedAt = new Date().toISOString();
+  }
+}
+
+function markQueuedThreadProcessed(state: any, thread: any) {
+  const id = textValue(thread?.id, "");
+  if (!id) return;
+  const syncState = ensureGmailSyncState(state);
+  const historyId = textValue(thread?.historyId, "");
+  if (historyId) syncState.processedThreadHistory[id] = historyId;
+  syncState.gmailQueue = syncState.gmailQueue.filter((entry: any) => textValue(entry?.id, "") !== id);
+  const historyEntries = Object.entries(syncState.processedThreadHistory);
+  if (historyEntries.length > 1000) {
+    syncState.processedThreadHistory = Object.fromEntries(historyEntries.slice(-1000));
+  }
+}
+
 function formatSyncError(error: unknown) {
   const message = typeof error === "string"
     ? textValue(error, "archive_failed")
@@ -1677,11 +1762,11 @@ export default async (request: Request) => {
       return [];
     });
     const archiveThreadBatches = await Promise.allSettled(
-      ARCHIVE_QUERIES.map((query) => listRecentGmailThreads(query, 4)),
+      ARCHIVE_QUERIES.map((query) => listRecentGmailThreads(query, 8)),
     );
     const archiveThreads = dedupeThreads(archiveThreadBatches
       .filter((result): result is PromiseFulfilledResult<any[]> => result.status === "fulfilled")
-      .flatMap((result) => result.value)).slice(0, 8);
+      .flatMap((result) => result.value));
     archiveThreadBatches.forEach((result, index) => {
       if (result.status === "fulfilled") return;
       appendSyncLog(state, {
@@ -1695,8 +1780,14 @@ export default async (request: Request) => {
         notes: `Gmail-søgning ${index + 1} svarede ikke korrekt. Sync fortsatte med de øvrige søgninger.`,
       });
     });
-    const inboxThreads = isNearFunctionTimeout() ? [] : await listRecentGmailThreads(SYNC_QUERY, 6);
-    const threads = dedupeThreads([...dkeQuestionThreads, ...archiveThreads, ...inboxThreads]).slice(0, 14);
+    const inboxThreads = isNearFunctionTimeout() ? [] : await listRecentGmailThreads(SYNC_QUERY, 12);
+    queueDiscoveredThreads(state, [
+      { lane: "dke_questions", priority: 100, threads: dkeQuestionThreads },
+      { lane: "archive", priority: 60, threads: archiveThreads },
+      { lane: "inbox", priority: 30, threads: inboxThreads },
+    ]);
+    const queuedThreads = selectQueuedThreads(state, 14);
+    const threads = queuedThreads.map((thread: any) => ({ id: thread.id, historyId: thread.historyId }));
     const fullThreadResults = await Promise.allSettled(
       threads.map((thread: any) => getGmailThread(String(thread.id))),
     );
@@ -1731,6 +1822,7 @@ export default async (request: Request) => {
         subject: threadId ? `Mailtråd ${threadId}` : "Mailtråd",
         error: errorText,
       });
+      markQueuedThreadAttempt(state, threadId);
       appendSyncLog(state, {
         status: "error",
         subject: threadId ? `Mailtråd ${threadId}` : "Mailtråd",
@@ -1765,7 +1857,10 @@ export default async (request: Request) => {
       }
       const threadId = textValue(thread?.id, "");
       const item = itemByThreadId.get(threadId);
-      if (!item) continue;
+      if (!item) {
+        markQueuedThreadProcessed(state, thread);
+        continue;
+      }
       try {
         const result = await archiveQualifiedThread(thread, item, state, integration, auth.actor);
         if (!result) continue;
@@ -1829,6 +1924,7 @@ export default async (request: Request) => {
           error: errorText,
         });
       }
+      markQueuedThreadProcessed(state, thread);
     }
 
     const offerFollowupsCreated = backfillOfferFollowupsFromState(state);
