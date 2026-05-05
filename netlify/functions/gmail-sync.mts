@@ -106,10 +106,51 @@ function dedupeThreads(threads: any[]) {
 function ensureGmailSyncState(state: any) {
   state.syncState = state.syncState && typeof state.syncState === "object" && !Array.isArray(state.syncState) ? state.syncState : {};
   state.syncState.gmailQueue = Array.isArray(state.syncState.gmailQueue) ? state.syncState.gmailQueue : [];
+  state.syncState.threadLedger = state.syncState.threadLedger && typeof state.syncState.threadLedger === "object" && !Array.isArray(state.syncState.threadLedger)
+    ? state.syncState.threadLedger
+    : {};
   state.syncState.processedThreadHistory = state.syncState.processedThreadHistory && typeof state.syncState.processedThreadHistory === "object" && !Array.isArray(state.syncState.processedThreadHistory)
     ? state.syncState.processedThreadHistory
     : {};
   return state.syncState;
+}
+
+function isFinalLedgerStatus(status = "") {
+  return ["processed", "task_created", "archived", "updated", "needs_manual_match", "ignored", "failed_final"].includes(textValue(status, ""));
+}
+
+function ledgerEntryForThread(state: any, threadId = "") {
+  const syncState = ensureGmailSyncState(state);
+  return threadId ? syncState.threadLedger?.[threadId] || null : null;
+}
+
+function shouldSkipThreadByLedger(state: any, threadId = "", historyId = "") {
+  if (!threadId || !historyId) return false;
+  const entry = ledgerEntryForThread(state, threadId);
+  return Boolean(entry && textValue(entry.historyId, "") === historyId && isFinalLedgerStatus(entry.status));
+}
+
+function updateThreadLedger(state: any, thread: any, payload: Record<string, unknown>) {
+  const syncState = ensureGmailSyncState(state);
+  const threadId = textValue(thread?.id || payload.threadId, "");
+  if (!threadId) return null;
+  const previous = syncState.threadLedger[threadId] || {};
+  const latest = latestThreadSummary(thread);
+  const next = {
+    ...previous,
+    threadId,
+    historyId: textValue(thread?.historyId || payload.historyId, previous.historyId || ""),
+    subject: textValue(payload.subject || latest?.subject || previous.subject, ""),
+    latestMessageAt: textValue(payload.latestMessageAt || latest?.isoDate || previous.latestMessageAt, ""),
+    lastSeenAt: new Date().toISOString(),
+    ...payload,
+  };
+  syncState.threadLedger[threadId] = next;
+  const entries = Object.entries(syncState.threadLedger);
+  if (entries.length > 1200) {
+    syncState.threadLedger = Object.fromEntries(entries.slice(-1200));
+  }
+  return next;
 }
 
 function queueDiscoveredThreads(state: any, groups: Array<{ lane: string; priority: number; threads: any[] }>) {
@@ -121,6 +162,7 @@ function queueDiscoveredThreads(state: any, groups: Array<{ lane: string; priori
       const id = textValue(thread?.id, "");
       if (!id) continue;
       const historyId = textValue(thread?.historyId, "");
+      if (shouldSkipThreadByLedger(state, id, historyId)) continue;
       if (!["dke_questions", "internal_inbox"].includes(group.lane) && historyId && textValue(syncState.processedThreadHistory?.[id], "") === historyId) continue;
       const existing: any = byId.get(id);
       if (existing) {
@@ -155,6 +197,7 @@ function selectQueuedThreads(state: any, max = 14) {
     .filter((item: any) => {
       const id = textValue(item?.id, "");
       const historyId = textValue(item?.historyId, "");
+      if (shouldSkipThreadByLedger(state, id, historyId)) return false;
       return id && (["dke_questions", "internal_inbox"].includes(textValue(item?.lane, "")) || !historyId || textValue(syncState.processedThreadHistory?.[id], "") !== historyId);
     })
     .sort((a: any, b: any) =>
@@ -892,7 +935,7 @@ async function registerInvoicesFromThreads(state: any, threads: any[]) {
     const match = matchInvoiceToCase(state, threadText, invoiceMatch[1]);
     if (!match.matched) {
         appendSyncLog(state, {
-          status: "error",
+          status: "needs_review",
           threadId: textValue(thread?.id, ""),
           subject: summaries[0]?.subject || `Faktura ${invoiceMatch[1]}`,
         customerName: "",
@@ -1084,14 +1127,6 @@ function inferArchiveSignal(subject = "", body = "", from = "") {
       sourceType: isInternalSender(from) ? "internal" : "external",
       fileLabel: `Faktura ${invoiceMatch[1]}`,
       invoiceNumber: invoiceMatch[1],
-    };
-  }
-  if (/^(re|sv|vs|fw|fwd)\s*:/i.test(rawSubject)) {
-    return {
-      category: "mails",
-      documentType: "Mailkorrespondance",
-      sourceType: isInternalSender(from) ? "internal" : "external",
-      fileLabel: "",
     };
   }
   return null;
@@ -1780,6 +1815,169 @@ function ensureInternalInboxTasks(state: any, threads: any[]) {
   return created;
 }
 
+function threadIntentSignals(thread: any) {
+  const latest = latestThreadSummary(thread);
+  const text = fullThreadText(thread);
+  const compact = plainCompactText(`${latest?.subject || ""}\n${text}`);
+  const source = `${latest?.subject || ""}\n${latest?.snippet || ""}\n${latest?.body || ""}`;
+  const hasFyi = /\b(til orientering|fyi|noteret|ingen kommentar|tak for info|bare til info)\b/i.test(source);
+  const hasQuestion = /\?/.test(source);
+  const hasInstruction = /\b(skal|husk|afklar|aftal|send|ring|opret|folg op|lav|ryd|flyt|tjek|undersog|svar|book|planlaeg|kan du|ma du gerne|må du gerne|vend venligst retur|giv besked)\b/.test(compact);
+  const hasConcreteSignal = /\b(status|dato|deadline|frist|billeder|foto|ks|dokumentation|mangler|mangel|skade|fejl|udbedr|tilbud|faktura|betaling|kontrakt|lon|loen|kokken|køkken|aflevering|godkend|underskrift|plan)\b/.test(compact);
+  const hasCustomerTaskSignal =
+    compact.includes("bulowsvej") ||
+    compact.includes("blaagardsgade") ||
+    compact.includes("blagardsgade") ||
+    compact.includes("ryesgade") ||
+    compact.includes("lykkesholms") ||
+    compact.includes("gadesvej") ||
+    compact.includes("dke") ||
+    compact.includes("charlotte");
+  return {
+    latest,
+    text,
+    compact,
+    hasFyi,
+    hasQuestion,
+    hasInstruction,
+    hasConcreteSignal,
+    hasCustomerTaskSignal,
+    isInternal: isInternalSender(latest?.from || ""),
+  };
+}
+
+function classifyThreadIntent(thread: any, item: any = null) {
+  const signals = threadIntentSignals(thread);
+  const latest = signals.latest;
+  if (!latest) return { intent: "ignore", lane: "ignore", reason: "Tom Gmail-tråd." };
+  const archiveSignal = inferArchiveSignal(item?.subject || latest.subject, signals.text || item?.body, latest.from);
+  if (archiveSignal) {
+    const lane = archiveSignal.category === "betaling"
+      ? "invoice"
+      : archiveSignal.category === "tilbud" || archiveSignal.category === "referater"
+        ? "archive"
+        : "archive";
+    return { intent: "archive_candidate", lane, reason: `${archiveSignal.documentType} skal arkiveres.`, archiveSignal };
+  }
+  if (signals.hasFyi && !signals.hasQuestion && !signals.hasInstruction) {
+    return { intent: "ignore", lane: "inbox", reason: "FYI/orientering uden konkret handling." };
+  }
+  if ((signals.hasInstruction || signals.hasQuestion || signals.isInternal) && signals.hasConcreteSignal) {
+    return { intent: "task_candidate", lane: signals.isInternal ? "internal" : "inbox", reason: "Mailen indeholder konkret handling eller afklaring." };
+  }
+  if (signals.hasCustomerTaskSignal && (signals.hasQuestion || signals.hasConcreteSignal)) {
+    return { intent: "task_candidate", lane: "inbox", reason: "Kundespecifik statusmail kræver vurdering." };
+  }
+  return { intent: "ignore", lane: "inbox", reason: "Ingen arkiv-, kundeopdaterings- eller opgavesignal." };
+}
+
+function taskTitleFromThread(thread: any) {
+  const latest = latestThreadSummary(thread);
+  const subject = textValue(latest?.subject, "Mail kræver opfølgning")
+    .replace(/^(re|sv|fw|fwd|vs):\s*/i, "")
+    .trim();
+  const compact = plainCompactText(`${subject}\n${latest?.body || latest?.snippet || ""}`);
+  if (compact.includes("bulowsvej") && compact.includes("mangler")) return "Afklar næste step for Bülowsvej 9 mangler";
+  if (compact.includes("billeder") && compact.includes("dj pult")) return "Send DJ-pult-billeder";
+  if (compact.includes("aflevering") && (compact.includes("blagardsgade 14") || compact.includes("blaagardsgade 14"))) return "Svar med dato for endelig aflevering";
+  if (compact.includes("uge 19") && compact.includes("bulowsvej 9")) return "Svar hvilken dag i uge 19 I kommer";
+  if (compact.includes("status") && compact.includes("igangvaerende sager")) return "Svar på status for igangværende sager";
+  return subject || "Mail kræver opfølgning";
+}
+
+function taskNotesFromThread(thread: any) {
+  const latest = latestThreadSummary(thread);
+  const body = textValue(latest?.body || latest?.snippet, "");
+  const trimmed = body.replace(/\s+/g, " ").trim();
+  const excerpt = trimmed.length > 260 ? `${trimmed.slice(0, 257)}...` : trimmed;
+  return excerpt || "Mailen indeholder en konkret handling eller afklaring. Vurder og luk opgaven, når den er håndteret.";
+}
+
+function taskBucketFromThread(thread: any) {
+  const signals = threadIntentSignals(thread);
+  if (/\b(nu|akut|hurtigst|straks|i dag|idag)\b/.test(signals.compact)) return "now";
+  if (/\b(status|dato|deadline|frist|svar|aflevering|mangler|skade|fejl|udbedr|billeder|ks)\b/.test(signals.compact)) return "today";
+  return "week";
+}
+
+function ensureTaskCandidateFromThread(state: any, thread: any) {
+  state.internalTasks = Array.isArray(state.internalTasks) ? state.internalTasks : [];
+  const threadId = textValue(thread?.id, "");
+  const text = fullThreadText(thread);
+  const matched = matchCaseWithConfidence(state.sager || [], text);
+  const title = taskTitleFromThread(thread);
+  const notes = taskNotesFromThread(thread);
+  const bucket = taskBucketFromThread(thread);
+  const dueDate = bucket === "week" ? "" : new Date().toISOString().slice(0, 10);
+
+  const existingInternal = state.internalTasks.some((task: any) =>
+    threadId && textValue(task?.threadId, "") === threadId && String(task?.status || "").toLowerCase() !== "fuldført"
+  );
+  if (existingInternal) return { created: false, reason: "Opgaven findes allerede.", threadId, title };
+
+  if (matched.confident && matched.entry) {
+    ensureCaseShape(matched.entry);
+    matched.entry.tasks = Array.isArray(matched.entry.tasks) ? matched.entry.tasks : [];
+    const existingCaseTask = matched.entry.tasks.some((task: any) =>
+      threadId && textValue(task?.threadId, "") === threadId && String(task?.status || "").toLowerCase() !== "fuldført"
+    );
+    if (existingCaseTask) return { created: false, reason: "Opgaven findes allerede på sagen.", threadId, title };
+    matched.entry.tasks.unshift({
+      id: randomUUID(),
+      title,
+      status: "Åben",
+      createdAt: new Date().toISOString(),
+      dueDate,
+      owner: "Søren",
+      notes,
+      source: "gmail_task_candidate",
+      threadId,
+    });
+    return {
+      created: true,
+      threadId,
+      title,
+      notes,
+      customerName: textValue(matched.entry.kunde, ""),
+      caseId: formatCaseIdForDisplay(matched.entry),
+      taskId: textValue(matched.entry.tasks[0]?.id, ""),
+      linked: true,
+    };
+  }
+
+  const existingByTitle = state.internalTasks.some((task: any) =>
+    normalizeCaseKey(task?.title) === normalizeCaseKey(title) &&
+    String(task?.status || "").toLowerCase() !== "fuldført"
+  );
+  if (existingByTitle) return { created: false, reason: "En tilsvarende intern opgave findes allerede.", threadId, title };
+  const unlinkedRef = `S-${stableThreeDigitHash(`${title}|${threadId || text}`)}`;
+  const task = normalizeInternalTask({
+    id: `gmail-task-${threadId || randomUUID()}`,
+    title,
+    status: "Åben",
+    dueDate,
+    owner: "Søren",
+    notes,
+    source: "gmail_task_candidate",
+    domain: "mail",
+    bucket,
+    threadId,
+    customerId: "",
+    unlinkedRef,
+  });
+  state.internalTasks.unshift(task);
+  return {
+    created: true,
+    threadId,
+    title,
+    notes,
+    customerName: "Intern opgave",
+    caseId: unlinkedRef,
+    taskId: task.id,
+    linked: false,
+  };
+}
+
 function ensureOfferFollowupTask(matched: any, signal: any, archiveText: string, documentDate: string) {
   if (!matched) return;
   const compact = plainCompactText(archiveText);
@@ -2147,7 +2345,7 @@ export default async (request: Request) => {
       .map((result) => result.value);
     const invoiceRegistration = await registerInvoicesFromThreads(state, fullThreads);
     const invoicesUpdated = Number(invoiceRegistration?.changed || 0);
-    const internalInboxTasksCreated = ensureInternalInboxTasks(state, fullThreads);
+    const taskCandidatesCreated: any[] = [];
     const dkeQuestionTasksCreated =
       ensureDkeCharlotteQuestionTasks(state, fullThreads) +
       ensureDkeCharlotteQuestionTasksFromStateEmails(state);
@@ -2167,33 +2365,6 @@ export default async (request: Request) => {
         });
       }
     }
-    if (internalInboxTasksCreated.length) {
-      for (const entry of internalInboxTasksCreated) {
-        appendSyncLog(state, {
-          status: "archived",
-          archiveKey: `internal-task-${textValue(entry.threadId, "") || stableThreeDigitHash(entry.title)}`,
-          subject: textValue(entry.title, "Intern opgave"),
-          customerName: textValue(entry.customerName, ""),
-          caseId: textValue(entry.caseId, ""),
-          documentType: "Opgave",
-          category: "sager",
-          notes: entry.linked
-            ? "Intern/SMG-mail i indbakken er oprettet som opgave på den matchede kunde."
-            : "Intern/SMG-mail i indbakken er oprettet som intern opgave uden kundematch.",
-        });
-      }
-    } else if (internalInboxThreads.length) {
-      appendSyncLog(state, {
-        status: "archived",
-        subject: "Intern indbakke gennemgået",
-        customerName: "SMG / NSTSF",
-        caseId: "",
-        documentType: "Opgave-screening",
-        category: "sager",
-        notes: `${internalInboxThreads.length} interne/SMG-indbakke-mails blev hentet. Ingen nye opgaver blev oprettet, enten fordi de allerede fandtes, eller fordi de ikke havde konkret handlingssignal.`,
-      });
-    }
-
     fullThreadResults.forEach((result, index) => {
       if (result.status === "fulfilled") return;
       const threadId = textValue(threads[index]?.id, "");
@@ -2222,6 +2393,59 @@ export default async (request: Request) => {
       .filter(Boolean)
       .sort((a: any, b: any) => String(b.date).localeCompare(String(a.date))));
     const itemByThreadId = new Map(items.map((item: any) => [textValue(item.threadId || item.id, ""), item]));
+    const intentByThreadId = new Map<string, any>();
+
+    for (const thread of fullThreads) {
+      const threadId = textValue(thread?.id, "");
+      const item = itemByThreadId.get(threadId);
+      const intent = classifyThreadIntent(thread, item);
+      intentByThreadId.set(threadId, intent);
+      updateThreadLedger(state, thread, {
+        intent: intent.intent,
+        lane: intent.lane,
+        status: intent.intent === "ignore" ? "ignored" : "new",
+        reason: intent.reason,
+        subject: textValue(item?.subject || latestThreadSummary(thread)?.subject, ""),
+      });
+      if (intent.intent !== "task_candidate") continue;
+      const result = ensureTaskCandidateFromThread(state, thread);
+      updateThreadLedger(state, thread, {
+        intent: intent.intent,
+        lane: intent.lane,
+        status: result.created ? "task_created" : "processed",
+        taskId: textValue(result.taskId, ""),
+        caseId: textValue(result.caseId, ""),
+        customerId: textValue(result.caseId, "").match(/(\d+)/)?.[1] || "",
+        reason: textValue(result.reason, intent.reason),
+        subject: textValue(item?.subject || result.title, ""),
+      });
+      if (!result.created) continue;
+      taskCandidatesCreated.push(result);
+      appendSyncLog(state, {
+        status: "task_created",
+        archiveKey: `task-candidate-${textValue(result.threadId, "") || stableThreeDigitHash(result.title)}`,
+        threadId: textValue(result.threadId, ""),
+        subject: textValue(result.title, "Opgave"),
+        customerName: textValue(result.customerName, ""),
+        caseId: textValue(result.caseId, ""),
+        documentType: "Opgave",
+        category: "sager",
+        notes: result.linked
+          ? "Mailen er oprettet som opgave på den matchede kunde."
+          : "Mailen er oprettet som intern opgave uden sikkert kundematch.",
+      });
+    }
+    if (!taskCandidatesCreated.length && internalInboxThreads.length) {
+      appendSyncLog(state, {
+        status: "skipped",
+        subject: "Intern indbakke gennemgået",
+        customerName: "SMG / NSTSF",
+        caseId: "",
+        documentType: "Opgave-screening",
+        category: "sager",
+        notes: `${internalInboxThreads.length} interne/SMG-indbakke-mails blev hentet. Ingen nye opgaver blev oprettet, fordi de allerede fandtes eller ikke havde konkret handlingssignal.`,
+      });
+    }
 
     for (const thread of fullThreads) {
       if (isNearFunctionTimeout()) {
@@ -2243,10 +2467,32 @@ export default async (request: Request) => {
         markQueuedThreadProcessed(state, thread);
         continue;
       }
+      const intent = intentByThreadId.get(threadId) || classifyThreadIntent(thread, item);
+      if (intent.intent !== "archive_candidate") {
+        markQueuedThreadProcessed(state, thread);
+        continue;
+      }
       try {
         const result = await archiveQualifiedThread(thread, item, state, integration, auth.actor);
-        if (!result) continue;
+        if (!result) {
+          updateThreadLedger(state, thread, {
+            intent: textValue(intent.intent, "ignore"),
+            lane: textValue(intent.lane, "inbox"),
+            status: "ignored",
+            reason: "Ingen arkivsignal efter fuld trådlæsning.",
+          });
+          continue;
+        }
         if (result.ok) {
+          updateThreadLedger(state, thread, {
+            intent: "archive_candidate",
+            lane: textValue(intent.lane, "archive"),
+            status: result.skipped ? "processed" : "archived",
+            caseId: textValue(result.matchedCaseId, ""),
+            customerId: textValue(result.matchedCaseId, "").match(/(\d+)/)?.[1] || "",
+            driveUrl: textValue(result.driveUrl, ""),
+            reason: result.skipped ? "Allerede arkiveret." : "Arkiveret i Drive.",
+          });
           if (!result.skipped) {
             appendSyncLog(state, {
               status: "archived",
@@ -2273,8 +2519,17 @@ export default async (request: Request) => {
         } else {
           const errorText = formatSyncError(result.error);
           const taskCreated = ensureUnmatchedMailTask(state, result, item, errorText, result.possibleCase);
+          const isMatchReview = ["case_not_matched", "invoice_match_low_confidence", "invoice_match_ambiguous"].includes(textValue(result.error, ""));
+          updateThreadLedger(state, thread, {
+            intent: "archive_candidate",
+            lane: textValue(intent.lane, "archive"),
+            status: isMatchReview ? "needs_manual_match" : "failed_retryable",
+            attempts: Number(ledgerEntryForThread(state, threadId)?.attempts || 0) + 1,
+            caseId: textValue(result.matchedCaseId, ""),
+            reason: errorText,
+          });
           appendSyncLog(state, {
-            status: "error",
+            status: isMatchReview ? "needs_review" : "error",
             threadId: textValue(result.threadId || item?.threadId || thread?.id, ""),
             subject: textValue(item?.subject, ""),
             customerName: textValue(result.customerName, ""),
@@ -2284,10 +2539,19 @@ export default async (request: Request) => {
             error: errorText,
             notes: taskCreated ? `${errorText} Oprettet som opgave uden dato.` : errorText,
           });
-          archiveErrors.push({ ...result, error: errorText });
+          if (!isMatchReview) archiveErrors.push({ ...result, error: errorText });
         }
       } catch (error) {
         const errorText = formatSyncError(error);
+        const attempts = Number(ledgerEntryForThread(state, threadId)?.attempts || 0) + 1;
+        updateThreadLedger(state, thread, {
+          intent: "archive_candidate",
+          lane: textValue(intent.lane, "archive"),
+          status: attempts >= 3 ? "failed_final" : "failed_retryable",
+          attempts,
+          nextRetryAt: attempts >= 3 ? "" : addDaysIso(new Date().toISOString().slice(0, 10), attempts >= 2 ? 1 : 0),
+          reason: errorText,
+        });
         appendSyncLog(state, {
           status: "error",
           threadId,
@@ -2345,7 +2609,8 @@ export default async (request: Request) => {
       archived: archivedResults.length,
       offerFollowupsCreated,
       dkeQuestionTasksCreated,
-      internalInboxTasksCreated: internalInboxTasksCreated.length,
+      taskCandidatesCreated: taskCandidatesCreated.length,
+      internalInboxTasksCreated: taskCandidatesCreated.length,
       paidInvoicesBackfilled,
       invoicesUpdated,
       ensuredFolders: ensuredFolders.length,

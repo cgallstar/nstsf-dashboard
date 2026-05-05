@@ -3465,9 +3465,13 @@ function collectPriorityUpdates(){
       ? 'Arkiveret'
       : item.status === 'skipped'
         ? 'Allerede arkiveret'
-        : item.status === 'error'
-          ? 'Fejl'
-          : 'Opdatering';
+        : item.status === 'needs_review'
+          ? 'Afklaring'
+          : item.status === 'task_created'
+            ? 'Opgave'
+          : item.status === 'error'
+            ? 'Fejl'
+            : 'Opdatering';
     const targetLabel = item.caseId ? formatCustomerIdDisplay(String(item.caseId).match(/(\d+)/)?.[1] || item.caseId) : item.customerName || 'Ukendt sag';
     const timeLabel = displayDateTime(item.createdAt);
     const driveUrl = textValue(item.driveUrl, '');
