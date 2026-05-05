@@ -28,15 +28,16 @@ function docFileName(doc: any) {
 }
 
 function docKey(doc: any) {
+  const title = textValue(doc?.titel || doc?.title, "").toLowerCase().replace(/\s+/g, " ").trim();
+  const date = textValue(doc?.dato || doc?.date, "");
+  if (title && date) return `${title}|${date}`;
+  const fileName = docFileName(doc).toLowerCase();
+  if (fileName) return `name:${fileName}`;
   const fileId = textValue(doc?.fileId, "");
   const url = textValue(doc?.url, "");
   if (fileId) return `file:${fileId}`;
   if (url) return `url:${url}`;
-  return [
-    textValue(doc?.titel || doc?.title, "").toLowerCase().replace(/\s+/g, " ").trim(),
-    textValue(doc?.dato || doc?.date, ""),
-    textValue(doc?.mimeType, ""),
-  ].join("|");
+  return [title, textValue(doc?.mimeType, "")].join("|");
 }
 
 function dedupeStateDocs(caseEntry: any) {

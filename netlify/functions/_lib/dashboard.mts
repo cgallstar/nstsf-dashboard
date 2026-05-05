@@ -141,6 +141,7 @@ export function normalizeDoc(doc: any) {
     dato: textValue(doc?.dato || doc?.date, new Date().toISOString().slice(0, 10)),
     url: textValue(doc?.url, ""),
     fileId: textValue(doc?.fileId, ""),
+    fileName: textValue(doc?.fileName || doc?.filename, ""),
     mimeType: textValue(doc?.mimeType, ""),
     notes: textValue(doc?.notes, ""),
   };
@@ -148,13 +149,15 @@ export function normalizeDoc(doc: any) {
 
 function docDedupeKey(doc: any) {
   const normalized = normalizeDoc(doc);
+  const titleKey = normalized.titel.toLowerCase().replace(/\s+/g, " ").trim();
+  if (titleKey && normalized.dato) return [
+    titleKey,
+    normalized.dato,
+  ].join("|");
+  if (normalized.fileName) return `name:${normalized.fileName.toLowerCase().replace(/\s+/g, " ").trim()}`;
   if (normalized.fileId) return `file:${normalized.fileId}`;
   if (normalized.url) return `url:${normalized.url}`;
-  return [
-    normalized.titel.toLowerCase().replace(/\s+/g, " ").trim(),
-    normalized.dato,
-    normalized.mimeType,
-  ].join("|");
+  return [titleKey, normalized.mimeType].join("|");
 }
 
 function dedupeDocs(items: any[]) {

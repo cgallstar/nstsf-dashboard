@@ -1986,19 +1986,43 @@ const AGENTS = {
 function setSyncStatus(text, tone){ const el = document.getElementById('syncStatus'); if(!el) return; el.textContent = text; el.style.color = tone === 'error' ? 'var(--red)' : tone === 'ok' ? 'var(--green)' : 'var(--muted)'; }
 function setAdminMessage(text='', tone=''){ const el = document.getElementById('adminMessage'); if(!el) return; el.textContent = text; el.style.color = tone === 'error' ? 'var(--red)' : tone === 'ok' ? 'var(--green)' : 'var(--muted)'; }
 function textValue(value, fallback=''){ if(value === null || value === undefined) return fallback; return String(value); }
+function docIdentityKey(item={}){
+  const title = textValue(item.titel || item.title, '').toLowerCase().replace(/\s+/g,' ').trim();
+  const date = textValue(item.dato || item.date, '');
+  if(title && date) return `${title}|${date}`;
+  const fileName = textValue(item.fileName || item.filename, '').toLowerCase().replace(/\s+/g,' ').trim();
+  if(fileName) return `name:${fileName}`;
+  const url = documentDriveUrl(item);
+  if(url) return `url:${url}`;
+  return `${title}|${textValue(item.mimeType, '')}`;
+}
+function dedupeDocsForState(items=[]){
+  const seen = new Set();
+  const result = [];
+  (items || []).forEach((item)=>{
+    const key = docIdentityKey(item);
+    if(seen.has(key)){
+      stateWasSanitized = true;
+      return;
+    }
+    seen.add(key);
+    result.push(item);
+  });
+  return result;
+}
 function cloneDocs(docs={}, drive=''){
   return {
     drive: textValue(docs?.drive ?? drive, ''),
-    byggereferater: Array.isArray(docs?.byggereferater) ? docs.byggereferater : [...docDemo.byggereferater],
-    transkripter: Array.isArray(docs?.transkripter) ? docs.transkripter : [...docDemo.transkripter],
-    tilbud: Array.isArray(docs?.tilbud) ? docs.tilbud : [...DOC_DEFAULTS.tilbud],
-    referater: Array.isArray(docs?.referater) ? docs.referater : [...DOC_DEFAULTS.referater],
-    ks: Array.isArray(docs?.ks) ? docs.ks : [...DOC_DEFAULTS.ks],
-    billeder: Array.isArray(docs?.billeder) ? docs.billeder : [...DOC_DEFAULTS.billeder],
-    ekstraarbejde: Array.isArray(docs?.ekstraarbejde) ? docs.ekstraarbejde : [...DOC_DEFAULTS.ekstraarbejde],
-    betaling: Array.isArray(docs?.betaling) ? docs.betaling : [...DOC_DEFAULTS.betaling],
-    kontrakter: Array.isArray(docs?.kontrakter) ? docs.kontrakter : [...DOC_DEFAULTS.kontrakter],
-    mails: Array.isArray(docs?.mails) ? docs.mails : [...DOC_DEFAULTS.mails],
+    byggereferater: dedupeDocsForState(Array.isArray(docs?.byggereferater) ? docs.byggereferater : [...docDemo.byggereferater]),
+    transkripter: dedupeDocsForState(Array.isArray(docs?.transkripter) ? docs.transkripter : [...docDemo.transkripter]),
+    tilbud: dedupeDocsForState(Array.isArray(docs?.tilbud) ? docs.tilbud : [...DOC_DEFAULTS.tilbud]),
+    referater: dedupeDocsForState(Array.isArray(docs?.referater) ? docs.referater : [...DOC_DEFAULTS.referater]),
+    ks: dedupeDocsForState(Array.isArray(docs?.ks) ? docs.ks : [...DOC_DEFAULTS.ks]),
+    billeder: dedupeDocsForState(Array.isArray(docs?.billeder) ? docs.billeder : [...DOC_DEFAULTS.billeder]),
+    ekstraarbejde: dedupeDocsForState(Array.isArray(docs?.ekstraarbejde) ? docs.ekstraarbejde : [...DOC_DEFAULTS.ekstraarbejde]),
+    betaling: dedupeDocsForState(Array.isArray(docs?.betaling) ? docs.betaling : [...DOC_DEFAULTS.betaling]),
+    kontrakter: dedupeDocsForState(Array.isArray(docs?.kontrakter) ? docs.kontrakter : [...DOC_DEFAULTS.kontrakter]),
+    mails: dedupeDocsForState(Array.isArray(docs?.mails) ? docs.mails : [...DOC_DEFAULTS.mails]),
   };
 }
 function normalizeSagsId(value=''){
@@ -3763,9 +3787,7 @@ function documentDriveUrl(item={}){
   return '';
 }
 function docViewKey(item={}){
-  const url = documentDriveUrl(item);
-  if(url) return `url:${url}`;
-  return `${textValue(item.titel || item.title, '').toLowerCase().replace(/\s+/g,' ').trim()}|${textValue(item.dato || item.date, '')}`;
+  return docIdentityKey(item);
 }
 function dedupeDocsForView(items=[]){
   const seen = new Set();
