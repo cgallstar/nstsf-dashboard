@@ -3,6 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate, max-age=0">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
 <title>Nordsjællands Tømrer- & Snedkerfirma — Dashboard</title>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=DM+Sans:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap');
@@ -1689,6 +1692,7 @@ const AUTH_API = '/api/auth';
 const STATE_API = '/api/state';
 const USERS_API = '/api/users';
 const GMAIL_SYNC_API = '/api/gmail-sync';
+const BUILD_VERSION = '2026-05-05-2252-sync-review-cache';
 let remoteSaveTimer = null;
 let isApplyingRemoteState = false;
 let stateWasSanitized = false;
@@ -1983,7 +1987,7 @@ const AGENTS = {
     points: ['styrer ferie, skoleuger og udenlandske rotationer', 'holder overblik over onboarding og bemandingsstatus', 'sørger for at kapacitetskalenderen matcher virkeligheden'],
   },
 };
-function setSyncStatus(text, tone){ const el = document.getElementById('syncStatus'); if(!el) return; el.textContent = text; el.style.color = tone === 'error' ? 'var(--red)' : tone === 'ok' ? 'var(--green)' : 'var(--muted)'; }
+function setSyncStatus(text, tone){ const el = document.getElementById('syncStatus'); if(!el) return; el.textContent = `${text} · build ${BUILD_VERSION}`; el.style.color = tone === 'error' ? 'var(--red)' : tone === 'ok' ? 'var(--green)' : 'var(--muted)'; }
 function setAdminMessage(text='', tone=''){ const el = document.getElementById('adminMessage'); if(!el) return; el.textContent = text; el.style.color = tone === 'error' ? 'var(--red)' : tone === 'ok' ? 'var(--green)' : 'var(--muted)'; }
 function textValue(value, fallback=''){ if(value === null || value === undefined) return fallback; return String(value); }
 function docIdentityKey(item={}){
