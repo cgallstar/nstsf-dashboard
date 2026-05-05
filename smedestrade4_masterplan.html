@@ -3,9 +3,115 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Smedestræde 4 - Masterplan</title>
+<title>Smedestræde 4 - Projektstyring Komplet</title>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap');
+
+  /* NAV TABS */
+  .nav { background: #162d4a; display: flex; gap: 2px; padding: 0 40px; flex-wrap: wrap; border-bottom: 2px solid #0d1f30; }
+  .nav-btn { background: rgba(255,255,255,0.07); color: #aac4e8; border: none; padding: 11px 18px; font-family: 'IBM Plex Mono', monospace; font-size: 10px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; cursor: pointer; transition: all 0.15s; border-bottom: 3px solid transparent; }
+  .nav-btn:hover { background: rgba(255,255,255,0.13); color: white; }
+  .nav-btn.active { background: var(--off-white); color: var(--navy); border-bottom-color: var(--red); }
+  .nav-btn.highlight { border-bottom-color: #e67e22; }
+
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+
+  /* UGEPLAN */
+  .ugeplan-table { width: 100%; border-collapse: collapse; font-size: 11px; }
+  .ugeplan-table th { font-family: 'IBM Plex Mono', monospace; font-size: 9px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; color: white; background: var(--navy); padding: 7px 10px; text-align: left; white-space: nowrap; }
+  .ugeplan-table td { padding: 7px 10px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  .ugeplan-table tr:nth-child(even) td { background: var(--cream); }
+  .ugeplan-table tr.current-week td { background: #EBF5FB !important; border-left: 4px solid var(--blue-mid); }
+  .uge-nr { font-family: 'IBM Plex Mono', monospace; font-size: 12px; font-weight: 700; color: var(--navy); }
+  .uge-dato { font-family: 'IBM Plex Mono', monospace; font-size: 9px; color: var(--muted); }
+  .uge-folk { font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: var(--navy); font-weight: 600; }
+  .milestone { background: var(--navy); color: white; font-family: 'IBM Plex Mono', monospace; font-size: 9px; font-weight: 700; padding: 2px 6px; border-radius: 2px; display: inline-block; margin-top: 3px; }
+
+  /* BESLUTNING KALENDER */
+  .decision-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  .decision-table th { font-family: 'IBM Plex Mono', monospace; font-size: 10px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; color: white; background: var(--navy); padding: 8px 12px; text-align: left; }
+  .decision-table td { padding: 8px 12px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  .decision-table tr:nth-child(even) td { background: var(--cream); }
+  .decision-table .deadline { font-family: 'IBM Plex Mono', monospace; font-size: 11px; font-weight: 700; color: var(--red); white-space: nowrap; }
+  .decision-table .owner { font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: var(--muted); }
+  .status-open { display: inline-block; background: #FDEDEC; color: var(--red); font-family: 'IBM Plex Mono', monospace; font-size: 9px; font-weight: 700; padding: 2px 7px; border-radius: 2px; }
+
+  /* KRITISK STI */
+  .critical-path { background: var(--navy); color: white; padding: 16px 24px; display: flex; align-items: center; gap: 0; flex-wrap: wrap; margin-bottom: 4px; }
+  .cp-step { font-family: 'IBM Plex Mono', monospace; font-size: 11px; font-weight: 600; padding: 6px 14px; background: rgba(255,255,255,0.1); margin: 2px; }
+  .cp-arrow { color: var(--red); font-size: 16px; padding: 0 4px; font-weight: 700; }
+
+  /* RISIKO */
+  .risk-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  .risk-table th { font-family: 'IBM Plex Mono', monospace; font-size: 9px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; color: white; background: var(--navy); padding: 7px 10px; text-align: left; }
+  .risk-table td { padding: 7px 10px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  .risk-table tr:nth-child(even) td { background: var(--cream); }
+  .prio-kritisk { display: inline-block; background: var(--red); color: white; font-family: 'IBM Plex Mono', monospace; font-size: 9px; font-weight: 700; padding: 2px 6px; border-radius: 2px; }
+  .prio-hoj { display: inline-block; background: var(--orange); color: white; font-family: 'IBM Plex Mono', monospace; font-size: 9px; font-weight: 700; padding: 2px 6px; border-radius: 2px; }
+  .prio-middel { display: inline-block; background: #888; color: white; font-family: 'IBM Plex Mono', monospace; font-size: 9px; font-weight: 700; padding: 2px 6px; border-radius: 2px; }
+  .risk-id { font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: var(--muted); }
+
+  /* UE KORT */
+  .ue-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 2px; }
+  .ue-card { background: white; padding: 16px 18px; border-left: 4px solid var(--navy); }
+  .ue-name { font-weight: 700; font-size: 13px; color: var(--navy); margin-bottom: 4px; }
+  .ue-type { font-family: 'IBM Plex Mono', monospace; font-size: 9px; color: var(--muted); letter-spacing: 1px; text-transform: uppercase; margin-bottom: 8px; }
+  .ue-row { display: flex; justify-content: space-between; font-size: 11px; padding: 3px 0; border-bottom: 1px solid var(--border); gap: 8px; }
+  .ue-row:last-child { border-bottom: none; }
+  .ue-row .label { color: var(--muted); flex-shrink: 0; }
+  .ue-row .val { font-family: 'IBM Plex Mono', monospace; font-size: 10px; text-align: right; }
+  .ue-contact { margin-top: 8px; background: var(--cream); padding: 8px; font-family: 'IBM Plex Mono', monospace; font-size: 10px; }
+  .ue-contact input { border: 1px solid var(--border); background: white; padding: 4px 8px; font-family: 'IBM Plex Mono', monospace; font-size: 10px; width: 100%; margin-top: 4px; }
+
+  /* FUGTLOG */
+  .fugt-table { width: 100%; border-collapse: collapse; font-size: 11px; }
+  .fugt-table th { font-family: 'IBM Plex Mono', monospace; font-size: 9px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; color: white; background: var(--navy); padding: 7px 10px; text-align: left; }
+  .fugt-table td { padding: 6px 10px; border-bottom: 1px solid var(--border); }
+  .fugt-table input, .fugt-table select { border: 1px solid var(--border); background: white; padding: 3px 6px; font-family: 'IBM Plex Mono', monospace; font-size: 10px; }
+
+  /* EKSTRAARBEJDER */
+  .extra-header-bar { background: var(--navy); color: white; padding: 20px 24px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px; }
+  .extra-header-bar h2 { font-family: 'IBM Plex Mono', monospace; font-size: 16px; font-weight: 600; }
+  .extra-header-bar .sub { font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: #aac4e8; margin-top: 4px; }
+  .pdf-btn { background: var(--red); color: white; border: none; padding: 10px 20px; font-family: 'IBM Plex Mono', monospace; font-size: 10px; font-weight: 700; letter-spacing: 1px; cursor: pointer; }
+  .pdf-btn:hover { background: #a93226; }
+  .add-extra-btn { background: var(--green); color: white; border: none; padding: 8px 16px; font-family: 'IBM Plex Mono', monospace; font-size: 10px; font-weight: 700; letter-spacing: 1px; cursor: pointer; margin-bottom: 12px; }
+  .extra-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  .extra-table th { font-family: 'IBM Plex Mono', monospace; font-size: 9px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; color: white; background: var(--navy); padding: 8px 12px; text-align: left; }
+  .extra-table td { padding: 8px 12px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  .extra-table tr:nth-child(even) td { background: var(--cream); }
+  .extra-table input, .extra-table select, .extra-table textarea { border: 1px solid var(--border); background: white; padding: 4px 8px; font-family: 'IBM Plex Mono', monospace; font-size: 11px; width: 100%; }
+  .extra-table textarea { resize: vertical; min-height: 40px; }
+  .extra-nr { font-family: 'IBM Plex Mono', monospace; font-size: 11px; font-weight: 700; color: var(--navy); text-align: center; }
+  .del-btn { background: none; border: 1px solid var(--border); color: var(--muted); padding: 3px 8px; cursor: pointer; font-size: 11px; }
+  .del-btn:hover { background: var(--red); color: white; border-color: var(--red); }
+  .extra-total-row td { background: var(--navy) !important; color: white; font-family: 'IBM Plex Mono', monospace; font-weight: 700; font-size: 13px; }
+  .summary-bar { background: white; border-left: 5px solid var(--navy); padding: 16px 20px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 2px; }
+  .sum-item .val { font-family: 'IBM Plex Mono', monospace; font-size: 20px; font-weight: 700; color: var(--navy); }
+  .sum-item .lbl { font-family: 'IBM Plex Mono', monospace; font-size: 9px; color: var(--muted); letter-spacing: 1px; text-transform: uppercase; margin-top: 2px; }
+  .sum-item.green .val { color: var(--green); }
+  .sum-item.orange .val { color: var(--orange); }
+  .sum-item.red .val { color: var(--red); }
+
+  /* PDF OVERLAY */
+  .pdf-overlay { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.7); z-index: 1000; align-items: center; justify-content: center; }
+  .pdf-overlay.show { display: flex; }
+  .pdf-modal { background: var(--off-white); width: 720px; max-height: 90vh; overflow-y: auto; }
+  .pdf-modal-header { background: var(--navy); color: white; padding: 16px 24px; display: flex; justify-content: space-between; align-items: center; }
+  .pdf-modal-header h3 { font-family: 'IBM Plex Mono', monospace; font-size: 14px; }
+  .close-modal-btn { background: none; border: none; color: white; font-size: 20px; cursor: pointer; }
+  .pdf-preview { padding: 32px; background: white; margin: 16px; }
+  .pdf-actions { padding: 16px 24px; display: flex; gap: 8px; justify-content: flex-end; border-top: 1px solid var(--border); }
+  .print-btn { background: var(--navy); color: white; border: none; padding: 10px 20px; font-family: 'IBM Plex Mono', monospace; font-size: 10px; font-weight: 700; cursor: pointer; letter-spacing: 1px; }
+  .cancel-btn { background: none; border: 1px solid var(--border); color: var(--text); padding: 10px 20px; font-family: 'IBM Plex Mono', monospace; font-size: 10px; cursor: pointer; letter-spacing: 1px; }
+  .warn-box { background: #FEF9E7; border-left: 4px solid var(--orange); padding: 12px 16px; font-size: 12px; margin-bottom: 12px; line-height: 1.7; }
+
+  @media print {
+    body * { visibility: hidden; }
+    #print-area, #print-area * { visibility: visible; }
+    #print-area { position: absolute; left: 0; top: 0; width: 100%; padding: 16mm; }
+  }
 
   :root {
     --navy: #1E3A5F;
@@ -518,13 +624,13 @@
   <div class="header-top">
     <div>
       <h1>SMEDESTRÆDE 4, JYLLINGE</h1>
-      <div class="subtitle">MASTERPLAN — TOTALRENOVERING</div>
+      <div class="subtitle">PROJEKTSTYRING KOMPLET — TOTALRENOVERING</div>
     </div>
     <div class="meta">
       Ejer: Henrik Ludvig<br>
       Rådgiver: MZ Byggerådgivning<br>
       Opstart: 15. maj 2026<br>
-      Estimeret slutning: dec. 2026
+      Planlagt aflevering: 13. nov. 2026
     </div>
   </div>
 </div>
@@ -536,6 +642,17 @@
   <span>Miljøscreening bestilles NU - blokerer nedrivning indvendigt</span>
 </div>
 
+<div class="nav">
+  <button class="nav-btn active" onclick="showTab('masterplan', this)">Masterplan</button>
+  <button class="nav-btn" onclick="showTab('kritisk', this)">Kritisk sti + beslutninger</button>
+  <button class="nav-btn" onclick="showTab('ugeplan', this)">Ugeplan</button>
+  <button class="nav-btn" onclick="showTab('risiko', this)">Risikoregister</button>
+  <button class="nav-btn" onclick="showTab('ue', this)">UE + kontakter</button>
+  <button class="nav-btn" onclick="showTab('drift', this)">Fugtlog</button>
+  <button class="nav-btn highlight" onclick="showTab('extra', this)">⚡ Ekstraarbejder</button>
+</div>
+
+<div class="tab-panel active" id="tab-masterplan">
 <div class="main">
 
   <!-- GANTT -->
@@ -1943,8 +2060,197 @@
   </table>
 
 </div>
+</div><!-- end tab-masterplan -->
+
+<!-- TAB: KRITISK STI + BESLUTNINGER -->
+<div class="tab-panel" id="tab-kritisk">
+<div class="main">
+
+  <div class="section-title" style="margin-top:0">Kritisk sti</div>
+  <div class="critical-path">
+    <div class="cp-step">Materialer bestilt</div><div class="cp-arrow">→</div>
+    <div class="cp-step">Asbest fjernet</div><div class="cp-arrow">→</div>
+    <div class="cp-step">Tag tæt</div><div class="cp-arrow">→</div>
+    <div class="cp-step">Terrændæk støbt</div><div class="cp-arrow">→</div>
+    <div class="cp-step">Tørring 8+ uger</div><div class="cp-arrow">→</div>
+    <div class="cp-step">Vinduer monteret</div><div class="cp-arrow">→</div>
+    <div class="cp-step">Facade lukket</div><div class="cp-arrow">→</div>
+    <div class="cp-step">Gulve + køkken</div><div class="cp-arrow">→</div>
+    <div class="cp-step">Slutmontage</div><div class="cp-arrow">→</div>
+    <div class="cp-step">Aflevering 13/11</div>
+  </div>
+
+  <div class="section-title">Beslutningskalender — bygherre skal handle</div>
+  <div class="warn-box">Disse beslutninger blokerer materialebestillinger og/eller udførelse. Forsinkelse her rykker hele planen automatisk.</div>
+
+  <table class="decision-table">
+    <thead><tr><th>Nr.</th><th>Beslutning</th><th>Deadline</th><th>Konsekvens</th><th>Ejer</th><th>Status</th></tr></thead>
+    <tbody>
+      <tr><td><span class="risk-id">B-01</span></td><td><strong>Telt/overdækning som basisplan</strong><br>Anbefalet stærkt — reducerer vejrrisiko markant under tagåbning</td><td class="deadline">07-05-2026</td><td>Vandskader, stilstand, ekstra affugtning</td><td class="owner">Bygherre + PL</td><td><span class="status-open">ÅBEN</span></td></tr>
+      <tr><td><span class="risk-id">B-02</span></td><td><strong>Ingeniørfrigivelse</strong><br>Bærende vægge, tagforhøjelse, badekar/1. sal, garagebjælker og fundamenter</td><td class="deadline">22-05-2026</td><td>Ingen nedrivning, ingen tagforhøjelse, ingen forstærkning</td><td class="owner">Bygherre + ingeniør</td><td><span class="status-open">ÅBEN</span></td></tr>
+      <tr><td><span class="risk-id">B-03</span></td><td><strong>Lås køkkentegning inkl. emfang, vand, afløb og el</strong><br>Skal være låst før installationer i terrændæk støbes</td><td class="deadline">20-05-2026</td><td>Gulv/kloak skal brydes op igen — ekstraregning</td><td class="owner">Bygherre + køkkenfirma</td><td><span class="status-open">ÅBEN</span></td></tr>
+      <tr><td><span class="risk-id">B-04</span></td><td><strong>Produktionsfrigiv vinduer og døre</strong><br>Outline 3-lags, sort inde/ude. Opmål på stedet 18-20/5, frigiv 22/5.</td><td class="deadline">22-05-2026</td><td>8-12 ugers levering rykkes — facade og lukning forsinkes</td><td class="owner">PL + tømrer</td><td><span class="status-open">ÅBEN</span></td></tr>
+      <tr><td><span class="risk-id">B-05</span></td><td><strong>Vælg fliser alle 3 badeværelser</strong><br>400 kr./m2 afsæt. Valg godkendes inden membranarbejde.</td><td class="deadline">08-06-2026</td><td>Stilstand i vådrum — leveringstid 3-6 uger</td><td class="owner">Bygherre</td><td><span class="status-open">ÅBEN</span></td></tr>
+      <tr><td><span class="risk-id">B-06</span></td><td><strong>Vælg trægulve alle etager</strong><br>400 kr./m2 afsæt. Akklimatisering kræver 2-4 uger på stedet.</td><td class="deadline">08-06-2026</td><td>Gulvlægning forsinkes — akklimatisering kan ikke komprimeres</td><td class="owner">Bygherre</td><td><span class="status-open">ÅBEN</span></td></tr>
+      <tr><td><span class="risk-id">B-07</span></td><td><strong>Bygherre afmonterer solceller på garage</strong><br>Skal ske inden garage nedrives. Bygherre bestiller genmontering selv.</td><td class="deadline">22-05-2026</td><td>Garage kan ikke nedrives — blokerer fase 10</td><td class="owner">Bygherre</td><td><span class="status-open">ÅBEN</span></td></tr>
+      <tr><td><span class="risk-id">B-08</span></td><td><strong>Bestil trappe</strong><br>8-12 ugers leveringstid. Mål låses efter nye gulvhøjder er kendte.</td><td class="deadline">16-06-2026</td><td>Forsinket montage holder igen på gulve og malerfinish</td><td class="owner">Bygherre</td><td><span class="status-open">ÅBEN</span></td></tr>
+      <tr><td><span class="risk-id">B-09</span></td><td><strong>Bestil garageport</strong><br>8-12 ugers leveringstid. Mål efter rååbning er klar.</td><td class="deadline">16-06-2026</td><td>Garageaflevering forsinkes</td><td class="owner">Bygherre</td><td><span class="status-open">ÅBEN</span></td></tr>
+      <tr><td><span class="risk-id">B-10</span></td><td><strong>Vælg badinventar alle 3 badeværelser</strong><br>Budget: 50.000 kr./bad. Leveringstid 4-8 uger.</td><td class="deadline">15-06-2026</td><td>Slutmontage og aflevering forsinkes</td><td class="owner">Bygherre + PL</td><td><span class="status-open">ÅBEN</span></td></tr>
+    </tbody>
+  </table>
+</div>
+</div><!-- end tab-kritisk -->
+
+<!-- TAB: UGEPLAN -->
+<div class="tab-panel" id="tab-ugeplan">
+<div class="main">
+  <div class="section-title" style="margin-top:0">Ugeplan — fredagsplanlægning og mandagsopstart</div>
+  <div class="info-note">Opdater status løbende. Milepælen i højre kolonne skal være opfyldt inden næste uge starter — ellers eskaleres til PL samme dag.</div>
+  <table class="ugeplan-table" style="margin-top:12px">
+    <thead><tr><th>Uge</th><th>Periode</th><th>Egne folk</th><th>UE på pladsen</th><th>Hovedfokus</th><th>Materialer / leverancer</th><th>Milepæl — OK inden næste uge</th></tr></thead>
+    <tbody>
+      <tr class="current-week"><td><div class="uge-nr">U20</div><div class="uge-dato">11-15/5</div></td><td class="uge-dato">11-15 maj</td><td class="uge-folk">PL + 1</td><td>Ingen</td><td>Kontrakter, forsikring, release af lange indkøb, mobilisering 15/5</td><td>Ordrebekræftelse: vinduer, tegl, varmepumpe, stillads</td><td><span class="milestone">Opstartsfoto + byggeplads klar</span></td></tr>
+      <tr><td><div class="uge-nr">U21</div><div class="uge-dato">18-22/5</div></td><td class="uge-dato">18-22 maj</td><td class="uge-folk">3-4</td><td>VVS, EL, stillads/telt</td><td>Afbryd installationer, opsæt stillads/telt, indvendig strip, solceller af</td><td>Containere, byggestrøm/vand, afdækning</td><td><span class="milestone">Alt aktivt afbrudt før tung nedrivning</span></td></tr>
+      <tr><td><div class="uge-nr">U22</div><div class="uge-dato">25-29/5</div></td><td class="uge-dato">25-29 maj</td><td class="uge-folk">4</td><td>Asbest/tag-UE</td><td>Asbestsanering/tag af, nedrivning inde, gulve/garage start</td><td>Asbestaffald, miljølog</td><td><span class="milestone">Tag klar til opbygning. Nedrivning frigivet.</span></td></tr>
+      <tr><td><div class="uge-nr">U23</div><div class="uge-dato">01-05/6</div></td><td class="uge-dato">1-5 jun</td><td class="uge-folk">3-4</td><td>Tag-UE</td><td>Tagforhøjelse/undertag, stuegulve renses, 1. sal strip færdig</td><td>Spærtræ, undertag Icopal, isolering 150 mm</td><td><span class="milestone">Undertag i gang. Konstruktioner kontrolleret.</span></td></tr>
+      <tr><td><div class="uge-nr">U24</div><div class="uge-dato">08-12/6</div></td><td class="uge-dato">8-12 jun</td><td class="uge-folk">3</td><td>VVS/kloak, EL</td><td>Kloak/vand under stuegulv, muråbninger, garage fundament, 1. sal bjælkelag</td><td>Kloakrør, radon, Kingspan, armering</td><td><span class="milestone">Skjulte installationer foto + tryktest inden lukning</span></td></tr>
+      <tr><td><div class="uge-nr">U25</div><div class="uge-dato">15-19/6</div></td><td class="uge-dato">15-19 jun</td><td class="uge-folk">3-4</td><td>Tag-UE, VVS</td><td>Stue isolering/radon/gulvvarme, tagtegl/gavle, varmepumpe start</td><td>Gulvvarme, tagtegl Ravensberger, tagrender</td><td><span class="milestone">Gulvvarme trykprøvet inden beton</span></td></tr>
+      <tr><td><div class="uge-nr">U26</div><div class="uge-dato">22-26/6</div></td><td class="uge-dato">22-26 jun</td><td class="uge-folk">3</td><td>Beton, VVS</td><td>Støb terrændæk stue og garage, tag vejrtæt</td><td>Beton/pumpe, affugtere</td><td><span class="milestone">Støbning dokumenteret. Affugtning + fugtlog startet.</span></td></tr>
+      <tr><td><div class="uge-nr">U27</div><div class="uge-dato">29/6-3/7</div></td><td class="uge-dato">29 jun-3 jul</td><td class="uge-folk">2-3</td><td>VVS, EL</td><td>Affugtning, hanebåndsloft klargøring, 1. sal vægge/gulvvarme</td><td>Gips, lydbatts, spånplader</td><td><span class="milestone">Fugtlog aktivt. Installationer mærkes og fotograferes.</span></td></tr>
+      <tr><td><div class="uge-nr">U28</div><div class="uge-dato">06-10/7</div></td><td class="uge-dato">6-10 jul</td><td class="uge-folk">3-4</td><td>VVS, EL, varmepumpe</td><td>Stuevægge/lofter, 1. sal råvægge, garage opbygning</td><td>Ultraboard, stålregler, gips</td><td><span class="milestone">Ingen lukning før VVS/EL foto og kontrol godkendt</span></td></tr>
+      <tr><td><div class="uge-nr">U29</div><div class="uge-dato">13-17/7</div></td><td class="uge-dato">13-17 jul</td><td class="uge-folk">3</td><td>VVS, EL</td><td>1. sal badeværelsesgulve/Lewis/Thermodyn, garage tag</td><td>Lewis, Thermodyn, Unidrain</td><td><span class="milestone">Fald og afløb godkendt inden membran</span></td></tr>
+      <tr><td><div class="uge-nr">U30</div><div class="uge-dato">20-24/7</div></td><td class="uge-dato">20-24 jul</td><td class="uge-folk">2-3</td><td>VVS, EL</td><td>Afslut rågips, modtagekontrol vinduer, forbered vinduesmontage</td><td>Vinduer/døre leverance, kran</td><td><span class="milestone">Mål, farver, glas, friskluftventiler godkendt</span></td></tr>
+      <tr><td><div class="uge-nr">U31</div><div class="uge-dato">27-31/7</div></td><td class="uge-dato">27-31 jul</td><td class="uge-folk">3-4</td><td>Kran, VVS</td><td>Monter vinduer/døre; vådrum membran/fliser starter</td><td>Bagstop, silikone, vådrumsmaterialer</td><td><span class="milestone">Tæt vinduesmontage godkendt inden facade starter</span></td></tr>
+      <tr><td><div class="uge-nr">U32</div><div class="uge-dato">03-07/8</div></td><td class="uge-dato">3-7 aug</td><td class="uge-folk">3-4</td><td>Kloak, EL/VVS</td><td>Vinduer færdig, sokkelopgravning/facade start, garage finish</td><td>Skalflex sokkel, Aquadræn</td><td><span class="milestone">Facadeunderlag frigives af murer</span></td></tr>
+      <tr><td><div class="uge-nr">U33</div><div class="uge-dato">10-14/8</div></td><td class="uge-dato">10-14 aug</td><td class="uge-folk">3-4</td><td>EL/VVS</td><td>Facadeopretning, flyt udtag/vandhane, sokkelisolering</td><td>EPS, net, profiler, skiffer sålbænke</td><td><span class="milestone">Facade plant og stokret. Installationer flyttet.</span></td></tr>
+      <tr><td><div class="uge-nr">U34</div><div class="uge-dato">17-21/8</div></td><td class="uge-dato">17-21 aug</td><td class="uge-folk">4</td><td>VVS/EL</td><td>Facadeisolering, bryggers/bad, maler starter indvendigt</td><td>Fliser, bryggersinventar</td><td><span class="milestone">Vådrums-KS løbende dokumenteret</span></td></tr>
+      <tr><td><div class="uge-nr">U35</div><div class="uge-dato">24-28/8</div></td><td class="uge-dato">24-28 aug</td><td class="uge-folk">3-4</td><td>VVS/EL</td><td>Maler, facade netpuds, 1. sal badeværelser fliser</td><td>Maling, fuger, badinventar</td><td><span class="milestone">Første malerrunde og vådrum fremdrift OK</span></td></tr>
+      <tr><td><div class="uge-nr">U36</div><div class="uge-dato">31/8-4/9</div></td><td class="uge-dato">31 aug-4 sep</td><td class="uge-folk">3</td><td>VVS/EL</td><td>Afslut vådrumsfliser, fugt afgørelse for trægulve</td><td>Fugtmåler, gulve til akklimatisering</td><td><span class="milestone">Fugtmåling OK inden trægulve frigives</span></td></tr>
+      <tr><td><div class="uge-nr">U37</div><div class="uge-dato">07-11/9</div></td><td class="uge-dato">7-11 sep</td><td class="uge-folk">3-4</td><td>VVS/EL</td><td>Trægulve start, facade slutpuds, badinventar 1. sal</td><td>Trægulv, skiffer sålbænke</td><td><span class="milestone">Gulve beskyttet straks efter lægning</span></td></tr>
+      <tr><td><div class="uge-nr">U38</div><div class="uge-dato">14-18/9</div></td><td class="uge-dato">14-18 sep</td><td class="uge-folk">3-4</td><td>Portfirma, VVS/EL</td><td>Trægulve fortsat, facade færdig, garageport</td><td>Garageport, døre/karme</td><td><span class="milestone">Facade afleveret inden stillads nedtages</span></td></tr>
+      <tr><td><div class="uge-nr">U39</div><div class="uge-dato">21-25/9</div></td><td class="uge-dato">21-25 sep</td><td class="uge-folk">2-3</td><td>Trappefirma</td><td>Trappe, gulve afsluttes, forbered køkken og døre</td><td>Trappe, fodlister</td><td><span class="milestone">Trappe og gulv klar til køkken</span></td></tr>
+      <tr><td><div class="uge-nr">U40</div><div class="uge-dato">28/9-2/10</div></td><td class="uge-dato">28 sep-2 okt</td><td class="uge-folk">3-4</td><td>Køkkenfirma</td><td>Køkken, inderdøre, fodlister, papiruld på loft</td><td>Køkken, Swedoor, papiruld</td><td><span class="milestone">Køkken klar til VVS/EL slutmontage</span></td></tr>
+      <tr><td><div class="uge-nr">U41</div><div class="uge-dato">05-09/10</div></td><td class="uge-dato">5-9 okt</td><td class="uge-folk">2-3</td><td>VVS, EL</td><td>VVS/EL slutmontage køkken/bad/bryggers, termostater</td><td>Armaturer, spots/udtag, termostater</td><td><span class="milestone">Tekniske anlæg klar til commissioning</span></td></tr>
+      <tr><td><div class="uge-nr">U42</div><div class="uge-dato">12-16/10</div></td><td class="uge-dato">12-16 okt</td><td class="uge-folk">2-3</td><td>VVS, EL</td><td>Slutmaling, fuger, retouch, sidste montage</td><td>Slutfuger, maling</td><td><span class="milestone">Klar til commissioning</span></td></tr>
+      <tr><td><div class="uge-nr">U43</div><div class="uge-dato">19-23/10</div></td><td class="uge-dato">19-23 okt</td><td class="uge-folk">1-2</td><td>VVS, EL</td><td>Commissioning og dokumentation</td><td>Manualer, KS-mapper</td><td><span class="milestone">Teknisk accept</span></td></tr>
+      <tr><td><div class="uge-nr">U44-45</div><div class="uge-dato">26/10-7/11</div></td><td class="uge-dato">26 okt-7 nov</td><td class="uge-folk">2</td><td>Efter behov</td><td>Mangelgennemgang rum-for-rum, udbedring, rengøring, udearealer</td><td>Afleveringsmappe</td><td><span class="milestone">Klar til rådgivergennemgang 13/11</span></td></tr>
+      <tr><td><div class="uge-nr">U46</div><div class="uge-dato">09-13/11</div></td><td class="uge-dato">9-13 nov</td><td class="uge-folk">1-2</td><td>Efter behov</td><td>Rådgiver/bygherre gennemgang og endelig rengøring</td><td>—</td><td><span class="milestone">AFLEVERING 13/11</span></td></tr>
+      <tr><td><div class="uge-nr">U47-48</div><div class="uge-dato">Buffer</div></td><td class="uge-dato">16-27 nov</td><td class="uge-folk">Efter behov</td><td>—</td><td>Buffer. Bruges KUN ved forsinkelser — ikke til planlagt arbejde.</td><td>—</td><td><span class="milestone">Buffer slut 27/11</span></td></tr>
+    </tbody>
+  </table>
+</div>
+</div><!-- end tab-ugeplan -->
+
+<!-- TAB: RISIKOREGISTER -->
+<div class="tab-panel" id="tab-risiko">
+<div class="main">
+  <div class="section-title" style="margin-top:0">Risikoregister</div>
+  <div class="info-note">Kritiske risici lukkes aktivt med handling og dato. Åbne kritiske risici eskaleres til bygherre ved næste byggemøde.</div>
+  <table class="risk-table" style="margin-top:12px">
+    <thead><tr><th>ID</th><th>Kategori</th><th>Risiko</th><th>Handling</th><th>Ejer</th><th>Deadline</th><th>Konsekvens</th><th>Prio</th><th>Status</th></tr></thead>
+    <tbody>
+      <tr><td class="risk-id">R-01</td><td>Vejrlig</td><td>Tag åbnes — indvendige konstruktioner sårbare ved nedbør</td><td>Vælg fuldt telt som basisplan. Beslutning senest 7/5.</td><td class="owner">Bygherre/PL</td><td style="font-family:monospace;font-size:10px;color:var(--red);font-weight:700">07-05</td><td>Vandskader, stilstand, ekstra affugtning</td><td><span class="prio-kritisk">KRITISK</span></td><td><span class="status-open">ÅBEN</span></td></tr>
+      <tr><td class="risk-id">R-02</td><td>Statik</td><td>Bærende vægge, tagforhøjelse, badekar og garagebjælker — ikke ingeniørfrigivet</td><td>Ingeniørrapport bestilles NU. Frigivelse kræves inden nedrivning.</td><td class="owner">Bygherre/ingeniør</td><td style="font-family:monospace;font-size:10px;color:var(--red);font-weight:700">22-05</td><td>Sikkerhedsrisiko og omarbejde</td><td><span class="prio-kritisk">KRITISK</span></td><td><span class="status-open">ÅBEN</span></td></tr>
+      <tr><td class="risk-id">R-03</td><td>Myndighed</td><td>Byggetilladelse til ovenlys og nyt badeværelse 1. sal ikke søgt</td><td>Søges NU af bygherre. Arbejdet stoppes hvis tilladelse mangler.</td><td class="owner">Bygherre</td><td style="font-family:monospace;font-size:10px;color:var(--red);font-weight:700">15-05</td><td>Stopordre og omprojektering</td><td><span class="prio-kritisk">KRITISK</span></td><td><span class="status-open">ÅBEN</span></td></tr>
+      <tr><td class="risk-id">R-04</td><td>Miljø</td><td>Asbesttag kendt. PCB, bly ukendt i indvendige konstruktioner.</td><td>Miljøscreening bestilles NU. Stop ved skjulte fund.</td><td class="owner">PL/asbest-UE</td><td style="font-family:monospace;font-size:10px;color:var(--red);font-weight:700">15-05</td><td>Arbejdsmiljøstop, ekstraomkostning</td><td><span class="prio-kritisk">KRITISK</span></td><td><span class="status-open">ÅBEN</span></td></tr>
+      <tr><td class="risk-id">R-05</td><td>Vinduer</td><td>Outline vinduer/døre — 8-12 ugers leveringstid. Ikke frigivet.</td><td>Opmål 18-20/5, frigiv produktion senest 22/5.</td><td class="owner">PL/tømrer</td><td style="font-family:monospace;font-size:10px;color:var(--red);font-weight:700">22-05</td><td>Facade og indvendig lukning rykkes 4-8 uger</td><td><span class="prio-kritisk">KRITISK</span></td><td><span class="status-open">ÅBEN</span></td></tr>
+      <tr><td class="risk-id">R-06</td><td>Køkken</td><td>Køkkentegning ikke låst — emfang, el, vand og afløb ukendt inden terrændæk</td><td>Bygherre låser køkkentegning senest 20/5 inkl. emfangsplacering.</td><td class="owner">Bygherre</td><td style="font-family:monospace;font-size:10px;color:var(--red);font-weight:700">20-05</td><td>Gulv/kloak brydes op — ekstraregning</td><td><span class="prio-kritisk">KRITISK</span></td><td><span class="status-open">ÅBEN</span></td></tr>
+      <tr><td class="risk-id">R-07</td><td>Fugt</td><td>Terrændæk og vådrum kan ikke forceres uden risiko for skimmel og garantitab</td><td>Fugtlog fra dag 1 efter støbning. Gulve frigives kun på målt fugt.</td><td class="owner">PL</td><td style="font-family:monospace;font-size:10px;color:var(--muted)">Løbende</td><td>Gulvskader, skimmel, garantitab</td><td><span class="prio-kritisk">KRITISK</span></td><td><span class="status-open">ÅBEN</span></td></tr>
+      <tr><td class="risk-id">R-08</td><td>Facade</td><td>Netpuds og slutpuds kræver vejr over 5 grader og ikke nedbør</td><td>Planlæg facade aug-sep. Vejrlog. Beskriv i kontrakt med murer.</td><td class="owner">Murer/PL</td><td style="font-family:monospace;font-size:10px;color:var(--muted)">Aug-sep</td><td>Dårlig finish, afskalning, forsinkelse</td><td><span class="prio-hoj">HØJ</span></td><td><span class="status-open">ÅBEN</span></td></tr>
+      <tr><td class="risk-id">R-09</td><td>Varmepumpe</td><td>Metroair I 16 — leveringstid og placering kan drille</td><td>Bestil NU. Lås placering udedel nord udfor bryggers.</td><td class="owner">VVS-UE</td><td style="font-family:monospace;font-size:10px;color:var(--red);font-weight:700">12-05</td><td>Ingen varme/affugtning, forsinket commissioning</td><td><span class="prio-hoj">HØJ</span></td><td><span class="status-open">ÅBEN</span></td></tr>
+      <tr><td class="risk-id">R-10</td><td>Bemanding</td><td>Garage, facade og indvendig finish overlapper uge 31-38 — murerkapacitet flaskehals</td><td>Prioritér kritisk sti. Hyr ekstra murer ved behov fra uge 31.</td><td class="owner">PL</td><td style="font-family:monospace;font-size:10px;color:var(--muted)">Uge 28</td><td>Forlænget byggetid</td><td><span class="prio-hoj">HØJ</span></td><td><span class="status-open">ÅBEN</span></td></tr>
+      <tr><td class="risk-id">R-11</td><td>Bygherre-lev.</td><td>Trappe, køkken, garageport, glasværn — koordinering uden for HE</td><td>Bestillings- og leverancedatoer i ugeplan. Opfølgning hver fredag.</td><td class="owner">Bygherre/PL</td><td style="font-family:monospace;font-size:10px;color:var(--muted)">Løbende</td><td>Egne folk står stille</td><td><span class="prio-hoj">HØJ</span></td><td><span class="status-open">ÅBEN</span></td></tr>
+      <tr><td class="risk-id">R-12</td><td>Økonomi</td><td>Ekstraarbejder uden aftaleseddel — konfliktpunkt ved afregning</td><td>Ingen ekstraarbejder uden signeret aftaleseddel. Gentages til alle UE.</td><td class="owner">PL</td><td style="font-family:monospace;font-size:10px;color:var(--muted)">Fra dag 1</td><td>Manglende betaling og konflikt</td><td><span class="prio-hoj">HØJ</span></td><td><span class="status-open">ÅBEN</span></td></tr>
+      <tr><td class="risk-id">R-13</td><td>Ventilation</td><td>Badeværelsesaftræk og ventilatorer kan kollidere med tag og loftisolering</td><td>Lås placering inden papiruld og taglukning. Koordiner VVS og tømrer.</td><td class="owner">VVS/tømrer</td><td style="font-family:monospace;font-size:10px;color:var(--muted)">Uge 27</td><td>Efterarbejde i isolering og tag</td><td><span class="prio-middel">MIDDEL</span></td><td><span class="status-open">ÅBEN</span></td></tr>
+      <tr><td class="risk-id">R-14</td><td>Materialer</td><td>Materialer kan indbygges fugtige eller forkerte</td><td>Modtagekontrol og tørt lager. Gælder plader, gulve og isolering.</td><td class="owner">Formand</td><td style="font-family:monospace;font-size:10px;color:var(--muted)">Løbende</td><td>Omarbejde og garantitab</td><td><span class="prio-middel">MIDDEL</span></td><td><span class="status-open">ÅBEN</span></td></tr>
+    </tbody>
+  </table>
+</div>
+</div><!-- end tab-risiko -->
+
+<!-- TAB: UE + KONTAKTER -->
+<div class="tab-panel" id="tab-ue">
+<div class="main">
+  <div class="section-title" style="margin-top:0">Underleverandører og egne fag — kontaktmatrix</div>
+  <div class="info-note">Udfyld kontaktfelter når leverandører er bekræftet. Dokumenter forsikringer inden mobilisering.</div>
+  <div class="ue-grid" style="margin-top:12px">
+    <div class="ue-card" style="border-left-color:#1E3A5F"><div class="ue-name">Tømrerhold</div><div class="ue-type">Eget fag</div><div class="ue-row"><span class="label">Omfang</span><span class="val">Nedrivning, råbyg, tag, gulve, døre, garage</span></div><div class="ue-row"><span class="label">Mobilisering</span><span class="val">15-05 → 23-10</span></div><div class="ue-row"><span class="label">Mand</span><span class="val">2-3 i kritiske perioder</span></div><div class="ue-row"><span class="label">Afhænger af</span><span class="val">Ingeniør, VVS/EL før lukning</span></div><div class="ue-contact">Kontakt:<input type="text" placeholder="Navn...">Tlf/mail:<input type="text" placeholder="Tlf / mail..."></div></div>
+    <div class="ue-card" style="border-left-color:#1E6B4A"><div class="ue-name">Murerhold</div><div class="ue-type">Eget fag</div><div class="ue-row"><span class="label">Omfang</span><span class="val">Gulve, muråbninger, vådrum, fliser, facade</span></div><div class="ue-row"><span class="label">Mobilisering</span><span class="val">25-05 → 18-09</span></div><div class="ue-row"><span class="label">OBS</span><span class="val">Flaskehals uge 31-38</span></div><div class="ue-row"><span class="label">Afhænger af</span><span class="val">VVS/kloak, vinduer, vejr</span></div><div class="ue-contact">Kontakt:<input type="text" placeholder="Navn...">Tlf/mail:<input type="text" placeholder="Tlf / mail..."></div></div>
+    <div class="ue-card" style="border-left-color:#D35400"><div class="ue-name">Malerhold</div><div class="ue-type">Eget fag</div><div class="ue-row"><span class="label">Omfang</span><span class="val">Spartel, filt, maling, vådrum, garage</span></div><div class="ue-row"><span class="label">Mobilisering</span><span class="val">24-08 → 23-10</span></div><div class="ue-row"><span class="label">Note</span><span class="val">Start før gulve hvor muligt</span></div><div class="ue-row"><span class="label">Afhænger af</span><span class="val">Gips klar, vådrum tørre, gulve beskyttet</span></div><div class="ue-contact">Kontakt:<input type="text" placeholder="Navn...">Tlf/mail:<input type="text" placeholder="Tlf / mail..."></div></div>
+    <div class="ue-card" style="border-left-color:#C0392B"><div class="ue-name">VVS / Kloak</div><div class="ue-type">Underleverandør</div><div class="ue-row"><span class="label">Omfang</span><span class="val">Kloak, gulvvarme, faldstammer, bad x3, slutmontage</span></div><div class="ue-row"><span class="label">Mobilisering</span><span class="val">18-05 → 30-10</span></div><div class="ue-row"><span class="label">Kritisk</span><span class="val">Terrændæk og vådrum</span></div><div class="ue-row"><span class="label">Dok.</span><span class="val">Autorisation, forsikring, produktblade</span></div><div class="ue-contact">Kontakt:<input type="text" placeholder="Navn...">Tlf/mail:<input type="text" placeholder="Tlf / mail..."></div></div>
+    <div class="ue-card" style="border-left-color:#6c3483"><div class="ue-name">EL-installatør</div><div class="ue-type">Underleverandør</div><div class="ue-row"><span class="label">Omfang</span><span class="val">Byggestrøm, råinstall., facade-el, slutmontage</span></div><div class="ue-row"><span class="label">Mobilisering</span><span class="val">18-05 → 30-10</span></div><div class="ue-row"><span class="label">Kritisk</span><span class="val">Løbende samdrift med tømrer/murer</span></div><div class="ue-row"><span class="label">Dok.</span><span class="val">Autorisation, forsikring</span></div><div class="ue-contact">Kontakt:<input type="text" placeholder="Navn...">Tlf/mail:<input type="text" placeholder="Tlf / mail..."></div></div>
+    <div class="ue-card" style="border-left-color:#C0392B"><div class="ue-name">Varmepumpe-UE</div><div class="ue-type">Underleverandør</div><div class="ue-row"><span class="label">Omfang</span><span class="val">Metro Therm Metroair I 16, commissioning</span></div><div class="ue-row"><span class="label">Mobilisering</span><span class="val">15-06 → 30-10</span></div><div class="ue-row"><span class="label">Kritisk</span><span class="val">Bestilles NU — lang leveringstid</span></div><div class="ue-row"><span class="label">Dok.</span><span class="val">Autorisation, dataark</span></div><div class="ue-contact">Kontakt:<input type="text" placeholder="Navn...">Tlf/mail:<input type="text" placeholder="Tlf / mail..."></div></div>
+    <div class="ue-card" style="border-left-color:#1E3A5F"><div class="ue-name">Asbest / Tag-UE</div><div class="ue-type">Underleverandør</div><div class="ue-row"><span class="label">Omfang</span><span class="val">Asbestsanering, tagopbygning, tegl, tagrender</span></div><div class="ue-row"><span class="label">Mobilisering</span><span class="val">18-05 → 26-06</span></div><div class="ue-row"><span class="label">Kritisk</span><span class="val">Ingen samdrift i risikozoner</span></div><div class="ue-row"><span class="label">Dok.</span><span class="val">Asbestkompetence, forsikring, affaldsplan</span></div><div class="ue-contact">Kontakt:<input type="text" placeholder="Navn...">Tlf/mail:<input type="text" placeholder="Tlf / mail..."></div></div>
+    <div class="ue-card" style="border-left-color:#888"><div class="ue-name">Stillads / Telt</div><div class="ue-type">Underleverandør</div><div class="ue-row"><span class="label">Omfang</span><span class="val">Stillads om hele huset + fuld overdækning</span></div><div class="ue-row"><span class="label">Mobilisering</span><span class="val">18-05 → facade færdig</span></div><div class="ue-row"><span class="label">Note</span><span class="val">Telt anbefales som basisplan</span></div><div class="ue-row"><span class="label">Dok.</span><span class="val">Stilladskontrol</span></div><div class="ue-contact">Kontakt:<input type="text" placeholder="Navn...">Tlf/mail:<input type="text" placeholder="Tlf / mail..."></div></div>
+    <div class="ue-card" style="border-left-color:#2980B9"><div class="ue-name">Rådgiver MZ Byggerådgivning</div><div class="ue-type">Tilsyn</div><div class="ue-row"><span class="label">Omfang</span><span class="val">Tilsyn, fakturagodkendelse, byggemøder, aflevering</span></div><div class="ue-row"><span class="label">Kontakt</span><span class="val">Marianne Zabell</span></div><div class="ue-row"><span class="label">Mail</span><span class="val">mz@mzbyg.dk</span></div><div class="ue-row"><span class="label">Telefon</span><span class="val">2395 0071</span></div></div>
+    <div class="ue-card" style="border-left-color:#888"><div class="ue-name">Beton / Pumpe</div><div class="ue-type">Underleverandør</div><div class="ue-row"><span class="label">Omfang</span><span class="val">Beton stueetage og garage, evt. pumpe</span></div><div class="ue-row"><span class="label">Mobilisering</span><span class="val">Uge 26 — dato bekræftes uge 25</span></div><div class="ue-row"><span class="label">Forudsætning</span><span class="val">Gulvvarme trykprøvet inden bestilling</span></div><div class="ue-contact">Kontakt:<input type="text" placeholder="Navn...">Tlf/mail:<input type="text" placeholder="Tlf / mail..."></div></div>
+  </div>
+</div>
+</div><!-- end tab-ue -->
+
+<!-- TAB: FUGTLOG -->
+<div class="tab-panel" id="tab-drift">
+<div class="main">
+  <div class="section-title" style="margin-top:0">Fugtlog — terrændæk stueetage</div>
+  <div class="info-note">Startes uge 26 umiddelbart efter støbning. Trægulve frigives KUN på dokumenteret fugtniveau iht. gulvleverandørens krav — typisk under 85% RF. Mål i mindst 3 punkter per rum.</div>
+  <table class="fugt-table" style="margin-top:12px">
+    <thead><tr><th>Dato</th><th>Uge</th><th>Måler</th><th>Køkken/alrum %RF</th><th>Stue %RF</th><th>Soveværelse %RF</th><th>Entre %RF</th><th>Krav opfyldt</th><th>Note</th></tr></thead>
+    <tbody id="fugtlog-body">
+      <tr><td><input type="date" style="width:130px"></td><td><input type="text" style="width:40px" placeholder="U26"></td><td><input type="text" style="width:80px" placeholder="Navn"></td><td><input type="number" style="width:65px" placeholder="%RF"></td><td><input type="number" style="width:65px" placeholder="%RF"></td><td><input type="number" style="width:65px" placeholder="%RF"></td><td><input type="number" style="width:65px" placeholder="%RF"></td><td><select style="width:80px"><option>—</option><option>JA</option><option>NEJ</option></select></td><td><input type="text" placeholder="Note..."></td></tr>
+      <tr><td><input type="date" style="width:130px"></td><td><input type="text" style="width:40px" placeholder="U27"></td><td><input type="text" style="width:80px" placeholder="Navn"></td><td><input type="number" style="width:65px" placeholder="%RF"></td><td><input type="number" style="width:65px" placeholder="%RF"></td><td><input type="number" style="width:65px" placeholder="%RF"></td><td><input type="number" style="width:65px" placeholder="%RF"></td><td><select style="width:80px"><option>—</option><option>JA</option><option>NEJ</option></select></td><td><input type="text" placeholder="Note..."></td></tr>
+    </tbody>
+  </table>
+  <button class="expand-all" onclick="addFugtRow()" style="margin-top:8px">+ TILFØJ MÅLING</button>
+</div>
+</div><!-- end tab-drift -->
+
+<!-- TAB: EKSTRAARBEJDER -->
+<div class="tab-panel" id="tab-extra">
+  <div class="extra-header-bar">
+    <div><h2>EKSTRAARBEJDER OG TILVALG</h2><div class="sub">Arbejder der ikke var indeholdt i det oprindelige tilbudsgrundlag (T1-T13)</div></div>
+    <button class="pdf-btn" onclick="showPdfPreview()">⬇ GENERER PDF TIL KUNDE</button>
+  </div>
+  <div class="main" style="padding-top:16px">
+    <div class="summary-bar" id="summary-bar">
+      <div class="sum-item"><div class="val" id="sum-total">0 kr.</div><div class="lbl">Samlet ekstra — alle</div></div>
+      <div class="sum-item green"><div class="val" id="sum-godkendt">0 kr.</div><div class="lbl">Godkendt af bygherre</div></div>
+      <div class="sum-item orange"><div class="val" id="sum-afventer">0 kr.</div><div class="lbl">Afventer godkendelse</div></div>
+      <div class="sum-item red"><div class="val" id="sum-tilbud">0 kr.</div><div class="lbl">Tilbud afgivet</div></div>
+    </div>
+    <div class="warn-box" style="margin-top:8px">Ingen ekstraarbejder igangsættes uden signeret aftaleseddel fra bygherre. Jf. AB92. Ekstraarbejder igangsat uden underskrift honoreres ikke.</div>
+    <button class="add-extra-btn" onclick="addExtraRow()">+ REGISTRÉR EKSTRAARBEJDE</button>
+    <table class="extra-table" id="extra-table">
+      <thead><tr><th style="width:36px">Nr.</th><th style="width:100px">Dato</th><th>Beskrivelse</th><th style="width:70px">T-ref</th><th style="width:120px">Beløb inkl. moms</th><th style="width:115px">Status</th><th style="width:90px">Godkendt af</th><th style="width:100px">Godkendt dato</th><th style="width:36px"></th></tr></thead>
+      <tbody id="extra-body">
+        <tr><td class="extra-nr">1</td><td><input type="date" class="extra-date"></td><td><textarea class="extra-desc" placeholder="Beskriv arbejdet præcist...">Nedtagning og bortskaffelse af ukendt asbest-isolering fundet bag brystning i stue. Ikke indeholdt i T8 — asbesttag. Kræver autoriseret UE.</textarea></td><td><input type="text" class="extra-ref" value="T2/T8"></td><td><input type="number" class="extra-amount" value="28500" oninput="updateSummary()"></td><td><select class="extra-status" onchange="updateSummary()"><option value="godkendt" selected>Godkendt</option><option value="afventer">Afventer</option><option value="tilbud">Tilbud afgivet</option><option value="afvist">Afvist</option></select></td><td><input type="text" class="extra-godkendt" value="Henrik L."></td><td><input type="date" class="extra-godkendt-dato"></td><td><button class="del-btn" onclick="delRow(this)">✕</button></td></tr>
+        <tr><td class="extra-nr">2</td><td><input type="date" class="extra-date"></td><td><textarea class="extra-desc" placeholder="Beskriv arbejdet præcist...">Ekstra forstærkning af bjælkelag 1. sal udfor badekar — ingeniørkrav efter tilstandsvurdering. Ikke indeholdt i T4.</textarea></td><td><input type="text" class="extra-ref" value="T4"></td><td><input type="number" class="extra-amount" value="14800" oninput="updateSummary()"></td><td><select class="extra-status" onchange="updateSummary()"><option value="godkendt">Godkendt</option><option value="afventer" selected>Afventer</option><option value="tilbud">Tilbud afgivet</option><option value="afvist">Afvist</option></select></td><td><input type="text" class="extra-godkendt" placeholder="Navn"></td><td><input type="date" class="extra-godkendt-dato"></td><td><button class="del-btn" onclick="delRow(this)">✕</button></td></tr>
+      </tbody>
+      <tfoot><tr class="extra-total-row"><td colspan="4">TOTAL EKSTRAARBEJDER INKL. MOMS</td><td id="total-display">43.300 kr.</td><td colspan="4"></td></tr></tfoot>
+    </table>
+  </div>
+</div><!-- end tab-extra -->
+
+<!-- PDF OVERLAY -->
+<div class="pdf-overlay" id="pdf-overlay">
+  <div class="pdf-modal">
+    <div class="pdf-modal-header"><h3>EKSTRAARBEJDER — PDF PREVIEW</h3><button class="close-modal-btn" onclick="closePdf()">✕</button></div>
+    <div class="pdf-preview" id="print-area"></div>
+    <div class="pdf-actions"><button class="cancel-btn" onclick="closePdf()">ANNULLER</button><button class="print-btn" onclick="window.print()">UDSKRIV / GEM SOM PDF</button></div>
+  </div>
+</div>
+</div>
+</div><!-- end pdf-overlay -->
 
 <script>
+// TAB NAVIGATION
+function showTab(id, btn) {
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-' + id).classList.add('active');
+  btn.classList.add('active');
+}
+
+// PHASE TOGGLES
 function togglePhase(header) {
   const body = header.nextElementSibling;
   const toggle = header.querySelector('.phase-toggle');
@@ -1976,7 +2282,7 @@ function toggleAll() {
   });
 }
 
-// Checkboxes persist in session
+// CHECKBOXES
 document.querySelectorAll('.check-box').forEach((box, i) => {
   const key = 'check_' + i;
   if (sessionStorage.getItem(key) === '1') box.classList.add('checked');
@@ -1984,6 +2290,81 @@ document.querySelectorAll('.check-box').forEach((box, i) => {
     sessionStorage.setItem(key, box.classList.contains('checked') ? '1' : '0');
   });
 });
+
+// FUGTLOG
+function addFugtRow() {
+  const tbody = document.getElementById('fugtlog-body');
+  const tr = document.createElement('tr');
+  tr.innerHTML = '<td><input type="date" style="width:130px"></td><td><input type="text" style="width:40px" placeholder="Uge"></td><td><input type="text" style="width:80px" placeholder="Navn"></td><td><input type="number" style="width:65px" placeholder="%RF"></td><td><input type="number" style="width:65px" placeholder="%RF"></td><td><input type="number" style="width:65px" placeholder="%RF"></td><td><input type="number" style="width:65px" placeholder="%RF"></td><td><select style="width:80px"><option>—</option><option>JA</option><option>NEJ</option></select></td><td><input type="text" placeholder="Note..."></td>';
+  tbody.appendChild(tr);
+}
+
+// EKSTRAARBEJDER
+function fmtKr(n) { return n.toLocaleString('da-DK') + ' kr.'; }
+
+function renumber() {
+  document.querySelectorAll('#extra-body tr').forEach((tr, i) => {
+    const c = tr.querySelector('.extra-nr');
+    if (c) c.textContent = i + 1;
+  });
+}
+
+function addExtraRow() {
+  const tbody = document.getElementById('extra-body');
+  const n = tbody.rows.length + 1;
+  const tr = document.createElement('tr');
+  tr.innerHTML = '<td class="extra-nr">' + n + '</td><td><input type="date" class="extra-date"></td><td><textarea class="extra-desc" placeholder="Beskriv arbejdet præcist — hvad, hvorfor og hvornår det opstod..."></textarea></td><td><input type="text" class="extra-ref" placeholder="T-nr."></td><td><input type="number" class="extra-amount" placeholder="0" oninput="updateSummary()"></td><td><select class="extra-status" onchange="updateSummary()"><option value="afventer">Afventer</option><option value="godkendt">Godkendt</option><option value="tilbud">Tilbud afgivet</option><option value="afvist">Afvist</option></select></td><td><input type="text" class="extra-godkendt" placeholder="Navn"></td><td><input type="date" class="extra-godkendt-dato"></td><td><button class="del-btn" onclick="delRow(this)">✕</button></td>';
+  tbody.appendChild(tr);
+  updateSummary();
+}
+
+function delRow(btn) { btn.closest('tr').remove(); renumber(); updateSummary(); }
+
+function updateSummary() {
+  let total = 0, godkendt = 0, afventer = 0, tilbud = 0;
+  document.querySelectorAll('#extra-body tr').forEach(tr => {
+    const amt = parseFloat(tr.querySelector('.extra-amount')?.value) || 0;
+    const status = tr.querySelector('.extra-status')?.value;
+    total += amt;
+    if (status === 'godkendt') godkendt += amt;
+    if (status === 'afventer') afventer += amt;
+    if (status === 'tilbud') tilbud += amt;
+  });
+  document.getElementById('sum-total').textContent = fmtKr(total);
+  document.getElementById('sum-godkendt').textContent = fmtKr(godkendt);
+  document.getElementById('sum-afventer').textContent = fmtKr(afventer);
+  document.getElementById('sum-tilbud').textContent = fmtKr(tilbud);
+  document.getElementById('total-display').textContent = fmtKr(total);
+}
+
+function statusLabel(val) {
+  const map = { godkendt: 'GODKENDT', afventer: 'AFVENTER', tilbud: 'TILBUD AFGIVET', afvist: 'AFVIST' };
+  const col = { godkendt: '#1E6B4A', afventer: '#7d6608', tilbud: '#2980B9', afvist: '#555' };
+  return '<span style="background:' + col[val] + '18;color:' + col[val] + ';font-family:monospace;font-size:10px;font-weight:700;padding:2px 6px;border-radius:2px;border:1px solid ' + col[val] + '40">' + (map[val]||val) + '</span>';
+}
+
+function showPdfPreview() {
+  const today = new Date().toLocaleDateString('da-DK');
+  let rows = ''; let total = 0;
+  document.querySelectorAll('#extra-body tr').forEach((tr, i) => {
+    const desc = tr.querySelector('.extra-desc')?.value || '';
+    const ref = tr.querySelector('.extra-ref')?.value || '';
+    const amt = parseFloat(tr.querySelector('.extra-amount')?.value) || 0;
+    const status = tr.querySelector('.extra-status')?.value || '';
+    const godkendt = tr.querySelector('.extra-godkendt')?.value || '—';
+    const dato = tr.querySelector('.extra-godkendt-dato')?.value;
+    const datoFmt = dato ? new Date(dato).toLocaleDateString('da-DK') : '—';
+    total += amt;
+    const bg = i % 2 === 1 ? 'background:#F5F2EC;' : '';
+    rows += '<tr style="border-bottom:1px solid #D0CBBC;' + bg + '"><td style="padding:8px 10px;font-family:monospace;font-weight:700;color:#1E3A5F;text-align:center;font-size:11px">' + (i+1) + '</td><td style="padding:8px 10px;font-family:monospace;font-size:10px;color:#888">' + ref + '</td><td style="padding:8px 10px;font-size:12px">' + desc + '</td><td style="padding:8px 10px;font-family:monospace;font-size:12px;font-weight:700;text-align:right;white-space:nowrap">' + (amt > 0 ? fmtKr(amt) : '—') + '</td><td style="padding:8px 10px;text-align:center">' + statusLabel(status) + '</td><td style="padding:8px 10px;font-size:11px;font-family:monospace;text-align:center">' + godkendt + '<br><span style="color:#888;font-size:9px">' + datoFmt + '</span></td></tr>';
+  });
+  document.getElementById('print-area').innerHTML = '<div style="font-family:\'IBM Plex Sans\',sans-serif;color:#1a1a1a"><div style="border-bottom:4px solid #1E3A5F;padding-bottom:16px;margin-bottom:24px"><div style="font-family:monospace;font-size:10px;color:#888;letter-spacing:2px;text-transform:uppercase;margin-bottom:4px">Ekstraarbejder og tilvalg</div><div style="font-size:20px;font-weight:700;color:#1E3A5F;font-family:monospace">SMEDESTRÆDE 4, JYLLINGE</div><div style="display:flex;justify-content:space-between;margin-top:12px;font-size:11px;color:#555"><div><strong>Ejer:</strong> Henrik Ludvig</div><div><strong>Rådgiver:</strong> Marianne Zabell, MZ Byggerådgivning</div><div><strong>Dato:</strong> ' + today + '</div></div></div><div style="background:#FDEDEC;border-left:4px solid #C0392B;padding:10px 14px;font-size:11px;margin-bottom:20px;font-family:monospace">Nedenstående arbejder er IKKE indeholdt i det oprindelige tilbudsgrundlag (T1-T13). Hvert punkt er eller skal godkendes skriftligt af bygherre inden igangsætning, jf. AB92.</div><table style="width:100%;border-collapse:collapse;font-size:12px"><thead><tr style="background:#1E3A5F;color:white"><th style="padding:8px 10px;font-family:monospace;font-size:9px;letter-spacing:1px;text-align:center;width:35px">NR.</th><th style="padding:8px 10px;font-family:monospace;font-size:9px;letter-spacing:1px;width:60px">T-REF</th><th style="padding:8px 10px;font-family:monospace;font-size:9px;letter-spacing:1px">BESKRIVELSE</th><th style="padding:8px 10px;font-family:monospace;font-size:9px;letter-spacing:1px;text-align:right;width:100px">BELØB INKL.MOMS</th><th style="padding:8px 10px;font-family:monospace;font-size:9px;letter-spacing:1px;text-align:center;width:110px">STATUS</th><th style="padding:8px 10px;font-family:monospace;font-size:9px;letter-spacing:1px;text-align:center;width:100px">GODKENDT AF</th></tr></thead><tbody>' + rows + '</tbody><tfoot><tr style="background:#1E3A5F;color:white"><td colspan="3" style="padding:10px 14px;font-family:monospace;font-size:12px;font-weight:700">TOTAL EKSTRAARBEJDER INKL. MOMS</td><td style="padding:10px 14px;font-family:monospace;font-size:14px;font-weight:700;text-align:right">' + fmtKr(total) + '</td><td colspan="2"></td></tr></tfoot></table><div style="margin-top:40px;display:grid;grid-template-columns:1fr 1fr;gap:40px"><div style="border-top:2px solid #1E3A5F;padding-top:12px"><div style="font-family:monospace;font-size:10px;color:#888;letter-spacing:1px;margin-bottom:4px">BYGHERRE — GODKENDELSE</div><div style="font-size:11px;color:#555">Henrik Ludvig</div><div style="margin-top:28px;border-top:1px solid #888;padding-top:6px;font-size:10px;color:#888">Dato og underskrift</div></div><div style="border-top:2px solid #1E3A5F;padding-top:12px"><div style="font-family:monospace;font-size:10px;color:#888;letter-spacing:1px;margin-bottom:4px">ENTREPRENØR</div><div style="font-size:11px;color:#555">Projektleder / Formand</div><div style="margin-top:28px;border-top:1px solid #888;padding-top:6px;font-size:10px;color:#888">Dato og underskrift</div></div></div><div style="margin-top:32px;font-size:10px;color:#888;font-family:monospace;border-top:1px solid #D0CBBC;padding-top:12px">Dokument genereret: ' + today + ' — Smedestræde 4, Jyllinge — Totalrenovering 2026</div></div>';
+  document.getElementById('pdf-overlay').classList.add('show');
+}
+
+function closePdf() { document.getElementById('pdf-overlay').classList.remove('show'); }
+
+updateSummary();
 </script>
 
 </body>
