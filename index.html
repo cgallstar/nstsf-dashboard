@@ -2106,7 +2106,8 @@ function titleWithLeadingRef(ref='', title=''){
 }
 function normalizeInternalTask(saved={}){ return { id:textValue(saved.id, `internal-${Date.now()}`), title:textValue(saved.title || saved.name, 'Intern opgave'), status:textValue(saved.status, 'Åben'), dueDate:textValue(saved.dueDate, ''), owner:textValue(saved.owner, ''), notes:textValue(saved.notes, ''), source:textValue(saved.source, 'custom-gpt'), bucket:textValue(saved.bucket, ''), domain:textValue(saved.domain, 'intern'), threadId:textValue(saved.threadId, ''), customerId:textValue(saved.customerId || saved.kundeId, ''), sagId:textValue(saved.sagId, ''), unlinkedRef:textValue(saved.unlinkedRef, ''), createdAt:textValue(saved.createdAt, new Date().toISOString()) }; }
 function normalizeEmail(saved={}){ return { id:textValue(saved.id, `mail-${Date.now()}`), threadId:textValue(saved.threadId, ''), kunde:textValue(saved.kunde, ''), from:textValue(saved.from, ''), subject:textValue(saved.subject, ''), date:textValue(saved.date, ''), preview:textValue(saved.preview, ''), body:textValue(saved.body, ''), tags:Array.isArray(saved.tags) ? saved.tags.map((tag)=>String(tag)) : [], handled:!!saved.handled, type:textValue(saved.type, 'todo'), latestSenderType:textValue(saved.latestSenderType, ''), repliedAt:textValue(saved.repliedAt, ''), archivedAt:textValue(saved.archivedAt, ''), archivedUrl:textValue(saved.archivedUrl, ''), archivedCaseId:textValue(saved.archivedCaseId, ''), archivedCustomer:textValue(saved.archivedCustomer, ''), archivedType:textValue(saved.archivedType, ''), archivedDate:textValue(saved.archivedDate, ''), syncedAt:textValue(saved.syncedAt, '') }; }
-function normalizeSyncLogEntry(saved={}){ return { id:textValue(saved.id, `sync-${Date.now()}`), createdAt:textValue(saved.createdAt, new Date().toISOString()), source:textValue(saved.source, 'gmail_sync'), status:textValue(saved.status, 'info'), archiveKey:textValue(saved.archiveKey, ''), threadId:textValue(saved.threadId, ''), subject:textValue(saved.subject, 'Ukendt tråd'), customerName:textValue(saved.customerName, ''), caseId:textValue(saved.caseId, ''), documentType:textValue(saved.documentType, ''), documentDate:textValue(saved.documentDate, ''), category:textValue(saved.category, ''), fileName:textValue(saved.fileName, ''), driveUrl:textValue(saved.driveUrl, ''), error:textValue(saved.error, ''), notes:textValue(saved.notes, '') }; }
+function isReviewSyncIssue(item={}){ return /kunne ikke matches sikkert|kræver manuel match|matcher flere mulige sager|case_not_matched|invoice_match_low_confidence|invoice_match_ambiguous/i.test(`${item.error || ''} ${item.notes || ''}`); }
+function normalizeSyncLogEntry(saved={}){ const error=textValue(saved.error, ''); const notes=textValue(saved.notes, ''); const status=textValue(saved.status, 'info'); const normalizedStatus=status === 'error' && isReviewSyncIssue({error, notes}) ? 'needs_review' : status; return { id:textValue(saved.id, `sync-${Date.now()}`), createdAt:textValue(saved.createdAt, new Date().toISOString()), source:textValue(saved.source, 'gmail_sync'), status:normalizedStatus, archiveKey:textValue(saved.archiveKey, ''), threadId:textValue(saved.threadId, ''), subject:textValue(saved.subject, 'Ukendt tråd'), customerName:textValue(saved.customerName, ''), caseId:textValue(saved.caseId, ''), documentType:textValue(saved.documentType, ''), documentDate:textValue(saved.documentDate, ''), category:textValue(saved.category, ''), fileName:textValue(saved.fileName, ''), driveUrl:textValue(saved.driveUrl, ''), error, notes }; }
 function isAllowedNstsfMail(item={}){
   const source = [item.from, item.to, item.cc, item.body, item.preview].map((value)=>textValue(value, '')).join(' ');
   if(/(cgallstar@gmail\.com|christian@scventures\.vc|werkhaus)/i.test(source)) return false;
@@ -2456,17 +2457,18 @@ async function updatePriorities(manual=false){
       });
     });
     (Array.isArray(data.archiveErrors) ? data.archiveErrors : []).forEach((entry)=>{
+      const errorText = entry.error || 'archive_failed';
       syncEntries.push({
         source:'gmail_sync',
-        status:'error',
+        status:isReviewSyncIssue({error:errorText, notes:errorText}) ? 'needs_review' : 'error',
         threadId:entry.threadId || '',
         subject:entry.subject || 'Mailtråd',
         customerName:entry.customerName || '',
         caseId:entry.matchedCaseId || entry.caseId || '',
         documentType:entry.documentType || '',
         category:entry.category || '',
-        error:entry.error || 'archive_failed',
-        notes:entry.error || 'Arkiveringen fejlede.',
+        error:errorText,
+        notes:errorText || 'Arkiveringen fejlede.',
       });
     });
     if(!syncEntries.length){
@@ -3461,7 +3463,7 @@ function collectPriorityUpdates(){
     seenSync.add(syncKey);
     const caseIndex = findCaseIndexByCaseId(item.caseId);
     const hasCase = caseIndex >= 0;
-    const isMatchAfklaring = /kunne ikke matches sikkert|kræver manuel match|matcher flere mulige sager/i.test(`${item.error || ''} ${item.notes || ''}`);
+    const isMatchAfklaring = isReviewSyncIssue(item);
     const statusLabel = item.status === 'archived'
       ? 'Arkiveret'
       : item.status === 'skipped'

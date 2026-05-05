@@ -61,6 +61,14 @@ const DANISH_MONTHS: Record<string, string> = {
 };
 function appendSyncLog(state: any, payload: Record<string, unknown>) {
   state.syncLog = Array.isArray(state?.syncLog) ? state.syncLog : [];
+  const rawStatus = textValue(payload.status, "");
+  const reviewText = [
+    payload.error,
+    payload.notes,
+  ].map((value) => textValue(value, "")).join(" ");
+  const status = rawStatus === "error" && /kunne ikke matches sikkert|kræver manuel match|matcher flere mulige sager|case_not_matched|invoice_match_low_confidence|invoice_match_ambiguous/i.test(reviewText)
+    ? "needs_review"
+    : rawStatus;
   const archiveKey = textValue(payload.archiveKey, "");
   const threadId = textValue(payload.threadId, "");
   const fileName = textValue(payload.fileName, "");
@@ -87,6 +95,7 @@ function appendSyncLog(state: any, payload: Record<string, unknown>) {
     createdAt: new Date().toISOString(),
     source: "gmail_sync",
     ...payload,
+    status,
   });
   state.syncLog = state.syncLog.slice(0, 80);
 }
@@ -595,6 +604,20 @@ function findOrCreateKnownCase(state: any, signal: any, text = "") {
       opg: "Istandsættelse af 1. sal",
       b: "600000",
       status: signal?.category === "tilbud" ? "Tilbud sendt" : "Oprettet fra Gmail",
+    });
+  }
+
+  if (compact.includes("henrik") || compact.includes("jyllinge") || compact.includes("smedestraede") || compact.includes("smedestrade")) {
+    const existing = findByMarker([/henrik/, /jyllinge/, /smedestraede/, /smedestrade/]);
+    if (existing) return ensureCaseShape(existing);
+    return createCase({
+      k: 3,
+      sid: "1005a",
+      nr: "1005",
+      kunde: "Henrik",
+      adr: "Smedestræde 4, 4040 Jyllinge",
+      opg: "Helt nyt hus.",
+      status: "Oprettet fra Gmail",
     });
   }
 
