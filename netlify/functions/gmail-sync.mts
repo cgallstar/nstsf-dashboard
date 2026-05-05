@@ -33,6 +33,7 @@ const KNOWN_INVOICE_CASES: Record<string, string> = {
   "1158": "1009",
 };
 const SYNC_QUERY = `newer_than:30d -in:spam -in:trash ${OWNER_QUERY}`;
+const INTERNAL_ACTION_INBOX_QUERY = `newer_than:30d in:inbox -in:spam -in:trash ${OWNER_QUERY} (from:smg@nstsf.dk OR from:nstsf.dk OR from:${MAILBOX_OWNER})`;
 const DKE_QUESTION_QUERY = `newer_than:14d -in:spam -in:trash ${OWNER_QUERY} ("DJ-pult" OR "DJ pult" OR "uge 19" OR "endelig aflevering" OR "Bülowsvej 9" OR "Bül. 9" OR "Bulowsvej 9" OR "Bul. 9" OR "Blågårdsgade 14" OR "Blå. 14" OR "Blaagaardsgade 14" OR "Blaa. 14")`;
 const ARCHIVE_QUERIES = [
   `newer_than:90d -in:spam -in:trash ${OWNER_QUERY} ("Faktura" OR "faktura")`,
@@ -120,7 +121,7 @@ function queueDiscoveredThreads(state: any, groups: Array<{ lane: string; priori
       const id = textValue(thread?.id, "");
       if (!id) continue;
       const historyId = textValue(thread?.historyId, "");
-      if (group.lane !== "dke_questions" && historyId && textValue(syncState.processedThreadHistory?.[id], "") === historyId) continue;
+      if (!["dke_questions", "internal_inbox"].includes(group.lane) && historyId && textValue(syncState.processedThreadHistory?.[id], "") === historyId) continue;
       const existing: any = byId.get(id);
       if (existing) {
         const previousPriority = Number(existing.priority || 0);
@@ -154,7 +155,7 @@ function selectQueuedThreads(state: any, max = 14) {
     .filter((item: any) => {
       const id = textValue(item?.id, "");
       const historyId = textValue(item?.historyId, "");
-      return id && (item?.lane === "dke_questions" || !historyId || textValue(syncState.processedThreadHistory?.[id], "") !== historyId);
+      return id && (["dke_questions", "internal_inbox"].includes(textValue(item?.lane, "")) || !historyId || textValue(syncState.processedThreadHistory?.[id], "") !== historyId);
     })
     .sort((a: any, b: any) =>
       Number(b.priority || 0) - Number(a.priority || 0) ||
@@ -215,6 +216,10 @@ function formatSyncError(error: unknown) {
 
 function isInternalSender(value = "") {
   return INTERNAL_PATTERNS.some((pattern) => pattern.test(String(value).toLowerCase()));
+}
+
+function isSmgSender(value = "") {
+  return /smg@nstsf\.dk/i.test(String(value || ""));
 }
 
 function parseMessageDate(summary: any) {
@@ -1612,6 +1617,147 @@ function ensureUnmatchedMailTask(state: any, result: any, item: any, errorText: 
   return true;
 }
 
+function latestThreadSummary(thread: any) {
+  const summaries = Array.isArray(thread?.messages) ? thread.messages.map(gmailMessageSummary) : [];
+  if (!summaries.length) return null;
+  return summaries
+    .map((summary) => ({ ...summary, isoDate: parseMessageDate(summary) }))
+    .sort((a, b) => String(a.isoDate).localeCompare(String(b.isoDate)))
+    .at(-1);
+}
+
+function fullThreadText(thread: any) {
+  const summaries = Array.isArray(thread?.messages) ? thread.messages.map(gmailMessageSummary) : [];
+  return summaries
+    .map((message) => [message.subject, message.from, message.to, message.cc, message.snippet, message.body]
+      .filter(Boolean)
+      .join("\n"))
+    .join("\n\n");
+}
+
+function isActionableInternalInboxMail(thread: any) {
+  const latest = latestThreadSummary(thread);
+  if (!latest || !isInternalSender(latest.from)) return false;
+  const source = `${latest.subject || ""}\n${latest.snippet || ""}\n${latest.body || ""}`;
+  const compact = plainCompactText(source);
+  if (!compact) return false;
+  if (/\b(til orientering|fyi|noteret|ingen kommentar|tak for info|bare til info)\b/i.test(source)) return false;
+  const hasInstruction =
+    /\b(skal|husk|afklar|aftal|send|ring|opret|folg op|lav|ryd|flyt|tjek|undersog|svar|book|planlaeg)\b/.test(compact) ||
+    /\?/.test(source);
+  const hasConcreteSignal =
+    /\b(dato|deadline|frist|billeder|foto|ks|dokumentation|mangler|mangel|skade|fejl|udbedr|tilbud|faktura|betaling|kontrakt|lon|loen|køkken|kokken|aflevering|godkend|underskrift)\b/.test(compact);
+  const isSmgInstruction = isSmgSender(latest.from) && hasConcreteSignal;
+  return Boolean((hasInstruction && hasConcreteSignal) || isSmgInstruction);
+}
+
+function internalInboxTaskTitle(thread: any) {
+  const latest = latestThreadSummary(thread);
+  const subject = textValue(latest?.subject, "Intern mail kræver opfølgning")
+    .replace(/^(re|sv|fw|fwd):\s*/i, "")
+    .trim();
+  const compact = plainCompactText(`${subject}\n${latest?.body || latest?.snippet || ""}`);
+  if (compact.includes("billeder") && compact.includes("dj pult")) return "Send DJ-pult-billeder";
+  if (compact.includes("aflevering") && (compact.includes("blagardsgade 14") || compact.includes("blaagardsgade 14"))) return "Svar med dato for endelig aflevering";
+  if (compact.includes("uge 19") && compact.includes("bulowsvej 9")) return "Svar hvilken dag i uge 19 I kommer";
+  return subject || "Intern mail kræver opfølgning";
+}
+
+function internalInboxTaskNotes(thread: any) {
+  const latest = latestThreadSummary(thread);
+  const body = textValue(latest?.body || latest?.snippet, "");
+  const trimmed = body.replace(/\s+/g, " ").trim();
+  const excerpt = trimmed.length > 240 ? `${trimmed.slice(0, 237)}...` : trimmed;
+  return excerpt || "Intern/SMG-mail i indbakken indeholder en konkret handling. Vurder og luk opgaven, når den er håndteret.";
+}
+
+function internalInboxTaskBucket(thread: any) {
+  const latest = latestThreadSummary(thread);
+  const compact = plainCompactText(`${latest?.subject || ""}\n${latest?.body || latest?.snippet || ""}`);
+  if (/\b(nu|akut|hurtigst|straks|i dag|idag)\b/.test(compact)) return "now";
+  if (/\b(dato|deadline|frist|svar|aflevering|mangler|skade|fejl|udbedr|billeder|ks)\b/.test(compact)) return "today";
+  return "week";
+}
+
+function ensureInternalInboxTask(state: any, thread: any) {
+  if (!isActionableInternalInboxMail(thread)) return false;
+  state.internalTasks = Array.isArray(state.internalTasks) ? state.internalTasks : [];
+  const threadId = textValue(thread?.id, "");
+  const text = fullThreadText(thread);
+  const matched = matchCaseWithConfidence(state.sager || [], text);
+  const title = internalInboxTaskTitle(thread);
+  const notes = internalInboxTaskNotes(thread);
+  const existingInternal = state.internalTasks.some((task: any) =>
+    textValue(task?.source, "") === "gmail_internal_instruction" &&
+    ((threadId && textValue(task?.threadId, "") === threadId) || normalizeCaseKey(task?.title) === normalizeCaseKey(title))
+  );
+  if (existingInternal) return false;
+
+  if (matched.confident && matched.entry) {
+    ensureCaseShape(matched.entry);
+    matched.entry.tasks = Array.isArray(matched.entry.tasks) ? matched.entry.tasks : [];
+    const existingCaseTask = matched.entry.tasks.some((task: any) =>
+      textValue(task?.source, "") === "gmail_internal_instruction" &&
+      ((threadId && textValue(task?.threadId, "") === threadId) || normalizeCaseKey(task?.title) === normalizeCaseKey(title))
+    );
+    if (existingCaseTask) return false;
+    matched.entry.tasks.unshift({
+      id: randomUUID(),
+      title,
+      status: "Åben",
+      createdAt: new Date().toISOString(),
+      dueDate: internalInboxTaskBucket(thread) === "week" ? "" : new Date().toISOString().slice(0, 10),
+      owner: "Søren",
+      notes,
+      source: "gmail_internal_instruction",
+      threadId,
+    });
+    return {
+      created: true,
+      title,
+      notes,
+      threadId,
+      customerName: textValue(matched.entry.kunde, ""),
+      caseId: formatCaseIdForDisplay(matched.entry),
+      linked: true,
+    };
+  }
+
+  const unlinkedRef = `S-${stableThreeDigitHash(`${title}|${threadId || text}`)}`;
+  state.internalTasks.unshift(normalizeInternalTask({
+    id: `gmail-internal-${threadId || randomUUID()}`,
+    title,
+    status: "Åben",
+    dueDate: internalInboxTaskBucket(thread) === "week" ? "" : new Date().toISOString().slice(0, 10),
+    owner: "Søren",
+    notes,
+    source: "gmail_internal_instruction",
+    domain: "mail",
+    bucket: internalInboxTaskBucket(thread),
+    threadId,
+    customerId: "",
+    unlinkedRef,
+  }));
+  return {
+    created: true,
+    title,
+    notes,
+    threadId,
+    customerName: "Intern opgave",
+    caseId: unlinkedRef,
+    linked: false,
+  };
+}
+
+function ensureInternalInboxTasks(state: any, threads: any[]) {
+  const created: any[] = [];
+  for (const thread of threads) {
+    const result = ensureInternalInboxTask(state, thread);
+    if (result && typeof result === "object") created.push(result);
+  }
+  return created;
+}
+
 function ensureOfferFollowupTask(matched: any, signal: any, archiveText: string, documentDate: string) {
   if (!matched) return;
   const compact = plainCompactText(archiveText);
@@ -1961,9 +2107,11 @@ export default async (request: Request) => {
         notes: `Gmail-søgning ${index + 1} svarede ikke korrekt. Sync fortsatte med de øvrige søgninger.`,
       });
     });
+    const internalInboxThreads = isNearFunctionTimeout() ? [] : await listRecentGmailThreads(INTERNAL_ACTION_INBOX_QUERY, 8);
     const inboxThreads = isNearFunctionTimeout() ? [] : await listRecentGmailThreads(SYNC_QUERY, 6);
     queueDiscoveredThreads(state, [
       { lane: "dke_questions", priority: 100, threads: dkeQuestionThreads },
+      { lane: "internal_inbox", priority: 95, threads: internalInboxThreads },
       { lane: "archive", priority: 60, threads: archiveThreads },
       { lane: "inbox", priority: 30, threads: inboxThreads },
     ]);
@@ -1977,6 +2125,7 @@ export default async (request: Request) => {
       .map((result) => result.value);
     const invoiceRegistration = await registerInvoicesFromThreads(state, fullThreads);
     const invoicesUpdated = Number(invoiceRegistration?.changed || 0);
+    const internalInboxTasksCreated = ensureInternalInboxTasks(state, fullThreads);
     const dkeQuestionTasksCreated =
       ensureDkeCharlotteQuestionTasks(state, fullThreads) +
       ensureDkeCharlotteQuestionTasksFromStateEmails(state);
@@ -1993,6 +2142,22 @@ export default async (request: Request) => {
           notes: entry.paid
             ? `${entry.invoiceNumber ? `Faktura ${entry.invoiceNumber}` : "Faktura"} er registreret som betalt på sagen via betalingsbekræftelse i mail${entry.amount ? ` med beløb ${entry.amount} kr. inkl. moms` : ""}.`
             : `${entry.invoiceNumber ? `Faktura ${entry.invoiceNumber}` : "Faktura"} er registreret på sagen via sikker Gmail/state-match${entry.amount ? ` med beløb ${entry.amount} kr. inkl. moms` : ""}.`,
+        });
+      }
+    }
+    if (internalInboxTasksCreated.length) {
+      for (const entry of internalInboxTasksCreated) {
+        appendSyncLog(state, {
+          status: "archived",
+          archiveKey: `internal-task-${textValue(entry.threadId, "") || stableThreeDigitHash(entry.title)}`,
+          subject: textValue(entry.title, "Intern opgave"),
+          customerName: textValue(entry.customerName, ""),
+          caseId: textValue(entry.caseId, ""),
+          documentType: "Opgave",
+          category: "sager",
+          notes: entry.linked
+            ? "Intern/SMG-mail i indbakken er oprettet som opgave på den matchede kunde."
+            : "Intern/SMG-mail i indbakken er oprettet som intern opgave uden kundematch.",
         });
       }
     }
@@ -2148,6 +2313,7 @@ export default async (request: Request) => {
       archived: archivedResults.length,
       offerFollowupsCreated,
       dkeQuestionTasksCreated,
+      internalInboxTasksCreated: internalInboxTasksCreated.length,
       paidInvoicesBackfilled,
       invoicesUpdated,
       ensuredFolders: ensuredFolders.length,
