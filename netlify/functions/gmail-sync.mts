@@ -38,6 +38,7 @@ const ARCHIVE_QUERIES = [
   `newer_than:45d -in:spam -in:trash ${OWNER_QUERY} ("Faktura" "Nordsjællands Tømrer")`,
   `newer_than:45d -in:spam -in:trash ${OWNER_QUERY} ("Bülowsvej" OR "Bulowsvej" OR "NV Gadesvej" OR "N. V. Gadesvej")`,
   `newer_than:45d -in:spam -in:trash ${OWNER_QUERY} ("Pladebutik" OR "Blågårdsgade 14" OR "Blaagaardsgade 14" OR "Kingosvej 1B")`,
+  `newer_than:14d -in:spam -in:trash ${OWNER_QUERY} ("DJ-pult" OR "DJ pult" OR "uge 19" OR "endelig aflevering" OR "Bülowsvej 9" OR "Bulowsvej 9" OR "Blågårdsgade 14" OR "Blaagaardsgade 14")`,
 ];
 const DANISH_MONTHS: Record<string, string> = {
   januar: "01",
@@ -1174,6 +1175,104 @@ function ensureTask(matched: any, title: string, payload: Record<string, unknown
   return true;
 }
 
+function findCaseByAllMarkers(state: any, markers: string[]) {
+  const markerCompacts = markers.map((marker) => plainCompactText(marker)).filter(Boolean);
+  if (!markerCompacts.length) return null;
+  const entries = Array.isArray(state?.sager) ? state.sager : [];
+  const scored = entries
+    .map((entry: any, index: number) => {
+      const hay = plainCompactText(`${entry?.kunde || ""} ${entry?.adr || ""} ${entry?.opg || ""} ${entry?.info || ""}`);
+      const score = markerCompacts.reduce((sum, marker) => sum + (hay.includes(marker) ? 1 : 0), 0);
+      return { entry, index, score };
+    })
+    .filter((result) => result.score >= markerCompacts.length)
+    .sort((a, b) => b.score - a.score || a.index - b.index);
+  return scored[0]?.entry || null;
+}
+
+function ensureDkeTask(state: any, payload: {
+  id: string;
+  markers?: string[];
+  title: string;
+  notes: string;
+  threadId: string;
+  dueDate?: string;
+}) {
+  const matched = payload.markers?.length ? findCaseByAllMarkers(state, payload.markers) : null;
+  if (matched) {
+    ensureCaseShape(matched);
+    return ensureTask(matched, payload.title, {
+      dueDate: payload.dueDate || new Date().toISOString().slice(0, 10),
+      owner: "Søren",
+      notes: payload.notes,
+      source: "gmail_sync",
+      threadId: payload.threadId,
+    });
+  }
+
+  state.internalTasks = Array.isArray(state.internalTasks) ? state.internalTasks : [];
+  const existing = state.internalTasks.some((task: any) =>
+    textValue(task?.id, "") === payload.id ||
+    (normalizeCaseKey(task?.title) === normalizeCaseKey(payload.title) && String(task?.status || "").toLowerCase() !== "fuldført")
+  );
+  if (existing) return false;
+  state.internalTasks.unshift(normalizeInternalTask({
+    id: payload.id,
+    title: payload.title,
+    status: "Åben",
+    dueDate: payload.dueDate || new Date().toISOString().slice(0, 10),
+    owner: "Søren",
+    source: "gmail_sync",
+    domain: "arbejde",
+    bucket: "today",
+    threadId: payload.threadId,
+    customerId: "1002",
+    notes: payload.notes,
+  }));
+  return true;
+}
+
+function ensureDkeCharlotteQuestionTasks(state: any, threads: any[]) {
+  let created = 0;
+  for (const thread of threads) {
+    const summaries = Array.isArray(thread?.messages) ? thread.messages.map(gmailMessageSummary) : [];
+    const text = summaries
+      .map((message) => [message.subject, message.from, message.snippet, message.body].filter(Boolean).join("\n"))
+      .join("\n\n");
+    const compact = plainCompactText(text);
+    const threadId = textValue(thread?.id, "");
+    const isCharlotteThread = compact.includes("charlotte") || compact.includes("dke");
+    if (!isCharlotteThread) continue;
+    if ((compact.includes("dj pult") || compact.includes("djpult")) && compact.includes("billeder")) {
+      if (ensureDkeTask(state, {
+        id: `gmail-dke-dj-pult-billeder-${threadId || stableThreeDigitHash(text)}`,
+        title: "Send DJ-pult-billeder til Charlotte",
+        notes: "DKE/Charlotte spørger efter manglende DJ-pult-billeder. Send billeder eller forklar status.",
+        threadId,
+      })) created += 1;
+    }
+    if ((compact.includes("endelig aflevering") || compact.includes("aflevering")) && (compact.includes("blagardsgade 14") || compact.includes("blaagardsgade 14"))) {
+      if (ensureDkeTask(state, {
+        id: `gmail-dke-blaagaardsgade-aflevering-${threadId || stableThreeDigitHash(text)}`,
+        markers: ["Blågårdsgade 14"],
+        title: "Svar med dato for endelig aflevering på Blågårdsgade 14",
+        notes: "DKE/Charlotte spørger om dato for endelig aflevering på Blågårdsgade 14 kld. th.",
+        threadId,
+      })) created += 1;
+    }
+    if (compact.includes("uge 19") && (compact.includes("bulowsvej 9") || compact.includes("bulowsvej"))) {
+      if (ensureDkeTask(state, {
+        id: `gmail-dke-bulowsvej-uge-19-${threadId || stableThreeDigitHash(text)}`,
+        markers: ["Bülowsvej 9"],
+        title: "Svar hvilken dag i uge 19 I kommer på Bülowsvej 9",
+        notes: "DKE/Charlotte spørger hvilken dag i uge 19 I kommer på Bülowsvej 9, 2. th.",
+        threadId,
+      })) created += 1;
+    }
+  }
+  return created;
+}
+
 function applyArchiveSideEffects(matched: any, signal: any, archiveText = "", documentDate = "") {
   if (!matched || !signal) return;
   matched.workflow = matched.workflow && typeof matched.workflow === "object" ? matched.workflow : {};
@@ -1592,6 +1691,7 @@ export default async (request: Request) => {
       .map((result) => result.value);
     const invoiceRegistration = await registerInvoicesFromThreads(state, fullThreads);
     const invoicesUpdated = Number(invoiceRegistration?.changed || 0);
+    const dkeQuestionTasksCreated = ensureDkeCharlotteQuestionTasks(state, fullThreads);
     if (invoicesUpdated) {
       for (const entry of invoiceRegistration.changedCases || []) {
         appendSyncLog(state, {
@@ -1718,6 +1818,17 @@ export default async (request: Request) => {
     }
 
     const offerFollowupsCreated = backfillOfferFollowupsFromState(state);
+    if (dkeQuestionTasksCreated) {
+      appendSyncLog(state, {
+        status: "archived",
+        subject: "DKE/Charlotte åbne spørgsmål",
+        customerName: "DKE / Charlotte",
+        caseId: "1002",
+        documentType: "Action point",
+        category: "sager",
+        notes: `${dkeQuestionTasksCreated} åbne spørgsmål fra DKE/Charlotte er oprettet som opgaver.`,
+      });
+    }
     if (offerFollowupsCreated) {
       appendSyncLog(state, {
         status: "archived",
@@ -1740,6 +1851,7 @@ export default async (request: Request) => {
       unhandled: items.filter((item: any) => !item.handled).length,
       archived: archivedResults.length,
       offerFollowupsCreated,
+      dkeQuestionTasksCreated,
       invoicesUpdated,
       ensuredFolders: ensuredFolders.length,
       archiveErrors,
