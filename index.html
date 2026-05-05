@@ -3461,11 +3461,12 @@ function collectPriorityUpdates(){
     seenSync.add(syncKey);
     const caseIndex = findCaseIndexByCaseId(item.caseId);
     const hasCase = caseIndex >= 0;
+    const isMatchAfklaring = /kunne ikke matches sikkert|kræver manuel match|matcher flere mulige sager/i.test(`${item.error || ''} ${item.notes || ''}`);
     const statusLabel = item.status === 'archived'
       ? 'Arkiveret'
       : item.status === 'skipped'
         ? 'Allerede arkiveret'
-        : item.status === 'needs_review'
+        : item.status === 'needs_review' || isMatchAfklaring
           ? 'Afklaring'
           : item.status === 'task_created'
             ? 'Opgave'

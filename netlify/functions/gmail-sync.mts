@@ -600,7 +600,8 @@ function findOrCreateKnownCase(state: any, signal: any, text = "") {
 
   const isPladebutikThread =
     compact.includes("pladebutik") ||
-    ((compact.includes("blagardsgade 14") || compact.includes("blaagardsgade 14")) && compact.includes("udbedring") && compact.includes("mangler"));
+    ((compact.includes("blagardsgade 14") || compact.includes("blaagardsgade 14")) &&
+      (/udbedring|mangler|mangel|aflevering|afleveringsreferat|kaelderbutik|kaelder/.test(compact)));
   if (isPladebutikThread) {
     const existing = findByMarker([/pladebutik/, /blagardsgade\s*14/, /blaagardsgade\s*14/]);
     if (existing) return ensureCaseShape(existing);
@@ -625,6 +626,16 @@ function findOrCreateKnownCase(state: any, signal: any, text = "") {
     });
   }
 
+  return null;
+}
+
+function findKnownCaseForTask(state: any, text = "") {
+  const compact = plainCompactText(text);
+  if (!compact) return null;
+  if (compact.includes("bulowsvej 9")) return findCaseByAllMarkers(state, ["Bülowsvej 9"]) || findCaseByAllMarkers(state, ["Bulowsvej 9"]);
+  if (compact.includes("blagardsgade 14") || compact.includes("blaagardsgade 14")) return findCaseByAllMarkers(state, ["Blågårdsgade 14"]) || findCaseByAllMarkers(state, ["Blaagaardsgade 14"]);
+  if (compact.includes("ryesgade 62") && (compact.includes("lej 30") || compact.includes("lejlighed 30"))) return findCaseByAllMarkers(state, ["Ryesgade 62", "30"]);
+  if (compact.includes("lykkesholms alle") || compact.includes("lykkesholms alle 33")) return findCaseByAllMarkers(state, ["Lykkesholms Allé 33"]);
   return null;
 }
 
@@ -1741,7 +1752,10 @@ function ensureInternalInboxTask(state: any, thread: any) {
   state.internalTasks = Array.isArray(state.internalTasks) ? state.internalTasks : [];
   const threadId = textValue(thread?.id, "");
   const text = fullThreadText(thread);
-  const matched = matchCaseWithConfidence(state.sager || [], text);
+  const knownTaskCase = findKnownCaseForTask(state, text);
+  const matched = knownTaskCase
+    ? { entry: knownTaskCase, score: 99, reasons: ["kendt adresse"], confident: true }
+    : matchCaseWithConfidence(state.sager || [], text);
   const title = internalInboxTaskTitle(thread);
   const notes = internalInboxTaskNotes(thread);
   const existingInternal = state.internalTasks.some((task: any) =>
