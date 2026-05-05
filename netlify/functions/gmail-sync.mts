@@ -30,7 +30,7 @@ const EXCLUDED_MAIL_QUERY = "-from:cgallstar@gmail.com -from:christian@scventure
 const OWNER_QUERY = `${NSTSF_QUERY} ${EXCLUDED_MAIL_QUERY}`;
 const GADESVEJ_DRIVE_URL = "https://drive.google.com/drive/folders/1IPXK472x8-Peasfv7kKU-JrG9oUNb6-4";
 const SYNC_QUERY = `newer_than:30d -in:spam -in:trash ${OWNER_QUERY}`;
-const DKE_QUESTION_QUERY = `newer_than:14d -in:spam -in:trash ${OWNER_QUERY} ("DJ-pult" OR "DJ pult" OR "uge 19" OR "endelig aflevering" OR "Bülowsvej 9" OR "Bulowsvej 9" OR "Blågårdsgade 14" OR "Blaagaardsgade 14")`;
+const DKE_QUESTION_QUERY = `newer_than:14d -in:spam -in:trash ${OWNER_QUERY} ("DJ-pult" OR "DJ pult" OR "uge 19" OR "endelig aflevering" OR "Bülowsvej 9" OR "Bül. 9" OR "Bulowsvej 9" OR "Bul. 9" OR "Blågårdsgade 14" OR "Blå. 14" OR "Blaagaardsgade 14" OR "Blaa. 14")`;
 const ARCHIVE_QUERIES = [
   `newer_than:90d -in:spam -in:trash ${OWNER_QUERY} ("Faktura" OR "faktura")`,
   `newer_than:45d -in:spam -in:trash ${OWNER_QUERY} ("Byggemødereferat" OR "Byggemodereferat" OR "byggemøde" OR "byggemode")`,
@@ -117,7 +117,7 @@ function queueDiscoveredThreads(state: any, groups: Array<{ lane: string; priori
       const id = textValue(thread?.id, "");
       if (!id) continue;
       const historyId = textValue(thread?.historyId, "");
-      if (historyId && textValue(syncState.processedThreadHistory?.[id], "") === historyId) continue;
+      if (group.lane !== "dke_questions" && historyId && textValue(syncState.processedThreadHistory?.[id], "") === historyId) continue;
       const existing: any = byId.get(id);
       if (existing) {
         const previousPriority = Number(existing.priority || 0);
@@ -151,7 +151,7 @@ function selectQueuedThreads(state: any, max = 14) {
     .filter((item: any) => {
       const id = textValue(item?.id, "");
       const historyId = textValue(item?.historyId, "");
-      return id && (!historyId || textValue(syncState.processedThreadHistory?.[id], "") !== historyId);
+      return id && (item?.lane === "dke_questions" || !historyId || textValue(syncState.processedThreadHistory?.[id], "") !== historyId);
     })
     .sort((a: any, b: any) =>
       Number(b.priority || 0) - Number(a.priority || 0) ||
@@ -1318,6 +1318,53 @@ function ensureDkeTask(state: any, payload: {
   return true;
 }
 
+function hasBlaagaardsgade14Signal(compact: string) {
+  return compact.includes("blagardsgade 14") ||
+    compact.includes("blaagardsgade 14") ||
+    /\bblaa?\s*14\b/.test(compact);
+}
+
+function hasBulowsvej9Signal(compact: string) {
+  return compact.includes("bulowsvej 9") ||
+    /\bbul\s*9\b/.test(compact);
+}
+
+function ensureDkeCharlotteQuestionTasksFromText(state: any, text: string, threadId = "") {
+  let created = 0;
+  const compact = plainCompactText(text);
+  const isCharlotteThread = compact.includes("charlotte") || compact.includes("dke");
+  if (!isCharlotteThread) return 0;
+
+  const stableId = threadId || stableThreeDigitHash(text);
+  if ((compact.includes("dj pult") || compact.includes("djpult")) && compact.includes("billeder")) {
+    if (ensureDkeTask(state, {
+      id: `gmail-dke-dj-pult-billeder-${stableId}`,
+      title: "Send DJ-pult-billeder til Charlotte",
+      notes: "DKE/Charlotte spørger efter manglende DJ-pult-billeder. Send billeder eller forklar status.",
+      threadId,
+    })) created += 1;
+  }
+  if ((compact.includes("endelig aflevering") || compact.includes("aflevering")) && hasBlaagaardsgade14Signal(compact)) {
+    if (ensureDkeTask(state, {
+      id: `gmail-dke-blaagaardsgade-aflevering-${stableId}`,
+      markers: ["Blågårdsgade 14"],
+      title: "Svar med dato for endelig aflevering på Blågårdsgade 14",
+      notes: "DKE/Charlotte spørger om dato for endelig aflevering på Blågårdsgade 14 kld. th.",
+      threadId,
+    })) created += 1;
+  }
+  if (compact.includes("uge 19") && hasBulowsvej9Signal(compact)) {
+    if (ensureDkeTask(state, {
+      id: `gmail-dke-bulowsvej-uge-19-${stableId}`,
+      markers: ["Bülowsvej 9"],
+      title: "Svar hvilken dag i uge 19 I kommer på Bülowsvej 9",
+      notes: "DKE/Charlotte spørger hvilken dag i uge 19 I kommer på Bülowsvej 9, 2. th.",
+      threadId,
+    })) created += 1;
+  }
+  return created;
+}
+
 function ensureDkeCharlotteQuestionTasks(state: any, threads: any[]) {
   let created = 0;
   for (const thread of threads) {
@@ -1325,36 +1372,26 @@ function ensureDkeCharlotteQuestionTasks(state: any, threads: any[]) {
     const text = summaries
       .map((message) => [message.subject, message.from, message.snippet, message.body].filter(Boolean).join("\n"))
       .join("\n\n");
-    const compact = plainCompactText(text);
-    const threadId = textValue(thread?.id, "");
-    const isCharlotteThread = compact.includes("charlotte") || compact.includes("dke");
-    if (!isCharlotteThread) continue;
-    if ((compact.includes("dj pult") || compact.includes("djpult")) && compact.includes("billeder")) {
-      if (ensureDkeTask(state, {
-        id: `gmail-dke-dj-pult-billeder-${threadId || stableThreeDigitHash(text)}`,
-        title: "Send DJ-pult-billeder til Charlotte",
-        notes: "DKE/Charlotte spørger efter manglende DJ-pult-billeder. Send billeder eller forklar status.",
-        threadId,
-      })) created += 1;
-    }
-    if ((compact.includes("endelig aflevering") || compact.includes("aflevering")) && (compact.includes("blagardsgade 14") || compact.includes("blaagardsgade 14"))) {
-      if (ensureDkeTask(state, {
-        id: `gmail-dke-blaagaardsgade-aflevering-${threadId || stableThreeDigitHash(text)}`,
-        markers: ["Blågårdsgade 14"],
-        title: "Svar med dato for endelig aflevering på Blågårdsgade 14",
-        notes: "DKE/Charlotte spørger om dato for endelig aflevering på Blågårdsgade 14 kld. th.",
-        threadId,
-      })) created += 1;
-    }
-    if (compact.includes("uge 19") && (compact.includes("bulowsvej 9") || compact.includes("bulowsvej"))) {
-      if (ensureDkeTask(state, {
-        id: `gmail-dke-bulowsvej-uge-19-${threadId || stableThreeDigitHash(text)}`,
-        markers: ["Bülowsvej 9"],
-        title: "Svar hvilken dag i uge 19 I kommer på Bülowsvej 9",
-        notes: "DKE/Charlotte spørger hvilken dag i uge 19 I kommer på Bülowsvej 9, 2. th.",
-        threadId,
-      })) created += 1;
-    }
+    created += ensureDkeCharlotteQuestionTasksFromText(state, text, textValue(thread?.id, ""));
+  }
+  return created;
+}
+
+function ensureDkeCharlotteQuestionTasksFromStateEmails(state: any) {
+  let created = 0;
+  const emails = Array.isArray(state?.emails) ? state.emails : [];
+  for (const email of emails) {
+    const text = [
+      email?.subject,
+      email?.from,
+      email?.kunde,
+      email?.snippet,
+      email?.preview,
+      email?.body,
+      email?.summary,
+      email?.suggestion,
+    ].filter(Boolean).join("\n");
+    created += ensureDkeCharlotteQuestionTasksFromText(state, text, textValue(email?.threadId || email?.id, ""));
   }
   return created;
 }
@@ -1796,7 +1833,9 @@ export default async (request: Request) => {
       .map((result) => result.value);
     const invoiceRegistration = await registerInvoicesFromThreads(state, fullThreads);
     const invoicesUpdated = Number(invoiceRegistration?.changed || 0);
-    const dkeQuestionTasksCreated = ensureDkeCharlotteQuestionTasks(state, fullThreads);
+    const dkeQuestionTasksCreated =
+      ensureDkeCharlotteQuestionTasks(state, fullThreads) +
+      ensureDkeCharlotteQuestionTasksFromStateEmails(state);
     if (invoicesUpdated) {
       for (const entry of invoiceRegistration.changedCases || []) {
         appendSyncLog(state, {
