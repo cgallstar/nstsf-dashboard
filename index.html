@@ -2489,7 +2489,7 @@ async function updatePriorities(manual=false){
     const note = archived
       ? `Sager opdateret. ${data.synced || 0} tråde · ${data.unhandled || 0} åbne · ${archived} arkiveret.`
       : `Sager opdateret. ${data.synced || 0} tråde · ${data.unhandled || 0} åbne.`;
-    setSyncStatus(note, 'ok');
+    setSyncStatus(data.gmailSyncBuild ? `${note} · sync ${data.gmailSyncBuild}` : note, 'ok');
   }catch(err){
     addLocalSyncLogEntries([{ source:'gmail_sync', status:'error', subject:'Opdatér Sager', notes:`Kunne ikke opdatere sager: ${err.message}` }]);
     renderPriorities();

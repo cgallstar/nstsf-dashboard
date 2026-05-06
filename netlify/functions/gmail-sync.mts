@@ -23,6 +23,7 @@ import {
   uploadDriveFile,
 } from "./_lib/google.mts";
 
+const GMAIL_SYNC_BUILD_VERSION = "2026-05-06-sync-error-review-v1";
 const INTERNAL_PATTERNS = [/@nstsf\.dk/i, /gemini-notes@google\.com/i];
 const MAILBOX_OWNER = "christian@nstsf.dk";
 const NSTSF_QUERY = `(from:${MAILBOX_OWNER} OR from:smg@nstsf.dk OR from:nstsf.dk OR to:${MAILBOX_OWNER} OR cc:${MAILBOX_OWNER})`;
@@ -104,16 +105,45 @@ function isReviewIssueText(value = "") {
   return /kunne ikke matches sikkert|kræver manuel match|matcher flere mulige sager|case_not_matched|invoice_match_low_confidence|invoice_match_ambiguous/i.test(String(value || ""));
 }
 
+function syncLogDedupeKey(entry: any) {
+  const threadId = textValue(entry?.threadId, "");
+  if (threadId) return `thread:${threadId}`;
+  const archiveKey = textValue(entry?.archiveKey, "");
+  if (archiveKey) return `archive:${archiveKey}`;
+  const fileName = textValue(entry?.fileName, "");
+  const caseId = textValue(entry?.caseId, "");
+  if (fileName && caseId) return `file:${caseId}:${fileName}`;
+  return [
+    textValue(entry?.subject, "").toLowerCase(),
+    textValue(entry?.documentType, "").toLowerCase(),
+    textValue(entry?.category, "").toLowerCase(),
+  ].join("|");
+}
+
 function normalizeExistingSyncLog(state: any) {
   if (!Array.isArray(state?.syncLog)) return 0;
   let changed = 0;
-  state.syncLog.forEach((entry: any) => {
-    if (!entry || entry.status !== "error") return;
+  const seen = new Set<string>();
+  const normalized: any[] = [];
+  for (const entry of state.syncLog) {
+    if (!entry) {
+      changed += 1;
+      continue;
+    }
     const reviewText = [entry.error, entry.notes].map((value) => textValue(value, "")).join(" ");
-    if (!isReviewIssueText(reviewText)) return;
-    entry.status = "needs_review";
-    changed += 1;
-  });
+    if (entry.status === "error" && isReviewIssueText(reviewText)) {
+      entry.status = "needs_review";
+      changed += 1;
+    }
+    const key = syncLogDedupeKey(entry);
+    if (seen.has(key)) {
+      changed += 1;
+      continue;
+    }
+    seen.add(key);
+    normalized.push(entry);
+  }
+  state.syncLog = normalized.slice(0, 80);
   return changed;
 }
 
@@ -2667,10 +2697,12 @@ export default async (request: Request) => {
     }
 
     state.emails = items;
+    const sanitizedSyncLogEntries = normalizeExistingSyncLog(state);
     const savedAt = await saveDashboardState(state);
 
     return json({
       ok: true,
+      gmailSyncBuild: GMAIL_SYNC_BUILD_VERSION,
       savedAt,
       synced: items.length,
       unhandled: items.filter((item: any) => !item.handled).length,
@@ -2681,7 +2713,7 @@ export default async (request: Request) => {
       internalInboxTasksCreated: taskCandidatesCreated.length,
       paidInvoicesBackfilled,
       invoicesUpdated,
-      migratedSyncLogEntries,
+      migratedSyncLogEntries: migratedSyncLogEntries + sanitizedSyncLogEntries,
       ensuredFolders: ensuredFolders.length,
       archiveErrors,
       archivedCases: archivedResults.map((entry) => ({
@@ -2714,14 +2746,17 @@ export default async (request: Request) => {
       error: errorText,
       notes: "Gmail-sync stoppede før trådene kunne behandles.",
     });
+    const sanitizedSyncLogEntries = normalizeExistingSyncLog(state);
     const savedAt = await saveDashboardState(state);
     return json({
       ok: true,
+      gmailSyncBuild: GMAIL_SYNC_BUILD_VERSION,
       savedAt,
       synced: 0,
       unhandled: 0,
       archived: 0,
       ensuredFolders: ensuredFolders.length,
+      migratedSyncLogEntries: migratedSyncLogEntries + sanitizedSyncLogEntries,
       archiveErrors: [{
         ok: false,
         threadId: "",
