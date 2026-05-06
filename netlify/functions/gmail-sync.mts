@@ -1228,12 +1228,16 @@ async function ensureKnownMaterialDocumentation(state: any, integration: any, ac
   const fileTitle = buildArchiveFileTitle(documentDate, { fileLabel: "Materialevalg microcement", documentType: "Materialevalg" }, displayCaseId, "Microcement");
   const fileName = `${fileTitle}.md`;
   const archiveKey = `known-material:microcement:${displayCaseId}:${documentDate}`;
-  const alreadyArchived = (matched.activityLog || []).some((entry: any) =>
+  const existingActivity = (matched.activityLog || []).find((entry: any) =>
     textValue(entry?.archiveKey, "") === archiveKey ||
     textValue(entry?.fileName, "") === fileName ||
     /microcement/i.test(`${entry?.subject || ""} ${entry?.fileName || ""} ${entry?.notes || ""}`)
   );
-  if (alreadyArchived) return null;
+  const existingDoc = (matched.docs?.ks || []).find((doc: any) =>
+    textValue(doc?.fileName, "") === fileName ||
+    /microcement/i.test(`${doc?.titel || ""} ${doc?.title || ""} ${doc?.notes || ""} ${doc?.fileName || ""}`)
+  );
+  if (existingDoc) return null;
 
   const document = {
     title: fileTitle,
@@ -1278,19 +1282,21 @@ async function ensureKnownMaterialDocumentation(state: any, integration: any, ac
   }
 
   pushDocs(matched.docs.ks, [document]);
-  appendActivity(matched, actor, {
-    type: "gmail_archive",
-    archiveKey,
-    subject: "Microcement",
-    archiveCategory: "ks",
-    documentType: "Materialevalg",
-    documentDate,
-    fileName,
-    driveUrl: textValue(document.url, ""),
-    sourceType: "external",
-    attachmentCount: 0,
-    notes: "Materialevalg for microcement arkiveret under KS / Dokumentation.",
-  });
+  if (!existingActivity) {
+    appendActivity(matched, actor, {
+      type: "gmail_archive",
+      archiveKey,
+      subject: "Microcement",
+      archiveCategory: "ks",
+      documentType: "Materialevalg",
+      documentDate,
+      fileName,
+      driveUrl: textValue(document.url, ""),
+      sourceType: "external",
+      attachmentCount: 0,
+      notes: "Materialevalg for microcement arkiveret under KS / Dokumentation.",
+    });
+  }
   appendSyncLog(state, {
     status: "archived",
     archiveKey,
@@ -1302,7 +1308,9 @@ async function ensureKnownMaterialDocumentation(state: any, integration: any, ac
     category: "ks",
     fileName,
     driveUrl: textValue(document.url, ""),
-    notes: `Arkiveret i Drive som ${fileName}.`,
+    notes: existingActivity
+      ? `Dokumentlisten under K-1006 er repareret med ${fileName}.`
+      : `Arkiveret i Drive som ${fileName}.`,
   });
   return { caseId: displayCaseId, fileName, driveUrl: textValue(document.url, "") };
 }
