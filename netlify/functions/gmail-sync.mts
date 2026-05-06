@@ -815,10 +815,18 @@ function applyInvoiceToCase(matched: any, invoiceNumber: string, invoiceDate = "
   return docsChanged || after !== before;
 }
 
-function findCaseByCustomerNumber(state: any, customerNumber = "") {
+function findCaseByCustomerNumber(state: any, customerNumber = "", matcher: ((entry: any) => boolean) | null = null) {
   const wanted = normalizeCaseKey(customerNumber);
-  if (!wanted) return null;
-  return (Array.isArray(state?.sager) ? state.sager : []).find((entry: any) => primaryCaseNumber(entry) === wanted) || null;
+  const normalizedDigits = textValue(customerNumber, "").replace(/\D/g, "");
+  if (!wanted && !normalizedDigits) return null;
+  const matches = (Array.isArray(state?.sager) ? state.sager : []).filter((entry: any) => {
+    if (wanted && primaryCaseNumber(entry) === wanted) return true;
+    if (!normalizedDigits) return false;
+    return textValue(entry?.nr, "").replace(/\D/g, "") === normalizedDigits ||
+      textValue(entry?.sid, "").replace(/\D/g, "") === normalizedDigits;
+  });
+  if (matcher) return matches.find(matcher) || null;
+  return matches[0] || null;
 }
 
 function invoicePaidConfirmed(text = "") {
@@ -1206,17 +1214,6 @@ async function ensureDriveFoldersForLinkedCases(state: any) {
     }
   }
   return ensured;
-}
-
-function findCaseByCustomerNumber(state: any, customerNumber = "", matcher: ((entry: any) => boolean) | null = null) {
-  const normalized = textValue(customerNumber, "").replace(/\D/g, "");
-  if (!normalized) return null;
-  const matches = (Array.isArray(state?.sager) ? state.sager : []).filter((entry: any) => {
-    return textValue(entry?.nr, "").replace(/\D/g, "") === normalized ||
-      textValue(entry?.sid, "").replace(/\D/g, "") === normalized;
-  });
-  if (matcher) return matches.find(matcher) || null;
-  return matches[0] || null;
 }
 
 async function ensureKnownMaterialDocumentation(state: any, integration: any, actor: any) {
