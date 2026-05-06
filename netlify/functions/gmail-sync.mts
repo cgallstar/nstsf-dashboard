@@ -602,6 +602,12 @@ function isGadesvejArchiveThread(signal: any, text = "") {
   return compact.includes("nv gadesvej") && /\b12a?\b/.test(compact);
 }
 
+function isGadesvejMaterialThread(signal: any, text = "") {
+  if (!signal || signal.category !== "ks") return false;
+  const compact = plainCompactText(text);
+  return compact.includes("microcement") || compact.includes("microcoat") || compact.includes("urban hald");
+}
+
 function isNvGadesvej10Thread(text = "") {
   const compact = plainCompactText(text);
   return compact.includes("nv gadesvej") && /\b10\b/.test(compact);
@@ -646,6 +652,7 @@ function findOrCreateGadesvejCase(state: any) {
 function findOrCreateKnownCase(state: any, signal: any, text = "") {
   const compact = plainCompactText(text);
   if (isGadesvejArchiveThread(signal, text)) return findOrCreateGadesvejCase(state);
+  if (isGadesvejMaterialThread(signal, text)) return findOrCreateGadesvejCase(state);
   const entries = Array.isArray(state?.sager) ? state.sager : [];
   const findByMarker = (patterns: RegExp[]) => entries.find((entry: any) => {
     const marker = plainCompactText(`${entry?.kunde || ""} ${entry?.adr || ""} ${entry?.opg || ""} ${entry?.sid || ""} ${entry?.nr || ""} ${entry?.fak || ""} ${entry?.docs?.drive || entry?.drive || ""}`);
@@ -1176,6 +1183,108 @@ async function ensureDriveFoldersForLinkedCases(state: any) {
   return ensured;
 }
 
+function findCaseByCustomerNumber(state: any, customerNumber = "", matcher: ((entry: any) => boolean) | null = null) {
+  const normalized = textValue(customerNumber, "").replace(/\D/g, "");
+  if (!normalized) return null;
+  const matches = (Array.isArray(state?.sager) ? state.sager : []).filter((entry: any) => {
+    return textValue(entry?.nr, "").replace(/\D/g, "") === normalized ||
+      textValue(entry?.sid, "").replace(/\D/g, "") === normalized;
+  });
+  if (matcher) return matches.find(matcher) || null;
+  return matches[0] || null;
+}
+
+async function ensureKnownMaterialDocumentation(state: any, integration: any, actor: any) {
+  const matched = findCaseByCustomerNumber(state, "1006", (entry: any) => {
+    const marker = plainCompactText(`${entry?.kunde || ""} ${entry?.adr || ""} ${entry?.opg || ""}`);
+    return marker.includes("mathias") || marker.includes("gadesvej");
+  }) || findOrCreateGadesvejCase(state);
+  if (!matched) return null;
+  ensureCaseShape(matched);
+  const documentDate = "2026-05-05";
+  const displayCaseId = formatCaseIdForDisplay(matched) || "1006 A";
+  const fileTitle = buildArchiveFileTitle(documentDate, { fileLabel: "Materialevalg microcement", documentType: "Materialevalg" }, displayCaseId, "Microcement");
+  const fileName = `${fileTitle}.md`;
+  const archiveKey = `known-material:microcement:${displayCaseId}:${documentDate}`;
+  const alreadyArchived = (matched.activityLog || []).some((entry: any) =>
+    textValue(entry?.archiveKey, "") === archiveKey ||
+    textValue(entry?.fileName, "") === fileName ||
+    /microcement/i.test(`${entry?.subject || ""} ${entry?.fileName || ""} ${entry?.notes || ""}`)
+  );
+  if (alreadyArchived) return null;
+
+  const document = {
+    title: fileTitle,
+    fileName,
+    mimeType: "text/markdown",
+    contentText: [
+      "# Materialevalg microcement",
+      "",
+      `- Kunde/sag: ${displayCaseId} · ${textValue(matched.kunde, "Mathias & Anna")}`,
+      "- Dato: 2026-05-05",
+      "- Kilde: Gmail · Microcement",
+      "",
+      "## Materiale",
+      "- Produkt: Urban Hald Microcement",
+      "- Farve: Signalhvid",
+      "- Variant: Standard",
+      "- Link: https://urbanhald.dk/shop/faerdigblandet-microcement-599p.html",
+      "",
+      "## Opbygning",
+      "- Rens",
+      "- Sandprimer",
+      "- Armeringsnet",
+      "- Microcement Standard / Signalhvid, påført af et par omgange med slib",
+      "- MicroCoat x2",
+    ].join("\n"),
+    date: documentDate,
+    notes: "Automatisk arkiveret fra Gmail-sync. Mail: Microcement.",
+  };
+
+  let uploaded: any = null;
+  if (integration.configured) {
+    const folderInfo = await ensureCaseDriveFolders(matched, displayCaseId, matched.kunde);
+    const folderId = textValue(folderInfo?.folders?.ks?.id, "");
+    matched.docs.drive = textValue(folderInfo?.caseFolder?.webViewLink, matched.docs.drive);
+    matched.drive = matched.docs.drive;
+    if (!folderId) throw new Error("drive_folder_missing:ks");
+    uploaded = await findDriveFileByName(folderId, fileName);
+    if (!uploaded) uploaded = await uploadDriveFile(folderId, document);
+    document.url = textValue(uploaded?.webViewLink, "");
+    document.fileId = textValue(uploaded?.id, "");
+    document.mimeType = textValue(uploaded?.mimeType, document.mimeType);
+  }
+
+  pushDocs(matched.docs.ks, [document]);
+  appendActivity(matched, actor, {
+    type: "gmail_archive",
+    archiveKey,
+    subject: "Microcement",
+    archiveCategory: "ks",
+    documentType: "Materialevalg",
+    documentDate,
+    fileName,
+    driveUrl: textValue(document.url, ""),
+    sourceType: "external",
+    attachmentCount: 0,
+    notes: "Materialevalg for microcement arkiveret under KS / Dokumentation.",
+  });
+  appendSyncLog(state, {
+    status: "archived",
+    archiveKey,
+    subject: "Microcement",
+    customerName: textValue(matched.kunde, "Mathias & Anna"),
+    caseId: displayCaseId,
+    documentType: "Materialevalg",
+    documentDate,
+    category: "ks",
+    fileName,
+    driveUrl: textValue(document.url, ""),
+    notes: `Arkiveret i Drive som ${fileName}.`,
+  });
+  return { caseId: displayCaseId, fileName, driveUrl: textValue(document.url, "") };
+}
+
 function extractDocumentDate(subject = "", body = "", fallbackIso = "") {
   const source = `${subject}\n${body}`;
   const monthPattern = new RegExp(`(\\d{1,2})\\.\\s*(${Object.keys(DANISH_MONTHS).join("|")})\\s*(\\d{4})`, "i");
@@ -1211,6 +1320,14 @@ function inferArchiveSignal(subject = "", body = "", from = "") {
       documentType: source.includes("afslutningsmode") ? "Afslutningsmoede" : "Byggemodereferat",
       sourceType: isInternalSender(from) ? "internal" : "external",
       fileLabel: source.includes("afslutningsmode") ? "Afslutningsmoede" : "Fejl og mangler moede",
+    };
+  }
+  if (source.includes("microcement") || source.includes("microcoat") || source.includes("urban hald")) {
+    return {
+      category: "ks",
+      documentType: "Materialevalg",
+      sourceType: isInternalSender(from) ? "internal" : "external",
+      fileLabel: "Materialevalg microcement",
     };
   }
   if (/byggemodereferat|byggemode referat|byggemode|modereferat|moedereferat|referat/.test(subjectSource) || /byggemodereferat|byggemode referat|byggemode|modereferat|moedereferat|referat/.test(source)) {
@@ -2755,6 +2872,7 @@ export default async (request: Request) => {
         notes: `${offerFollowupsCreated} action point${offerFollowupsCreated === 1 ? "" : "s"} for tilbud er sikret på kundesager.`,
       });
     }
+    const materialDocumentation = await ensureKnownMaterialDocumentation(state, integration, auth.actor);
 
     state.emails = items;
     const sanitizedSyncLogEntries = normalizeExistingSyncLog(state);
@@ -2773,6 +2891,7 @@ export default async (request: Request) => {
       internalInboxTasksCreated: taskCandidatesCreated.length,
       paidInvoicesBackfilled,
       invoicesUpdated,
+      materialDocumentation: materialDocumentation ? 1 : 0,
       migratedSyncLogEntries: migratedSyncLogEntries + sanitizedSyncLogEntries,
       syncDiagnostics: syncLogDiagnostics(state),
       ensuredFolders: ensuredFolders.length,
