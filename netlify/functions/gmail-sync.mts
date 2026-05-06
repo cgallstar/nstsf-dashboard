@@ -62,10 +62,14 @@ const DANISH_MONTHS: Record<string, string> = {
 };
 function appendSyncLog(state: any, payload: Record<string, unknown>) {
   state.syncLog = Array.isArray(state?.syncLog) ? state.syncLog : [];
+  const cleanSubject = stripSyncStatusPrefix(textValue(payload.subject, ""));
   const rawStatus = textValue(payload.status, "");
   const reviewText = [
     payload.error,
     payload.notes,
+    cleanSubject,
+    payload.documentType,
+    payload.category,
   ].map((value) => textValue(value, "")).join(" ");
   const status = rawStatus === "error" && isReviewIssueText(reviewText)
     ? "needs_review"
@@ -74,7 +78,7 @@ function appendSyncLog(state: any, payload: Record<string, unknown>) {
   const threadId = textValue(payload.threadId, "");
   const fileName = textValue(payload.fileName, "");
   const caseId = textValue(payload.caseId, "");
-  const subject = textValue(payload.subject, "");
+  const subject = cleanSubject;
   if (archiveKey) {
     state.syncLog = state.syncLog.filter((entry: any) =>
       textValue(entry?.archiveKey, "") !== archiveKey &&
@@ -96,6 +100,7 @@ function appendSyncLog(state: any, payload: Record<string, unknown>) {
     createdAt: new Date().toISOString(),
     source: "gmail_sync",
     ...payload,
+    subject: cleanSubject,
     status,
   });
   state.syncLog = state.syncLog.slice(0, 80);
@@ -103,6 +108,10 @@ function appendSyncLog(state: any, payload: Record<string, unknown>) {
 
 function isReviewIssueText(value = "") {
   return /kunne ikke matches sikkert|kræver manuel match|matcher flere mulige sager|case_not_matched|invoice_match_low_confidence|invoice_match_ambiguous/i.test(String(value || ""));
+}
+
+function stripSyncStatusPrefix(value = "") {
+  return textValue(value, "").replace(/^\s*(fejl|afklaring|arkiveret|opgave|opdatering|allerede arkiveret)\s*[·:-]\s*/i, "").trim();
 }
 
 function syncLogDedupeKey(entry: any) {
@@ -130,7 +139,8 @@ function normalizeExistingSyncLog(state: any) {
       changed += 1;
       continue;
     }
-    const reviewText = [entry.error, entry.notes].map((value) => textValue(value, "")).join(" ");
+    entry.subject = stripSyncStatusPrefix(entry.subject);
+    const reviewText = [entry.error, entry.notes, entry.subject, entry.documentType, entry.category].map((value) => textValue(value, "")).join(" ");
     if (entry.status === "error" && isReviewIssueText(reviewText)) {
       entry.status = "needs_review";
       changed += 1;
@@ -145,6 +155,25 @@ function normalizeExistingSyncLog(state: any) {
   }
   state.syncLog = normalized.slice(0, 80);
   return changed;
+}
+
+function syncLogDiagnostics(state: any) {
+  const entries = Array.isArray(state?.syncLog) ? state.syncLog : [];
+  return entries.reduce((acc: any, entry: any) => {
+    const status = textValue(entry?.status, "unknown") || "unknown";
+    acc.total += 1;
+    acc.byStatus[status] = Number(acc.byStatus[status] || 0) + 1;
+    if (status === "error") {
+      const subject = textValue(entry?.subject, "");
+      acc.errors.push({
+        subject,
+        error: textValue(entry?.error || entry?.notes, ""),
+        documentType: textValue(entry?.documentType, ""),
+        category: textValue(entry?.category, ""),
+      });
+    }
+    return acc;
+  }, { total: 0, byStatus: {}, errors: [] });
 }
 
 function dedupeThreads(threads: any[]) {
@@ -2714,6 +2743,7 @@ export default async (request: Request) => {
       paidInvoicesBackfilled,
       invoicesUpdated,
       migratedSyncLogEntries: migratedSyncLogEntries + sanitizedSyncLogEntries,
+      syncDiagnostics: syncLogDiagnostics(state),
       ensuredFolders: ensuredFolders.length,
       archiveErrors,
       archivedCases: archivedResults.map((entry) => ({
@@ -2757,6 +2787,7 @@ export default async (request: Request) => {
       archived: 0,
       ensuredFolders: ensuredFolders.length,
       migratedSyncLogEntries: migratedSyncLogEntries + sanitizedSyncLogEntries,
+      syncDiagnostics: syncLogDiagnostics(state),
       archiveErrors: [{
         ok: false,
         threadId: "",

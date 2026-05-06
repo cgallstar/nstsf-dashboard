@@ -1692,7 +1692,7 @@ const AUTH_API = '/api/auth';
 const STATE_API = '/api/state';
 const USERS_API = '/api/users';
 const GMAIL_SYNC_API = '/api/gmail-sync';
-const BUILD_VERSION = '2026-05-06-0835-sync-review-hardening';
+const BUILD_VERSION = '2026-05-06-0845-sync-layer-diagnostics';
 let remoteSaveTimer = null;
 let isApplyingRemoteState = false;
 let stateWasSanitized = false;
@@ -2112,7 +2112,8 @@ function normalizeInternalTask(saved={}){ return { id:textValue(saved.id, `inter
 function normalizeEmail(saved={}){ return { id:textValue(saved.id, `mail-${Date.now()}`), threadId:textValue(saved.threadId, ''), kunde:textValue(saved.kunde, ''), from:textValue(saved.from, ''), subject:textValue(saved.subject, ''), date:textValue(saved.date, ''), preview:textValue(saved.preview, ''), body:textValue(saved.body, ''), tags:Array.isArray(saved.tags) ? saved.tags.map((tag)=>String(tag)) : [], handled:!!saved.handled, type:textValue(saved.type, 'todo'), latestSenderType:textValue(saved.latestSenderType, ''), repliedAt:textValue(saved.repliedAt, ''), archivedAt:textValue(saved.archivedAt, ''), archivedUrl:textValue(saved.archivedUrl, ''), archivedCaseId:textValue(saved.archivedCaseId, ''), archivedCustomer:textValue(saved.archivedCustomer, ''), archivedType:textValue(saved.archivedType, ''), archivedDate:textValue(saved.archivedDate, ''), syncedAt:textValue(saved.syncedAt, '') }; }
 function syncIssueText(item={}){ return `${item.error || ''} ${item.notes || ''} ${item.subject || ''} ${item.body || ''}`; }
 function isReviewSyncIssue(item={}){ return /kunne ikke matches sikkert|kræver manuel match|matcher flere mulige sager|case_not_matched|invoice_match_low_confidence|invoice_match_ambiguous/i.test(syncIssueText(item)); }
-function normalizeSyncLogEntry(saved={}){ const error=textValue(saved.error, ''); const notes=textValue(saved.notes, ''); const status=textValue(saved.status, 'info'); const normalizedStatus=status === 'error' && isReviewSyncIssue({error, notes}) ? 'needs_review' : status; return { id:textValue(saved.id, `sync-${Date.now()}`), createdAt:textValue(saved.createdAt, new Date().toISOString()), source:textValue(saved.source, 'gmail_sync'), status:normalizedStatus, archiveKey:textValue(saved.archiveKey, ''), threadId:textValue(saved.threadId, ''), subject:textValue(saved.subject, 'Ukendt tråd'), customerName:textValue(saved.customerName, ''), caseId:textValue(saved.caseId, ''), documentType:textValue(saved.documentType, ''), documentDate:textValue(saved.documentDate, ''), category:textValue(saved.category, ''), fileName:textValue(saved.fileName, ''), driveUrl:textValue(saved.driveUrl, ''), error, notes }; }
+function stripSyncStatusPrefix(value=''){ return textValue(value, '').replace(/^\s*(fejl|afklaring|arkiveret|opgave|opdatering|allerede arkiveret)\s*[·:-]\s*/i, '').trim(); }
+function normalizeSyncLogEntry(saved={}){ const error=textValue(saved.error, ''); const notes=textValue(saved.notes, ''); const subject=stripSyncStatusPrefix(textValue(saved.subject, 'Ukendt tråd')); const status=textValue(saved.status, 'info'); const normalizedStatus=status === 'error' && isReviewSyncIssue({...saved, error, notes, subject}) ? 'needs_review' : status; return { id:textValue(saved.id, `sync-${Date.now()}`), createdAt:textValue(saved.createdAt, new Date().toISOString()), source:textValue(saved.source, 'gmail_sync'), status:normalizedStatus, archiveKey:textValue(saved.archiveKey, ''), threadId:textValue(saved.threadId, ''), subject, customerName:textValue(saved.customerName, ''), caseId:textValue(saved.caseId, ''), documentType:textValue(saved.documentType, ''), documentDate:textValue(saved.documentDate, ''), category:textValue(saved.category, ''), fileName:textValue(saved.fileName, ''), driveUrl:textValue(saved.driveUrl, ''), error, notes }; }
 function isAllowedNstsfMail(item={}){
   const source = [item.from, item.to, item.cc, item.body, item.preview].map((value)=>textValue(value, '')).join(' ');
   if(/(cgallstar@gmail\.com|christian@scventures\.vc|werkhaus)/i.test(source)) return false;
@@ -2491,7 +2492,8 @@ async function updatePriorities(manual=false){
     const note = archived
       ? `Sager opdateret. ${data.synced || 0} tråde · ${data.unhandled || 0} åbne · ${archived} arkiveret.`
       : `Sager opdateret. ${data.synced || 0} tråde · ${data.unhandled || 0} åbne.`;
-    setSyncStatus(data.gmailSyncBuild ? `${note} · sync ${data.gmailSyncBuild}` : note, 'ok');
+    const diag = data.syncDiagnostics?.byStatus ? ` · log ${JSON.stringify(data.syncDiagnostics.byStatus)}` : '';
+    setSyncStatus(data.gmailSyncBuild ? `${note} · sync ${data.gmailSyncBuild}${diag}` : `${note}${diag}`, 'ok');
   }catch(err){
     addLocalSyncLogEntries([{ source:'gmail_sync', status:'error', subject:'Opdatér Sager', notes:`Kunne ikke opdatere sager: ${err.message}` }]);
     renderPriorities();

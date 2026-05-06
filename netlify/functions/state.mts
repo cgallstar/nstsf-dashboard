@@ -21,6 +21,10 @@ function isReviewIssueText(value = "") {
   return /kunne ikke matches sikkert|kræver manuel match|matcher flere mulige sager|case_not_matched|invoice_match_low_confidence|invoice_match_ambiguous/i.test(String(value || ""));
 }
 
+function stripSyncStatusPrefix(value = "") {
+  return textValue(value, "").replace(/^\s*(fejl|afklaring|arkiveret|opgave|opdatering|allerede arkiveret)\s*[·:-]\s*/i, "").trim();
+}
+
 function syncLogDedupeKey(entry) {
   const threadId = textValue(entry?.threadId, "");
   if (threadId) return `thread:${threadId}`;
@@ -47,7 +51,10 @@ function sanitizeDashboardState(state) {
       continue;
     }
     const next = { ...entry };
-    const reviewText = [next.error, next.notes].map((value) => textValue(value, "")).join(" ");
+    const originalSubject = textValue(next.subject, "");
+    next.subject = stripSyncStatusPrefix(originalSubject);
+    if (next.subject !== originalSubject) changed += 1;
+    const reviewText = [next.error, next.notes, next.subject, next.documentType, next.category].map((value) => textValue(value, "")).join(" ");
     if (next.status === "error" && isReviewIssueText(reviewText)) {
       next.status = "needs_review";
       changed += 1;
