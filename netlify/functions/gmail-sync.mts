@@ -23,7 +23,7 @@ import {
   uploadDriveFile,
 } from "./_lib/google.mts";
 
-const GMAIL_SYNC_BUILD_VERSION = "2026-05-06-sync-error-review-v2";
+const GMAIL_SYNC_BUILD_VERSION = "2026-05-06-label-change-ledger-v1";
 const INTERNAL_PATTERNS = [/@nstsf\.dk/i, /gemini-notes@google\.com/i];
 const MAILBOX_OWNER = "christian@nstsf.dk";
 const NSTSF_QUERY = `(from:${MAILBOX_OWNER} OR from:smg@nstsf.dk OR from:nstsf.dk OR to:${MAILBOX_OWNER} OR cc:${MAILBOX_OWNER})`;
@@ -34,7 +34,7 @@ const KNOWN_INVOICE_CASES: Record<string, string> = {
   "1158": "1009",
 };
 const SYNC_QUERY = `newer_than:30d -in:spam -in:trash ${OWNER_QUERY}`;
-const INTERNAL_ACTION_INBOX_QUERY = `newer_than:30d in:inbox -in:spam -in:trash ${OWNER_QUERY} (from:smg@nstsf.dk OR from:nstsf.dk OR from:${MAILBOX_OWNER})`;
+const INTERNAL_ACTION_INBOX_QUERY = `newer_than:30d -in:spam -in:trash ${OWNER_QUERY} (from:smg@nstsf.dk OR from:nstsf.dk OR from:${MAILBOX_OWNER})`;
 const DKE_QUESTION_QUERY = `newer_than:14d -in:spam -in:trash ${OWNER_QUERY} ("DJ-pult" OR "DJ pult" OR "uge 19" OR "endelig aflevering" OR "Bülowsvej 9" OR "Bül. 9" OR "Bulowsvej 9" OR "Bul. 9" OR "Blågårdsgade 14" OR "Blå. 14" OR "Blaagaardsgade 14" OR "Blaa. 14")`;
 const ARCHIVE_QUERIES = [
   `newer_than:90d -in:spam -in:trash ${OWNER_QUERY} ("Faktura" OR "faktura")`,
@@ -226,6 +226,7 @@ function updateThreadLedger(state: any, thread: any, payload: Record<string, unk
     threadId,
     historyId: textValue(thread?.historyId || payload.historyId, previous.historyId || ""),
     subject: textValue(payload.subject || latest?.subject || previous.subject, ""),
+    latestMessageId: textValue(payload.latestMessageId || latest?.id || previous.latestMessageId || ""),
     latestMessageAt: textValue(payload.latestMessageAt || latest?.isoDate || previous.latestMessageAt, ""),
     lastSeenAt: new Date().toISOString(),
     ...payload,
@@ -1807,6 +1808,21 @@ function latestThreadSummary(thread: any) {
     .at(-1);
 }
 
+function isLedgerFinalWithoutNewMessage(state: any, thread: any) {
+  const threadId = textValue(thread?.id, "");
+  const previous = ledgerEntryForThread(state, threadId);
+  if (!previous || !isFinalLedgerStatus(previous.status)) return false;
+  const latest = latestThreadSummary(thread);
+  if (!latest) return false;
+  const previousMessageId = textValue(previous.latestMessageId, "");
+  const previousMessageAt = textValue(previous.latestMessageAt, "");
+  const latestMessageId = textValue(latest.id, "");
+  const latestMessageAt = textValue(latest.isoDate, "");
+  if (previousMessageId && latestMessageId && previousMessageId === latestMessageId) return true;
+  if (previousMessageAt && latestMessageAt && previousMessageAt === latestMessageAt) return true;
+  return false;
+}
+
 function fullThreadText(thread: any) {
   const summaries = Array.isArray(thread?.messages) ? thread.messages.map(gmailMessageSummary) : [];
   return summaries
@@ -2470,11 +2486,26 @@ export default async (request: Request) => {
     const fullThreads = fullThreadResults
       .filter((result): result is PromiseFulfilledResult<any> => result.status === "fulfilled")
       .map((result) => result.value);
-    const invoiceRegistration = await registerInvoicesFromThreads(state, fullThreads);
+    const processableFullThreads: any[] = [];
+    for (const thread of fullThreads) {
+      if (isLedgerFinalWithoutNewMessage(state, thread)) {
+        const previous = ledgerEntryForThread(state, textValue(thread?.id, ""));
+        updateThreadLedger(state, thread, {
+          status: textValue(previous?.status, "processed"),
+          intent: textValue(previous?.intent, "ignore"),
+          lane: textValue(previous?.lane, "inbox"),
+          reason: "Gmail-label eller arkivstatus ændret uden ny besked. Tråden blev ikke behandlet igen.",
+        });
+        markQueuedThreadProcessed(state, thread);
+        continue;
+      }
+      processableFullThreads.push(thread);
+    }
+    const invoiceRegistration = await registerInvoicesFromThreads(state, processableFullThreads);
     const invoicesUpdated = Number(invoiceRegistration?.changed || 0);
     const taskCandidatesCreated: any[] = [];
     const dkeQuestionTasksCreated =
-      ensureDkeCharlotteQuestionTasks(state, fullThreads) +
+      ensureDkeCharlotteQuestionTasks(state, processableFullThreads) +
       ensureDkeCharlotteQuestionTasksFromStateEmails(state);
     if (invoicesUpdated) {
       for (const entry of invoiceRegistration.changedCases || []) {
@@ -2515,14 +2546,14 @@ export default async (request: Request) => {
       });
     });
 
-    const items = resolveHandledItems(fullThreads
+    const items = resolveHandledItems(processableFullThreads
       .map((thread) => toEmailEntry(thread, state.sager || []))
       .filter(Boolean)
       .sort((a: any, b: any) => String(b.date).localeCompare(String(a.date))));
     const itemByThreadId = new Map(items.map((item: any) => [textValue(item.threadId || item.id, ""), item]));
     const intentByThreadId = new Map<string, any>();
 
-    for (const thread of fullThreads) {
+    for (const thread of processableFullThreads) {
       const threadId = textValue(thread?.id, "");
       const item = itemByThreadId.get(threadId);
       const intent = classifyThreadIntent(thread, item);
@@ -2574,7 +2605,7 @@ export default async (request: Request) => {
       });
     }
 
-    for (const thread of fullThreads) {
+    for (const thread of processableFullThreads) {
       if (isNearFunctionTimeout()) {
         appendSyncLog(state, {
           status: "error",
