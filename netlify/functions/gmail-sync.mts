@@ -23,7 +23,7 @@ import {
   uploadDriveFile,
 } from "./_lib/google.mts";
 
-const GMAIL_SYNC_BUILD_VERSION = "2026-05-06-sync-error-review-v1";
+const GMAIL_SYNC_BUILD_VERSION = "2026-05-06-sync-error-review-v2";
 const INTERNAL_PATTERNS = [/@nstsf\.dk/i, /gemini-notes@google\.com/i];
 const MAILBOX_OWNER = "christian@nstsf.dk";
 const NSTSF_QUERY = `(from:${MAILBOX_OWNER} OR from:smg@nstsf.dk OR from:nstsf.dk OR to:${MAILBOX_OWNER} OR cc:${MAILBOX_OWNER})`;
