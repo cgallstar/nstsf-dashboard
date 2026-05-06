@@ -756,7 +756,9 @@ function findKnownCaseForTask(state: any, text = "") {
   if (compact.includes("bulowsvej 9")) return findCaseByAllMarkers(state, ["Bülowsvej 9"]) || findCaseByAllMarkers(state, ["Bulowsvej 9"]);
   if (compact.includes("blagardsgade 14") || compact.includes("blaagardsgade 14")) return findCaseByAllMarkers(state, ["Blågårdsgade 14"]) || findCaseByAllMarkers(state, ["Blaagaardsgade 14"]);
   if (compact.includes("ryesgade 62") && (compact.includes("lej 30") || compact.includes("lejlighed 30"))) return findCaseByAllMarkers(state, ["Ryesgade 62", "30"]);
-  if (compact.includes("lykkesholms alle") || compact.includes("lykkesholms alle 33")) return findCaseByAllMarkers(state, ["Lykkesholms Allé 33"]);
+  if (compact.includes("lykkeholmsalle") || compact.includes("lykkeholms alle") || compact.includes("lykkeholms alle 33") || compact.includes("lykkesholms alle") || compact.includes("lykkesholms alle 33")) {
+    return findCaseByAllMarkers(state, ["Lykkeholms Allé 33"]) || findCaseByAllMarkers(state, ["Lykkesholms Allé 33"]);
+  }
   return null;
 }
 
@@ -779,7 +781,7 @@ function labelInvoiceDocs(matched: any, invoiceNumber: string, date: string) {
   return changed;
 }
 
-function applyInvoiceToCase(matched: any, invoiceNumber: string, date = "", amount = 0) {
+function applyInvoiceToCase(matched: any, invoiceNumber: string, invoiceDate = "", amount = 0, dueDate = "") {
   ensureCaseShape(matched);
   const currentInvoice = textValue(matched.fak || matched.workflow?.invoiceNumber, "");
   const alreadyPaidSameInvoice = currentInvoice === invoiceNumber &&
@@ -796,8 +798,10 @@ function applyInvoiceToCase(matched: any, invoiceNumber: string, date = "", amou
   matched.status = alreadyPaidSameInvoice ? "Faktura betalt" : "Faktura sendt";
   matched.workflow = matched.workflow && typeof matched.workflow === "object" ? matched.workflow : {};
   matched.workflow.invoiceNumber = invoiceNumber;
-  matched.workflow.invoiceSentDate = date || matched.workflow.invoiceSentDate || new Date().toISOString().slice(0, 10);
-  if (!textValue(matched.dato, "")) matched.dato = matched.workflow.invoiceSentDate;
+  matched.workflow.invoiceSentDate = invoiceDate || matched.workflow.invoiceSentDate || new Date().toISOString().slice(0, 10);
+  matched.workflow.invoiceDueDate = dueDate || matched.workflow.invoiceDueDate || "";
+  if (matched.workflow.invoiceDueDate) matched.dato = matched.workflow.invoiceDueDate;
+  else if (!textValue(matched.dato, "")) matched.dato = matched.workflow.invoiceSentDate;
   if (amount && !alreadyPaidSameInvoice) matched.u = formatAmount(amount);
   const docsChanged = labelInvoiceDocs(matched, invoiceNumber, matched.workflow.invoiceSentDate);
   const after = JSON.stringify({
@@ -1081,8 +1085,10 @@ async function registerInvoicesFromThreads(state: any, threads: any[]) {
     }
     const matched = match.matched;
     const date = extractDocumentDate(summaries[0]?.subject || "", threadText, summaries[0]?.date);
+    const dueDate = extractInvoiceDueDate(threadText);
     const amount = extractInvoiceAmount(threadText);
-    const didApply = applyInvoiceToCase(matched, invoiceMatch[1], date, amount);
+    const didApply = applyInvoiceToCase(matched, invoiceMatch[1], date, amount, dueDate);
+    const didCreateReplyTask = ensureCustomerReplyTasksFromInvoiceThread(matched, threadText, invoiceMatch[1]);
     const paidConfirmed = invoicePaidConfirmed(threadText);
     const didMarkPaid = paidConfirmed
       ? applyInvoicePaidToCase(state, matched, invoiceMatch[1], date, amount, "betalingsbekræftelse i mail")
@@ -1094,16 +1100,35 @@ async function registerInvoicesFromThreads(state: any, threads: any[]) {
         summary: `Faktura ${invoiceMatch[1]} er registreret på sagen via Gmail-sync (${match.reasons.join(", ")}).`,
       });
     }
-    if (didApply || didMarkPaid) {
-      changed += 1;
-      changedCases.push({
-        threadId: textValue(thread?.id, ""),
-        caseId: formatCaseIdForDisplay(matched),
-        customerName: textValue(matched?.kunde, ""),
-        invoiceNumber: invoiceMatch[1],
-        amount,
-        paid: paidConfirmed,
+    if (didCreateReplyTask) {
+      appendActivity(matched, { name: "Gmail-sync", email: MAILBOX_OWNER }, {
+        type: "task_created",
+        title: "Kundesvar på faktura kræver handling",
+        summary: `Charlotte har svaret i fakturatråden for faktura ${invoiceMatch[1]}. Der er oprettet en opgave på sagen.`,
       });
+      appendSyncLog(state, {
+        status: "task_created",
+        threadId: textValue(thread?.id, ""),
+        subject: `Kundesvar på faktura ${invoiceMatch[1]}`,
+        customerName: textValue(matched?.kunde, ""),
+        caseId: formatCaseIdForDisplay(matched),
+        documentType: "Opgave",
+        category: "sager",
+        notes: "Charlotte beder om udbedring af sidste detaljer, billeder efter udførelse og brændeovnsattest.",
+      });
+    }
+    if (didApply || didMarkPaid || didCreateReplyTask) {
+      changed += 1;
+      if (didApply || didMarkPaid) {
+        changedCases.push({
+          threadId: textValue(thread?.id, ""),
+          caseId: formatCaseIdForDisplay(matched),
+          customerName: textValue(matched?.kunde, ""),
+          invoiceNumber: invoiceMatch[1],
+          amount,
+          paid: paidConfirmed,
+        });
+      }
     }
   }
   return { changed, changedCases };
@@ -1283,6 +1308,107 @@ async function ensureKnownMaterialDocumentation(state: any, integration: any, ac
     notes: `Arkiveret i Drive som ${fileName}.`,
   });
   return { caseId: displayCaseId, fileName, driveUrl: textValue(document.url, "") };
+}
+
+async function ensureKnownInvoice1152Handling(state: any, integration: any, actor: any) {
+  const matched =
+    findCaseByAllMarkers(state, ["Lykkeholms Allé 33"]) ||
+    findCaseByAllMarkers(state, ["Lykkesholms Allé 33"]) ||
+    findKnownCaseForTask(state, "Lykkeholmsalle 33 c");
+  if (!matched) return false;
+  ensureCaseShape(matched);
+  const displayCaseId = formatCaseIdForDisplay(matched) || "1002 G";
+  const fileTitle = buildArchiveFileTitle("2026-05-01", { fileLabel: "Faktura 1152", documentType: "Faktura" }, displayCaseId, "Faktura 1152");
+  const fileName = `${fileTitle}.md`;
+  const archiveKey = "known-invoice-1152-lykkeholmsalle-33c";
+  const invoiceChanged = applyInvoiceToCase(matched, "1152", "2026-05-01", 38085, "2026-05-15");
+  const taskChanged = ensureCustomerReplyTasksFromInvoiceThread(matched, [
+    "SV: Nordsjællands Tømrer- & Snedkerfirma ApS Faktura 1152",
+    "Charlotte beder om at se på de sidste detaljer som mangler at blive udbedret.",
+    "Send billeder, når det er udført.",
+    "Sæt eventuelt en bøtte maling til drift.",
+    "Send brændeovnsattest for brændeovnen på 2. sal.",
+  ].join("\n"), "1152");
+  const alreadyHasDoc = (matched.docs?.betaling || []).some((doc: any) =>
+    textValue(doc?.fileName, "") === fileName ||
+    /faktura\s*1152/i.test(`${doc?.titel || ""} ${doc?.title || ""} ${doc?.notes || ""} ${doc?.fileName || ""}`)
+  );
+  let docChanged = false;
+  let driveUrl = "";
+  if (!alreadyHasDoc) {
+    const document = {
+      title: fileTitle,
+      fileName,
+      mimeType: "text/markdown",
+      contentText: [
+        "# Faktura 1152",
+        "",
+        `- Kunde/sag: ${displayCaseId} · ${textValue(matched.kunde, "DKE / Charlotte")}`,
+        "- Adresse: Lykkeholmsallé 33 C",
+        "- Fakturadato: 2026-05-01",
+        "- Forfaldsdato: 2026-05-15",
+        "- Beløb inkl. moms: 38.085,14 kr.",
+        "- Fakturanr.: 1152",
+        "",
+        "## Opgaver nævnt i faktura",
+        "- Opsætning af skabe i garage",
+        "- Fastgørelse af trykknap til skydedør",
+        "- Maling af stødtrin på kældertrappe",
+        "- Montering af folie på badeværelsesvinduer",
+        "- Lydisolering af skab til ventilationsanlæg på 2. sal",
+        "- Opsætning af hylder og malerreparation ved vinkøleskab",
+        "- Skab til rengøringsartikler",
+        "- Fastgørelse af lyskomponenter/router i elskab",
+        "- Udbedring af skader på facade efter elektriker",
+        "- Flytning af brændeovn på 2. sal",
+        "",
+        "## Kundesvar fra Charlotte",
+        "- Se på de sidste detaljer/mangler jf. billedlink.",
+        "- Send billeder, når arbejdet er udført.",
+        "- Aftal/sæt en bøtte maling til drift.",
+        "- Send brændeovnsattest for brændeovnen på 2. sal.",
+      ].join("\n"),
+      date: "2026-05-01",
+      notes: "Automatisk sikret fra Gmail-sync. Faktura 1152 og Charlottes efterfølgende svar.",
+    };
+    if (integration.configured) {
+      const folderInfo = await ensureCaseDriveFolders(matched, displayCaseId, matched.kunde);
+      const folderId = textValue(folderInfo?.folders?.betaling?.id, "");
+      matched.docs.drive = textValue(folderInfo?.caseFolder?.webViewLink, matched.docs.drive);
+      matched.drive = matched.docs.drive;
+      if (!folderId) throw new Error("drive_folder_missing:betaling");
+      let uploaded = await findDriveFileByName(folderId, fileName);
+      if (!uploaded) uploaded = await uploadDriveFile(folderId, document);
+      document.url = textValue(uploaded?.webViewLink, "");
+      document.fileId = textValue(uploaded?.id, "");
+      document.mimeType = textValue(uploaded?.mimeType, document.mimeType);
+      driveUrl = document.url;
+    }
+    pushDocs(matched.docs.betaling, [document]);
+    docChanged = true;
+  }
+  if (!invoiceChanged && !taskChanged && !docChanged) return false;
+  appendActivity(matched, { name: "Gmail-sync", email: MAILBOX_OWNER }, {
+    type: "invoice_update",
+    title: "Faktura 1152 og kundesvar registreret",
+    summary: "Faktura 1152 er registreret med 38.085 kr. inkl. moms og forfald 15. maj 2026. Charlottes opfølgning er sikret som opgave.",
+    archiveKey,
+    fileName,
+    driveUrl,
+  });
+  appendSyncLog(state, {
+    status: taskChanged ? "task_created" : "archived",
+    archiveKey,
+    subject: "Nordsjællands Tømrer- & Snedkerfirma ApS Faktura 1152",
+    customerName: textValue(matched.kunde, "DKE / Charlotte"),
+    caseId: displayCaseId,
+    documentType: taskChanged ? "Opgave" : "Faktura",
+    category: taskChanged ? "sager" : "betaling",
+    fileName,
+    driveUrl,
+    notes: "Faktura 1152 er knyttet til Lykkeholms Allé 33 C. Charlotte beder samtidig om udbedring, billeder og brændeovnsattest.",
+  });
+  return true;
 }
 
 function extractDocumentDate(subject = "", body = "", fallbackIso = "") {
@@ -1686,6 +1812,27 @@ function extractInvoiceAmount(text = "") {
   return vatInclusiveFromMoneyValues(krValues, true);
 }
 
+function normalizeDanishDate(day = "", month = "", year = "") {
+  const yyyy = String(year || "").padStart(4, "20");
+  const mm = String(month || "").padStart(2, "0");
+  const dd = String(day || "").padStart(2, "0");
+  return /^\d{4}-\d{2}-\d{2}$/.test(`${yyyy}-${mm}-${dd}`) ? `${yyyy}-${mm}-${dd}` : "";
+}
+
+function extractInvoiceDueDate(text = "") {
+  const source = String(text || "");
+  const patterns = [
+    /forfaldsdato[^\d]{0,30}(\d{1,2})[./-](\d{1,2})[./-](\d{4})/i,
+    /fakturaen\s+betales\s+senest[^\d]{0,30}(\d{1,2})[./-](\d{1,2})[./-](\d{4})/i,
+    /betales\s+senest[^\d]{0,30}(\d{1,2})[./-](\d{1,2})[./-](\d{4})/i,
+  ];
+  for (const pattern of patterns) {
+    const match = source.match(pattern);
+    if (match) return normalizeDanishDate(match[1], match[2], match[3]);
+  }
+  return "";
+}
+
 function ensureTask(matched: any, title: string, payload: Record<string, unknown>) {
   matched.tasks = Array.isArray(matched.tasks) ? matched.tasks : [];
   const existing = matched.tasks.some((task: any) => normalizeCaseKey(task?.title) === normalizeCaseKey(title) && String(task?.status || "").toLowerCase() !== "fuldført");
@@ -1698,6 +1845,37 @@ function ensureTask(matched: any, title: string, payload: Record<string, unknown
     ...payload,
   });
   return true;
+}
+
+function ensureCustomerReplyTasksFromInvoiceThread(matched: any, threadText = "", invoiceNumber = "") {
+  const compact = plainCompactText(threadText);
+  if (!compact) return false;
+  const hasCustomerFollowup =
+    compact.includes("vil i se pa") ||
+    compact.includes("mangler at blive udbedret") ||
+    compact.includes("send blot billeder") ||
+    compact.includes("braendeovnsattest") ||
+    compact.includes("brandeovnsattest") ||
+    compact.includes("billeder nar det er udfort");
+  if (!hasCustomerFollowup) return false;
+
+  const needsPhotos = compact.includes("billeder") || compact.includes("photos");
+  const needsFireplaceCertificate = compact.includes("braendeovnsattest") || compact.includes("brandeovnsattest");
+  const needsPaint = compact.includes("botte maling") || compact.includes("bøtte maling") || compact.includes("maling til os");
+  const notes = [
+    `Charlotte har svaret i fakturatråden${invoiceNumber ? ` for faktura ${invoiceNumber}` : ""} med konkrete udeståender.`,
+    "- Udbedr de sidste detaljer/mangler jf. billedlinket.",
+    needsPhotos ? "- Send billeder, når arbejdet er udført." : "",
+    needsPaint ? "- Aftal/sæt en bøtte maling til drift pga. løbende facadeskader." : "",
+    needsFireplaceCertificate ? "- Send brændeovnsattest for brændeovnen på 2. sal." : "",
+  ].filter(Boolean).join("\n");
+  return ensureTask(matched, "Udbedr sidste detaljer og send dokumentation", {
+    dueDate: new Date().toISOString().slice(0, 10),
+    owner: "Søren",
+    notes,
+    source: "gmail_invoice_reply",
+    bucket: "now",
+  });
 }
 
 function findCaseByAllMarkers(state: any, markers: string[]) {
@@ -2873,6 +3051,7 @@ export default async (request: Request) => {
       });
     }
     const materialDocumentation = await ensureKnownMaterialDocumentation(state, integration, auth.actor);
+    const invoice1152Handled = await ensureKnownInvoice1152Handling(state, integration, auth.actor);
 
     state.emails = items;
     const sanitizedSyncLogEntries = normalizeExistingSyncLog(state);
@@ -2892,6 +3071,7 @@ export default async (request: Request) => {
       paidInvoicesBackfilled,
       invoicesUpdated,
       materialDocumentation: materialDocumentation ? 1 : 0,
+      invoice1152Handled: invoice1152Handled ? 1 : 0,
       migratedSyncLogEntries: migratedSyncLogEntries + sanitizedSyncLogEntries,
       syncDiagnostics: syncLogDiagnostics(state),
       ensuredFolders: ensuredFolders.length,
