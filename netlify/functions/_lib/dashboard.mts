@@ -215,6 +215,50 @@ export function normalizeChangeOrder(item: any) {
   };
 }
 
+function normalizedKeyPart(value: unknown) {
+  return textValue(value, "").toLowerCase().replace(/\s+/g, " ").trim();
+}
+
+function taskDedupeKey(task: any) {
+  const normalized = normalizeTask(task);
+  return [
+    normalizedKeyPart(normalized.title),
+    normalizedKeyPart(normalized.dueDate),
+    normalizedKeyPart(normalized.owner),
+    normalizedKeyPart(normalized.notes),
+  ].join("|");
+}
+
+function changeOrderDedupeKey(item: any) {
+  const normalized = normalizeChangeOrder(item);
+  return [
+    normalizedKeyPart(normalized.title),
+    normalizedKeyPart(normalized.amount),
+    normalizedKeyPart(normalized.status),
+    normalizedKeyPart(normalized.notes),
+  ].join("|");
+}
+
+export function pushTasks(target: any[], items: any[]) {
+  const seen = new Set(target.map(taskDedupeKey));
+  items.map(normalizeTask).reverse().forEach((item) => {
+    const key = taskDedupeKey(item);
+    if (seen.has(key)) return;
+    seen.add(key);
+    target.unshift(item);
+  });
+}
+
+export function pushChangeOrders(target: any[], items: any[]) {
+  const seen = new Set(target.map(changeOrderDedupeKey));
+  items.map(normalizeChangeOrder).reverse().forEach((item) => {
+    const key = changeOrderDedupeKey(item);
+    if (seen.has(key)) return;
+    seen.add(key);
+    target.unshift(item);
+  });
+}
+
 export function normalizeDraft(draft: any) {
   return {
     id: textValue(draft?.id, randomUUID()),
@@ -275,19 +319,33 @@ export function matchCase(sager: any[], caseNumber: string, customerName: string
     const match = normalizeCaseId(value).match(/^(\d+)/);
     return match ? match[1] : "";
   };
-  return sager.find((entry) => {
+  const entries = Array.isArray(sager) ? sager : [];
+  if (nr) {
+    const exactMatches = entries.filter((entry) => {
+      const sagNr = normalizeCaseId(entry?.nr);
+      const sagsId = normalizeCaseId(entry?.sid);
+      return (sagsId && nr === sagsId) || (sagNr && nr === sagNr);
+    });
+    if (exactMatches.length === 1) return exactMatches[0];
+  }
+
+  const customerMatches = entries.filter((entry) => {
     const sagNr = normalizeCaseId(entry?.nr);
     const sagsId = normalizeCaseId(entry?.sid);
     const sagPrimary = primary(entry?.nr);
     const sagsIdPrimary = primary(entry?.sid);
     const kunde = textValue(entry?.kunde, "").trim().toLowerCase();
-    if (nr && sagsId && nr === sagsId) return true;
-    if (nr && sagNr && nr === sagNr) return true;
     if (nr && sagsIdPrimary && nr === sagsIdPrimary) return true;
     if (nr && sagPrimary && nr === sagPrimary) return true;
     if (!customer || !kunde) return false;
-    return kunde.includes(customer) || customer.includes(kunde);
+    const combined = [entry?.kunde, entry?.adr, entry?.opg, entry?.info]
+      .map((value) => textValue(value, "").trim().toLowerCase())
+      .filter(Boolean)
+      .join(" ");
+    return combined.includes(customer) || customer.includes(kunde);
   });
+  if (customerMatches.length === 1) return customerMatches[0];
+  return null;
 }
 
 export function pushDocs(target: any[], items: any[]) {

@@ -14,6 +14,17 @@ function stableThreeDigitHash(value = "") {
   return String(100 + hash).padStart(3, "0").slice(-3);
 }
 
+function taskDedupeKey(task: any) {
+  return [
+    textValue(task?.title || task?.name, "").toLowerCase().replace(/\s+/g, " ").trim(),
+    textValue(task?.notes, "").toLowerCase().replace(/\s+/g, " ").trim(),
+    textValue(task?.dueDate, "").trim(),
+    textValue(task?.owner, "").toLowerCase().replace(/\s+/g, " ").trim(),
+    textValue(task?.customerId || task?.kundeId, "").toLowerCase().replace(/\s+/g, ""),
+    textValue(task?.sagId, "").toLowerCase().replace(/\s+/g, ""),
+  ].join("|");
+}
+
 export default async (request: Request) => {
   const auth = authorizeDashboardRequest(request, { allowActionsToken: true });
   if (!auth.ok) return auth.response;
@@ -28,6 +39,9 @@ export default async (request: Request) => {
   } catch {
     return json({ ok: false, error: "invalid_json" }, 400);
   }
+  if (!textValue(body.title || body.name, "").trim()) {
+    return json({ ok: false, error: "title_required" }, 400);
+  }
 
   const state = await loadDashboardState();
   if (!state) return json({ ok: false, error: "no_state" }, 404);
@@ -38,10 +52,24 @@ export default async (request: Request) => {
     name: textValue(body.actorName, auth.actor?.name || "Custom GPT"),
     email: textValue(body.actorEmail, auth.actor?.email || ""),
   };
+  const incomingKey = taskDedupeKey(body);
+  const existing = state.internalTasks.find((entry: any) => {
+    const status = textValue(entry?.status, "").toLowerCase();
+    return status !== "fuldført" && taskDedupeKey(entry) === incomingKey;
+  });
+  if (existing) {
+    return json({
+      ok: true,
+      savedAt: state.savedAt || "",
+      task: existing,
+      deduped: true,
+      note: "Intern opgave fandtes allerede og blev ikke oprettet igen.",
+    });
+  }
 
   const task = normalizeInternalTask({
     ...body,
-    unlinkedRef: textValue(body.unlinkedRef, `S-${stableThreeDigitHash(`${body.title || body.name || ""}|${Date.now()}`)}`),
+    unlinkedRef: textValue(body.unlinkedRef, `S-${stableThreeDigitHash(incomingKey)}`),
   });
   state.internalTasks.unshift(task);
   state.internalTaskActivity = Array.isArray(state.internalTaskActivity) ? state.internalTaskActivity : [];

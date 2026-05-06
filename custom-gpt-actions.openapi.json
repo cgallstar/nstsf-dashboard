@@ -87,6 +87,9 @@
                   "owner": { "type": "string" },
                   "bucket": { "type": "string", "enum": ["now", "today", "week"] },
                   "domain": { "type": "string" },
+                  "customerId": { "type": "string", "description": "Optional K-ID/customer reference, for example K-1002 or 1002." },
+                  "sagId": { "type": "string", "description": "Optional S-ID/task/case reference, for example S-290." },
+                  "unlinkedRef": { "type": "string", "description": "Optional S-ID for tasks that are not tied to a customer." },
                   "source": { "type": "string" },
                   "status": { "type": "string" }
                 }

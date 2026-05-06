@@ -5,10 +5,10 @@ import {
   json,
   loadDashboardState,
   matchCase,
-  normalizeChangeOrder,
   normalizeDraft,
-  normalizeTask,
+  pushChangeOrders,
   pushDocs,
+  pushTasks,
   saveDashboardState,
   textValue,
 } from "./_lib/dashboard.mts";
@@ -75,11 +75,11 @@ export default async (request: Request) => {
   if (body.progressPct !== undefined) matched.workflow.progressPct = Number(body.progressPct) || 0;
 
   if (Array.isArray(body.todos)) {
-    body.todos.map(normalizeTask).forEach((task: any) => matched.tasks.unshift(task));
+    pushTasks(matched.tasks, body.todos);
   }
 
   if (Array.isArray(body.changeOrders)) {
-    body.changeOrders.map(normalizeChangeOrder).forEach((item: any) => matched.changeOrders.unshift(item));
+    pushChangeOrders(matched.changeOrders, body.changeOrders);
   }
 
   if (body.currentStage || body.progressPct !== undefined || body.stageNote) {
