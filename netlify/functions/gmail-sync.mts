@@ -66,7 +66,7 @@ function appendSyncLog(state: any, payload: Record<string, unknown>) {
     payload.error,
     payload.notes,
   ].map((value) => textValue(value, "")).join(" ");
-  const status = rawStatus === "error" && /kunne ikke matches sikkert|kræver manuel match|matcher flere mulige sager|case_not_matched|invoice_match_low_confidence|invoice_match_ambiguous/i.test(reviewText)
+  const status = rawStatus === "error" && isReviewIssueText(reviewText)
     ? "needs_review"
     : rawStatus;
   const archiveKey = textValue(payload.archiveKey, "");
@@ -98,6 +98,23 @@ function appendSyncLog(state: any, payload: Record<string, unknown>) {
     status,
   });
   state.syncLog = state.syncLog.slice(0, 80);
+}
+
+function isReviewIssueText(value = "") {
+  return /kunne ikke matches sikkert|kræver manuel match|matcher flere mulige sager|case_not_matched|invoice_match_low_confidence|invoice_match_ambiguous/i.test(String(value || ""));
+}
+
+function normalizeExistingSyncLog(state: any) {
+  if (!Array.isArray(state?.syncLog)) return 0;
+  let changed = 0;
+  state.syncLog.forEach((entry: any) => {
+    if (!entry || entry.status !== "error") return;
+    const reviewText = [entry.error, entry.notes].map((value) => textValue(value, "")).join(" ");
+    if (!isReviewIssueText(reviewText)) return;
+    entry.status = "needs_review";
+    changed += 1;
+  });
+  return changed;
 }
 
 function dedupeThreads(threads: any[]) {
@@ -607,6 +624,20 @@ function findOrCreateKnownCase(state: any, signal: any, text = "") {
     });
   }
 
+  if (compact.includes("bulowsvej 9")) {
+    const existing = findByMarker([/bulowsvej\s*9/]);
+    if (existing) return ensureCaseShape(existing);
+    return createCase({
+      k: 2,
+      sid: "1002c",
+      nr: "1002",
+      kunde: "DKE / Charlotte",
+      adr: "Bülowsvej 9, 2. th.",
+      opg: compact.includes("mangel") || compact.includes("udbedring") ? "Udbedring af mangler" : "Fakturering",
+      status: compact.includes("mangel") || compact.includes("udbedring") ? "Mangler registreret" : "Oprettet fra Gmail",
+    });
+  }
+
   if (compact.includes("henrik") || compact.includes("jyllinge") || compact.includes("smedestraede") || compact.includes("smedestrade")) {
     const existing = findByMarker([/henrik/, /jyllinge/, /smedestraede/, /smedestrade/]);
     if (existing) return ensureCaseShape(existing);
@@ -623,8 +654,8 @@ function findOrCreateKnownCase(state: any, signal: any, text = "") {
 
   const isPladebutikThread =
     compact.includes("pladebutik") ||
-    ((compact.includes("blagardsgade 14") || compact.includes("blaagardsgade 14")) &&
-      (/udbedring|mangler|mangel|aflevering|afleveringsreferat|kaelderbutik|kaelder/.test(compact)));
+    compact.includes("blagardsgade 14") ||
+    compact.includes("blaagardsgade 14");
   if (isPladebutikThread) {
     const existing = findByMarker([/pladebutik/, /blagardsgade\s*14/, /blaagardsgade\s*14/]);
     if (existing) return ensureCaseShape(existing);
@@ -2146,9 +2177,8 @@ async function archiveQualifiedThread(thread: any, item: any, state: any, integr
     }
     matched = invoiceCaseMatch.matched;
   } else {
-    matched = matchCaseFromText(state.sager || [], archiveText);
+    matched = findOrCreateKnownCase(state, signal, archiveText) || matchCaseFromText(state.sager || [], archiveText);
   }
-  matched = findOrCreateKnownCase(state, signal, archiveText) || matched;
   if (!matched) {
     return {
       ok: false,
@@ -2325,6 +2355,7 @@ export default async (request: Request) => {
 
   const state = await loadDashboardState();
   if (!state) return json({ ok: false, error: "no_state" }, 404);
+  const migratedSyncLogEntries = normalizeExistingSyncLog(state);
   const syncStartedAt = Date.now();
   const isNearFunctionTimeout = () => Date.now() - syncStartedAt > 6500;
   const archivedResults: any[] = [];
@@ -2650,6 +2681,7 @@ export default async (request: Request) => {
       internalInboxTasksCreated: taskCandidatesCreated.length,
       paidInvoicesBackfilled,
       invoicesUpdated,
+      migratedSyncLogEntries,
       ensuredFolders: ensuredFolders.length,
       archiveErrors,
       archivedCases: archivedResults.map((entry) => ({
