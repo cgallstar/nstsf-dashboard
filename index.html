@@ -1692,7 +1692,7 @@ const AUTH_API = '/api/auth';
 const STATE_API = '/api/state';
 const USERS_API = '/api/users';
 const GMAIL_SYNC_API = '/api/gmail-sync';
-const BUILD_VERSION = '2026-05-06-0845-sync-layer-diagnostics';
+const BUILD_VERSION = '2026-05-06-0915-ks-docs-visible';
 let remoteSaveTimer = null;
 let isApplyingRemoteState = false;
 let stateWasSanitized = false;
@@ -2489,11 +2489,16 @@ async function updatePriorities(manual=false){
     addLocalSyncLogEntries(syncEntries);
     renderPriorities();
     const archived = Number(data.archived || 0);
+    const materialDocs = Number(data.materialDocumentation || 0);
+    const extras = [
+      materialDocs ? `${materialDocs} KS/dokumentation` : '',
+    ].filter(Boolean).join(' · ');
     const note = archived
       ? `Sager opdateret. ${data.synced || 0} tråde · ${data.unhandled || 0} åbne · ${archived} arkiveret.`
       : `Sager opdateret. ${data.synced || 0} tråde · ${data.unhandled || 0} åbne.`;
     const diag = data.syncDiagnostics?.byStatus ? ` · log ${JSON.stringify(data.syncDiagnostics.byStatus)}` : '';
-    setSyncStatus(data.gmailSyncBuild ? `${note} · sync ${data.gmailSyncBuild}${diag}` : `${note}${diag}`, 'ok');
+    const extraText = extras ? ` · ${extras}` : '';
+    setSyncStatus(data.gmailSyncBuild ? `${note}${extraText} · sync ${data.gmailSyncBuild}${diag}` : `${note}${extraText}${diag}`, 'ok');
   }catch(err){
     addLocalSyncLogEntries([{ source:'gmail_sync', status:'error', subject:'Opdatér Sager', notes:`Kunne ikke opdatere sager: ${err.message}` }]);
     renderPriorities();
@@ -3894,6 +3899,7 @@ function renderSagDetail(i){
   const wf = s.workflow || {};
   const meetingNotes = s.docs.referater.length ? s.docs.referater : s.docs.byggereferater;
   const offerDocs = s.docs.tilbud || [];
+  const ksDocs = s.docs.ks || [];
   const mailDocs = s.docs.mails || [];
   const transcriptTitles = (s.docs.transkripter || []).map((item)=>item.titel).slice(0,2).join(' · ') || 'Ingen registreret endnu';
   caseDetail.classList.add('active');
@@ -3937,6 +3943,7 @@ function renderSagDetail(i){
         <h3>Noter og mødereferater</h3>
         <div class="case-bullet-list">
           <div class="case-bullet-item"><span class="dot"></span><div><strong>Referater</strong>${renderMeetingNotes(meetingNotes)}</div></div>
+          <div class="case-bullet-item"><span class="dot"></span><div><strong>KS / dokumentation</strong>${renderMeetingNotes(ksDocs)}</div></div>
           <div class="case-bullet-item"><span class="dot"></span><div><strong>Tilbud</strong>${renderMeetingNotes(offerDocs)}</div></div>
           <div class="case-bullet-item"><span class="dot"></span><div><strong>Mails</strong>${renderMeetingNotes(mailDocs)}</div></div>
           <div class="case-bullet-item"><span class="dot"></span><div><strong>Transkripter</strong><span class="meta">${transcriptTitles}</span></div></div>
