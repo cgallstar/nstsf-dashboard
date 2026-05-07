@@ -93,4 +93,22 @@ assert.notEqual(
   }),
 );
 
+assert.equal(
+  resolveKnownCaseByText(
+    cases(),
+    "Svar på spørgsmål vedr. tilbud – NV Gadesvej 10",
+    { category: "tilbud" },
+  )?.nr,
+  "1015",
+);
+
+assert.equal(
+  resolveKnownCaseByText(
+    cases(),
+    "Tilbud på facaderenovering N W gadesvej 12",
+    { category: "tilbud" },
+  )?.nr,
+  "1006",
+);
+
 console.log("gmail-sync core tests passed");

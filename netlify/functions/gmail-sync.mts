@@ -3186,6 +3186,27 @@ function repairKnownGadesvejOfferRouting(state: any) {
   const syncState = ensureGmailSyncState(state);
   if (needsSigneRepair) delete syncState.threadLedger[SIGNE_TAM_OFFER_REPLY_THREAD_ID];
   if (needsFacadeRepair) delete syncState.threadLedger[MATHIAS_ANNA_FACADE_OFFER_THREAD_ID];
+  if (needsSigneRepair) {
+    delete syncState.processedThreadHistory[SIGNE_TAM_OFFER_REPLY_THREAD_ID];
+    syncState.gmailQueue = (syncState.gmailQueue || []).filter((entry: any) => textValue(entry?.id, "") !== SIGNE_TAM_OFFER_REPLY_THREAD_ID);
+    syncState.gmailQueue.unshift({
+      id: SIGNE_TAM_OFFER_REPLY_THREAD_ID,
+      lane: "archive",
+      priority: 130,
+      discoveredAt: new Date().toISOString(),
+      reason: "Reparerer forkert Gadesvej 10 arkivering.",
+    });
+    syncState.manualReviewResolutions[SIGNE_TAM_OFFER_REPLY_THREAD_ID] = {
+      action: "match_case",
+      caseId: "1015 A",
+      customerName: "Signe & Tam",
+      createdAt: new Date().toISOString(),
+      reason: "Kendt routing: NV Gadesvej 10 skal til K-1015.",
+    };
+  }
+  if (needsFacadeRepair) {
+    delete syncState.processedThreadHistory[MATHIAS_ANNA_FACADE_OFFER_THREAD_ID];
+  }
 
   state.syncLog = Array.isArray(state?.syncLog)
     ? state.syncLog.filter((entry: any) => {
@@ -3217,6 +3238,17 @@ function repairKnownGadesvejOfferRouting(state: any) {
     };
     changed += removeDocsWhere(wrongCase, "tilbud", removeWrongSigneDoc);
     changed += removeDocsWhere(wrongCase, "mails", removeWrongSigneDoc);
+    for (const [archiveKey, manifest] of Object.entries(syncState.archiveManifest || {})) {
+      const hay = plainCompactText(`${archiveKey} ${(manifest as any)?.threadId || ""} ${(manifest as any)?.fileName || ""} ${(manifest as any)?.driveUrl || ""} ${(manifest as any)?.title || ""}`);
+      const isWrongManifest =
+        textValue((manifest as any)?.threadId, "") === SIGNE_TAM_OFFER_REPLY_THREAD_ID ||
+        hay.includes("17kw9yvnjxulkdknzahjwdgdjmwfguuez") ||
+        (hay.includes("2026 05 07 1006 a tilbud") && !hay.includes("facaderenovering"));
+      if (!isWrongManifest) continue;
+      delete syncState.archiveManifest[archiveKey];
+      delete syncState.projectionLog[archiveKey];
+      changed += 1;
+    }
   }
 
   const targetCase = signeCase || findOrCreateKnownCase(state, { category: "tilbud", documentType: "Tilbud" }, "Signe Tam NV Gadesvej 10 tilbud");
@@ -3660,7 +3692,7 @@ export default async (request: Request) => {
   try {
     const lundebjergvejCustomerMigration = await runMigrationOnce(state, "2026-05-07-lundebjergvej-customer", () => ensureKnownLundebjergvejCustomer(state));
     const lundebjergvejBackfillMigration = await runMigrationOnce(state, "2026-05-07-lundebjergvej-backfill-reset", () => prepareLundebjergvejBackfill(state));
-    const gadesvejOfferRoutingMigration = await runMigrationOnce(state, "2026-05-07-gadesvej-offer-routing-repair", () => repairKnownGadesvejOfferRouting(state));
+    const gadesvejOfferRoutingMigration = await runMigrationOnce(state, "2026-05-07-gadesvej-offer-routing-repair-v2", () => repairKnownGadesvejOfferRouting(state));
     migrationResults.lundebjergvejCustomerCreated = lundebjergvejCustomerMigration.result ? 1 : 0;
     migrationResults.lundebjergvejBackfillPrepared = lundebjergvejBackfillMigration.result ? 1 : 0;
     migrationResults.gadesvejOfferRoutingRepaired = gadesvejOfferRoutingMigration.result ? 1 : 0;
