@@ -23,7 +23,7 @@ import {
   uploadDriveFile,
 } from "./_lib/google.mts";
 
-const GMAIL_SYNC_BUILD_VERSION = "2026-05-06-label-change-ledger-v1";
+const GMAIL_SYNC_BUILD_VERSION = "2026-05-07-lundebjergvej-customer-archive-v1";
 const INTERNAL_PATTERNS = [/@nstsf\.dk/i, /gemini-notes@google\.com/i];
 const MAILBOX_OWNER = "christian@nstsf.dk";
 const NSTSF_QUERY = `(from:${MAILBOX_OWNER} OR from:smg@nstsf.dk OR from:nstsf.dk OR to:${MAILBOX_OWNER} OR cc:${MAILBOX_OWNER})`;
@@ -36,6 +36,7 @@ const KNOWN_INVOICE_CASES: Record<string, string> = {
 const SYNC_QUERY = `newer_than:30d -in:spam -in:trash ${OWNER_QUERY}`;
 const INTERNAL_ACTION_INBOX_QUERY = `newer_than:30d -in:spam -in:trash ${OWNER_QUERY} (from:smg@nstsf.dk OR from:nstsf.dk OR from:${MAILBOX_OWNER})`;
 const DKE_QUESTION_QUERY = `newer_than:14d -in:spam -in:trash ${OWNER_QUERY} ("DJ-pult" OR "DJ pult" OR "uge 19" OR "endelig aflevering" OR "Bülowsvej 9" OR "Bül. 9" OR "Bulowsvej 9" OR "Bul. 9" OR "Blågårdsgade 14" OR "Blå. 14" OR "Blaagaardsgade 14" OR "Blaa. 14")`;
+const LUNDEBJERGVEJ_QUERY = `newer_than:30d -in:spam -in:trash ${OWNER_QUERY} ("Lundebjergvej 2-6" OR "Lundebjergvej" OR "Core Property")`;
 const ARCHIVE_QUERIES = [
   `newer_than:90d -in:spam -in:trash ${OWNER_QUERY} ("Faktura" OR "faktura")`,
   `newer_than:45d -in:spam -in:trash ${OWNER_QUERY} ("Byggemødereferat" OR "Byggemodereferat" OR "byggemøde" OR "byggemode")`,
@@ -44,6 +45,7 @@ const ARCHIVE_QUERIES = [
   `newer_than:45d -in:spam -in:trash ${OWNER_QUERY} ("Faktura" "Nordsjællands Tømrer")`,
   `newer_than:45d -in:spam -in:trash ${OWNER_QUERY} ("Bülowsvej" OR "Bulowsvej" OR "NV Gadesvej" OR "N. V. Gadesvej")`,
   `newer_than:45d -in:spam -in:trash ${OWNER_QUERY} ("Pladebutik" OR "Blågårdsgade 14" OR "Blaagaardsgade 14" OR "Kingosvej 1B")`,
+  LUNDEBJERGVEJ_QUERY,
   DKE_QUESTION_QUERY,
 ];
 const DANISH_MONTHS: Record<string, string> = {
@@ -675,6 +677,34 @@ function findOrCreateKnownCase(state: any, signal: any, text = "") {
     state.sager = entries;
     return created;
   };
+
+  if (compact.includes("lundebjergvej")) {
+    const existing = findByMarker([/lundebjergvej\s*2\s*6/, /lundebjergvej/, /core property/]);
+    if (existing) {
+      const shaped = ensureCaseShape(existing);
+      if (!primaryCaseNumber(shaped)) {
+        shaped.sid = "1018a";
+        shaped.nr = "1018";
+      }
+      if (!textValue(shaped.kunde, "")) shaped.kunde = "Core Property / John Bødker";
+      if (!textValue(shaped.adr, "")) shaped.adr = "Lundebjergvej 2-6, 3600 Frederikssund";
+      if (!textValue(shaped.opg, "")) shaped.opg = "Afklaring af fuger, brandfugning og værn";
+      return shaped;
+    }
+    return createCase({
+      k: 2,
+      sid: "1018a",
+      nr: "1018",
+      kunde: "Core Property / John Bødker",
+      adr: "Lundebjergvej 2-6, 3600 Frederikssund",
+      opg: "Afklaring af fuger, brandfugning og værn",
+      status: signal?.category === "referater" ? "Referat arkiveret" : "Oprettet fra Gmail",
+      workflow: {
+        currentStage: "Afklaring efter gennemgang",
+        nextAction: "Afvent specifikation fra købers rådgiver og planlæg eventuel udbedring.",
+      },
+    });
+  }
 
   if (isNvGadesvej10Thread(text)) {
     const existing = findByMarker([/nv gadesvej.*10/, /gadesvej.*10/, /signe/, /tam/]);
@@ -1998,6 +2028,28 @@ function ensureDkeTask(state: any, payload: {
   return true;
 }
 
+function hasArchivedLundebjergvejReferat(state: any) {
+  const entries = Array.isArray(state?.sager) ? state.sager : [];
+  return entries.some((entry: any) => {
+    const shaped = ensureCaseShape(entry);
+    const marker = plainCompactText(`${shaped.kunde || ""} ${shaped.adr || ""} ${shaped.opg || ""}`);
+    if (!marker.includes("lundebjergvej")) return false;
+    return (shaped.activityLog || []).some((activity: any) =>
+      textValue(activity?.threadId, "") === "19e01514500b08bc" ||
+      (String(activity?.type || "") === "gmail_archive" && plainCompactText(`${activity?.subject || ""} ${activity?.fileName || ""}`).includes("lundebjergvej"))
+    );
+  });
+}
+
+function prepareLundebjergvejBackfill(state: any) {
+  if (hasArchivedLundebjergvejReferat(state)) return false;
+  const syncState = ensureGmailSyncState(state);
+  delete syncState.threadLedger["19e01514500b08bc"];
+  delete syncState.processedThreadHistory["19e01514500b08bc"];
+  syncState.gmailQueue = (syncState.gmailQueue || []).filter((entry: any) => textValue(entry?.id, "") !== "19e01514500b08bc");
+  return true;
+}
+
 function hasBlaagaardsgade14Signal(compact: string) {
   return compact.includes("blagardsgade 14") ||
     compact.includes("blaagardsgade 14") ||
@@ -2527,6 +2579,22 @@ function ensureOfferFollowupTask(matched: any, signal: any, archiveText: string,
 
 function applyKnownCaseActions(matched: any, signal: any, archiveText = "", documentDate = "") {
   const compact = plainCompactText(`${matched?.kunde || ""} ${matched?.adr || ""} ${matched?.opg || ""} ${archiveText}`);
+  if (compact.includes("lundebjergvej")) {
+    matched.workflow = matched.workflow && typeof matched.workflow === "object" ? matched.workflow : {};
+    matched.workflow.currentStage = textValue(matched.workflow.currentStage, "Afklaring efter gennemgang");
+    matched.workflow.latestMeetingDate = documentDate || matched.workflow.latestMeetingDate || new Date().toISOString().slice(0, 10);
+    matched.workflow.nextAction = "Afvent specifikation fra købers rådgiver og planlæg eventuel udbedring.";
+    ensureTask(matched, "Afvent specifikation fra købers rådgiver", {
+      dueDate: addDaysIso(documentDate, 2),
+      owner: "Søren",
+      notes: "Core Property afventer nærmere specifikation fra købers rådgiver, så placeringer vedr. fuger kan identificeres.",
+    });
+    ensureTask(matched, "Planlæg udbedring af brandfugning og værn", {
+      dueDate: addDaysIso(documentDate, 7),
+      owner: "Søren",
+      notes: "Der er registreret manglende brandfugning omkring installationer/gennemføringer og værn på svalegang, som skal stabiliseres.",
+    });
+  }
   if (compact.includes("kingosvej 1b")) {
     ensureTask(matched, "Følg op på tilbud", {
       dueDate: addDaysIso(documentDate, 7),
@@ -2807,6 +2875,7 @@ export default async (request: Request) => {
   const ensuredFolders: any[] = [];
 
   try {
+    const lundebjergvejBackfillPrepared = prepareLundebjergvejBackfill(state);
     const dkeQuestionThreads = await listRecentGmailThreads(DKE_QUESTION_QUERY, 6).catch((error) => {
       appendSyncLog(state, {
         status: "error",
@@ -2817,6 +2886,19 @@ export default async (request: Request) => {
         category: "gmail",
         error: formatSyncError(error),
         notes: "Den prioriterede DKE/Charlotte-søgning svarede ikke korrekt.",
+      });
+      return [];
+    });
+    const lundebjergvejThreads = await listRecentGmailThreads(LUNDEBJERGVEJ_QUERY, 3).catch((error) => {
+      appendSyncLog(state, {
+        status: "error",
+        subject: "Lundebjergvej Gmail-søgning",
+        customerName: "Core Property / John Bødker",
+        caseId: "1018 A",
+        documentType: "Gmail-søgning",
+        category: "gmail",
+        error: formatSyncError(error),
+        notes: "Den prioriterede Lundebjergvej-søgning svarede ikke korrekt.",
       });
       return [];
     });
@@ -2842,6 +2924,7 @@ export default async (request: Request) => {
     const internalInboxThreads = isNearFunctionTimeout() ? [] : await listRecentGmailThreads(INTERNAL_ACTION_INBOX_QUERY, 8);
     const inboxThreads = isNearFunctionTimeout() ? [] : await listRecentGmailThreads(SYNC_QUERY, 6);
     queueDiscoveredThreads(state, [
+      { lane: "archive", priority: 110, threads: lundebjergvejThreads },
       { lane: "dke_questions", priority: 100, threads: dkeQuestionThreads },
       { lane: "internal_inbox", priority: 95, threads: internalInboxThreads },
       { lane: "archive", priority: 60, threads: archiveThreads },
@@ -3148,6 +3231,7 @@ export default async (request: Request) => {
       materialDocumentation: materialDocumentation ? 1 : 0,
       invoice1152Handled: invoice1152Handled ? 1 : 0,
       bookkeepingTaskBackfilled: bookkeepingTaskBackfilled ? 1 : 0,
+      lundebjergvejBackfillPrepared: lundebjergvejBackfillPrepared ? 1 : 0,
       migratedSyncLogEntries: migratedSyncLogEntries + sanitizedSyncLogEntries,
       syncDiagnostics: syncLogDiagnostics(state),
       ensuredFolders: ensuredFolders.length,
