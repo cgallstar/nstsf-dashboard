@@ -2186,6 +2186,7 @@ function pipelineStats(){
     resolution:Object.keys(state.resolution || {}).length,
     projection:Object.keys(state.projectionLog || {}).length,
     review:collectOpenReviewQueueItems().length,
+    runs:Object.keys(state.syncRuns || {}).length,
   };
 }
 function addLocalSyncLogEntries(entries=[]){
@@ -3558,7 +3559,7 @@ function renderUpdatesInto(targetId){
   if(!updates) return;
   const items = collectPriorityUpdates();
   const stats = pipelineStats();
-  const statsHtml = `<div class="priority-mini-item"><strong>Pipeline</strong><div class="meta">Ingestion ${stats.ingestion} · Klassifikation ${stats.classification} · Resolution ${stats.resolution}</div><div class="meta">Arkiveringer ${stats.projection} · Afklaringer ${stats.review}</div></div>`;
+  const statsHtml = `<div class="priority-mini-item"><strong>Pipeline</strong><div class="meta">Runs ${stats.runs} · Ingestion ${stats.ingestion} · Klassifikation ${stats.classification}</div><div class="meta">Resolution ${stats.resolution} · Arkiveringer ${stats.projection} · Afklaringer ${stats.review}</div></div>`;
   updates.innerHTML = statsHtml + (items.length ? items.map((item)=>`<div class="priority-mini-item${item.targetType ? ' clickable' : ''}"${item.targetType ? ` data-update-id="${escapeAttr(item.id)}"` : ''}><strong>${escapeAttr(item.title)}</strong><div class="meta">${escapeAttr(item.meta)}</div><div class="meta">${escapeAttr(item.body)}</div>${item.reviewKey ? `<div class="priority-review-actions"><button class="side-btn" data-review-action="match_case" data-review-key="${escapeAttr(item.reviewKey)}">Match</button><button class="side-btn" data-review-action="create_task" data-review-key="${escapeAttr(item.reviewKey)}">Opret opgave</button><button class="side-btn" data-review-action="ignore" data-review-key="${escapeAttr(item.reviewKey)}">Ignorér</button><button class="side-btn" data-review-action="resolve" data-review-key="${escapeAttr(item.reviewKey)}">Løst</button></div>` : ''}</div>`).join('') : '<div class="priority-sidebar-empty">Ingen nyere opdateringer endnu.</div>');
 }
 function openPriorityUpdate(updateId){

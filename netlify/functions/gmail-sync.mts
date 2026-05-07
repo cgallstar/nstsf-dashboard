@@ -30,7 +30,7 @@ import {
 
 const GMAIL_SYNC_BUILD_VERSION = "2026-05-07-pipeline-v3";
 const RESOLVER_VERSION = "2026-05-07-resolver-v3";
-const PIPELINE_VERSION = "2026-05-07-pipeline-v1";
+const PIPELINE_VERSION = "2026-05-07-pipeline-v2";
 const INTERNAL_PATTERNS = [/@nstsf\.dk/i, /gemini-notes@google\.com/i];
 const MAILBOX_OWNER = "christian@nstsf.dk";
 const NSTSF_QUERY = `(from:${MAILBOX_OWNER} OR from:smg@nstsf.dk OR from:nstsf.dk OR to:${MAILBOX_OWNER} OR cc:${MAILBOX_OWNER})`;
@@ -229,6 +229,12 @@ function ensureGmailSyncState(state: any) {
   state.syncState.reviewQueue = Array.isArray(state.syncState.reviewQueue) ? state.syncState.reviewQueue : [];
   state.syncState.manualReviewResolutions = state.syncState.manualReviewResolutions && typeof state.syncState.manualReviewResolutions === "object" && !Array.isArray(state.syncState.manualReviewResolutions)
     ? state.syncState.manualReviewResolutions
+    : {};
+  state.syncState.syncRuns = state.syncState.syncRuns && typeof state.syncState.syncRuns === "object" && !Array.isArray(state.syncState.syncRuns)
+    ? state.syncState.syncRuns
+    : {};
+  state.syncState.records = state.syncState.records && typeof state.syncState.records === "object" && !Array.isArray(state.syncState.records)
+    ? state.syncState.records
     : {};
   return state.syncState;
 }
@@ -464,6 +470,47 @@ function pipelineSnapshot(state: any) {
     projectedDocuments: Object.keys(syncState.projectionLog || {}).length,
     openReviewItems: reviewItems.filter((item: any) => textValue(item?.status, "open") === "open").length,
   };
+}
+
+function startSyncRun(state: any, trigger = "manual") {
+  const syncState = ensureGmailSyncState(state);
+  const runId = `sync-${new Date().toISOString()}-${randomUUID().slice(0, 8)}`;
+  syncState.currentRunId = runId;
+  syncState.syncRuns[runId] = {
+    id: runId,
+    trigger,
+    status: "running",
+    startedAt: new Date().toISOString(),
+    gmailSyncBuild: GMAIL_SYNC_BUILD_VERSION,
+    pipelineVersion: PIPELINE_VERSION,
+    resolverVersion: RESOLVER_VERSION,
+  };
+  syncState.syncRuns = trimObjectMap(syncState.syncRuns, 250);
+  return runId;
+}
+
+function finishSyncRun(state: any, runId = "", payload: Record<string, unknown> = {}) {
+  if (!runId) return null;
+  const syncState = ensureGmailSyncState(state);
+  syncState.syncRuns[runId] = {
+    ...(syncState.syncRuns[runId] || { id: runId }),
+    ...payload,
+    finishedAt: new Date().toISOString(),
+  };
+  return syncState.syncRuns[runId];
+}
+
+function refreshNormalizedSyncRecords(state: any) {
+  const syncState = ensureGmailSyncState(state);
+  syncState.records = {
+    mailThreads: syncState.ingestion || {},
+    classifications: syncState.classification || {},
+    resolutions: syncState.resolution || {},
+    documents: syncState.projectionLog || {},
+    reviewItems: Object.fromEntries((Array.isArray(syncState.reviewQueue) ? syncState.reviewQueue : []).map((item: any) => [reviewQueueKey(item), item])),
+    syncRuns: syncState.syncRuns || {},
+  };
+  return syncState.records;
 }
 
 async function runMigrationOnce(state: any, key: string, migration: () => Promise<any> | any) {
@@ -3580,7 +3627,7 @@ async function ensureKnownLundebjergvejReferat(state: any, integration: any, act
 }
 
 export default async (request: Request) => {
-  const auth = authorizeDashboardRequest(request);
+  const auth = authorizeDashboardRequest(request, { allowActionsToken: true });
   if (!auth.ok) return auth.response;
 
   if (request.method !== "POST") {
@@ -3592,8 +3639,15 @@ export default async (request: Request) => {
     return json({ ok: false, error: "google_not_configured" }, 400);
   }
 
+  let requestBody: any = {};
+  try {
+    requestBody = await request.clone().json();
+  } catch {
+    requestBody = {};
+  }
   const state = await loadDashboardState();
   if (!state) return json({ ok: false, error: "no_state" }, 404);
+  const syncRunId = startSyncRun(state, textValue(requestBody?.trigger, auth.actor?.type === "actions" ? "actions" : "manual"));
   const migratedSyncLogEntries = normalizeExistingSyncLog(state);
   const syncStartedAt = Date.now();
   const isNearFunctionTimeout = () => Date.now() - syncStartedAt > 18000;
@@ -4114,6 +4168,14 @@ export default async (request: Request) => {
       });
     }
     const sanitizedSyncLogEntries = normalizeExistingSyncLog(state);
+    finishSyncRun(state, syncRunId, {
+      status: "completed",
+      synced: items.length,
+      archived: archivedResults.length,
+      archiveErrors: archiveErrors.length,
+      reviewItemsOpen: pipelineSnapshot(state).openReviewItems,
+    });
+    refreshNormalizedSyncRecords(state);
     const savedAt = await saveDashboardState(state);
     const pipeline = pipelineSnapshot(state);
 
@@ -4122,6 +4184,7 @@ export default async (request: Request) => {
       gmailSyncBuild: GMAIL_SYNC_BUILD_VERSION,
       pipelineVersion: PIPELINE_VERSION,
       resolverVersion: RESOLVER_VERSION,
+      syncRunId,
       savedAt,
       synced: items.length,
       unhandled: items.filter((item: any) => !item.handled).length,
@@ -4179,6 +4242,11 @@ export default async (request: Request) => {
       notes: "Gmail-sync stoppede før trådene kunne behandles.",
     });
     const sanitizedSyncLogEntries = normalizeExistingSyncLog(state);
+    finishSyncRun(state, syncRunId, {
+      status: "failed",
+      error: errorText,
+    });
+    refreshNormalizedSyncRecords(state);
     const savedAt = await saveDashboardState(state);
     const pipeline = pipelineSnapshot(state);
     return json({
@@ -4186,6 +4254,7 @@ export default async (request: Request) => {
       gmailSyncBuild: GMAIL_SYNC_BUILD_VERSION,
       pipelineVersion: PIPELINE_VERSION,
       resolverVersion: RESOLVER_VERSION,
+      syncRunId,
       savedAt,
       synced: 0,
       unhandled: 0,
