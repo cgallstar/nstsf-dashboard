@@ -144,11 +144,15 @@ export function normalizeDoc(doc: any) {
     fileName: textValue(doc?.fileName || doc?.filename, ""),
     mimeType: textValue(doc?.mimeType, ""),
     notes: textValue(doc?.notes, ""),
+    archiveKey: textValue(doc?.archiveKey, ""),
+    threadId: textValue(doc?.threadId, ""),
   };
 }
 
 function docDedupeKey(doc: any) {
   const normalized = normalizeDoc(doc);
+  if (normalized.archiveKey) return `archive:${normalized.archiveKey}`;
+  if (normalized.threadId && normalized.fileName) return `thread-file:${normalized.threadId}:${normalized.fileName.toLowerCase().replace(/\s+/g, " ").trim()}`;
   const titleKey = normalized.titel.toLowerCase().replace(/\s+/g, " ").trim();
   if (titleKey && normalized.dato) return [
     titleKey,

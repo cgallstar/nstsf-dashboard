@@ -1991,6 +1991,11 @@ function setSyncStatus(text, tone){ const el = document.getElementById('syncStat
 function setAdminMessage(text='', tone=''){ const el = document.getElementById('adminMessage'); if(!el) return; el.textContent = text; el.style.color = tone === 'error' ? 'var(--red)' : tone === 'ok' ? 'var(--green)' : 'var(--muted)'; }
 function textValue(value, fallback=''){ if(value === null || value === undefined) return fallback; return String(value); }
 function docIdentityKey(item={}){
+  const archiveKey = textValue(item.archiveKey, '');
+  if(archiveKey) return `archive:${archiveKey}`;
+  const threadId = textValue(item.threadId, '');
+  const threadFileName = textValue(item.fileName || item.filename, '').toLowerCase().replace(/\s+/g,' ').trim();
+  if(threadId && threadFileName) return `thread-file:${threadId}:${threadFileName}`;
   const title = textValue(item.titel || item.title, '').toLowerCase().replace(/\s+/g,' ').trim();
   const date = textValue(item.dato || item.date, '');
   if(title && date) return `${title}|${date}`;

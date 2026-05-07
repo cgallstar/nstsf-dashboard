@@ -22,8 +22,12 @@ import {
   listRecentGmailThreads,
   uploadDriveFile,
 } from "./_lib/google.mts";
+import {
+  buildArchiveKeyFromParts,
+  resolveKnownCaseByText,
+} from "./_lib/sync-core.mts";
 
-const GMAIL_SYNC_BUILD_VERSION = "2026-05-07-gadesvej-offer-backfill-v2";
+const GMAIL_SYNC_BUILD_VERSION = "2026-05-07-robust-sync-manifest-v1";
 const INTERNAL_PATTERNS = [/@nstsf\.dk/i, /gemini-notes@google\.com/i];
 const MAILBOX_OWNER = "christian@nstsf.dk";
 const NSTSF_QUERY = `(from:${MAILBOX_OWNER} OR from:smg@nstsf.dk OR from:nstsf.dk OR to:${MAILBOX_OWNER} OR cc:${MAILBOX_OWNER})`;
@@ -201,7 +205,62 @@ function ensureGmailSyncState(state: any) {
   state.syncState.processedThreadHistory = state.syncState.processedThreadHistory && typeof state.syncState.processedThreadHistory === "object" && !Array.isArray(state.syncState.processedThreadHistory)
     ? state.syncState.processedThreadHistory
     : {};
+  state.syncState.archiveManifest = state.syncState.archiveManifest && typeof state.syncState.archiveManifest === "object" && !Array.isArray(state.syncState.archiveManifest)
+    ? state.syncState.archiveManifest
+    : {};
   return state.syncState;
+}
+
+function sourceSignatureFromThread(thread: any, fallback = "") {
+  const summaries = Array.isArray(thread?.messages) ? thread.messages.map(gmailMessageSummary) : [];
+  const messageIds = summaries.map((message) => textValue(message?.id, "")).filter(Boolean);
+  const attachmentNames = summaries
+    .flatMap((message) => Array.isArray(message?.attachments) ? message.attachments : [])
+    .map((attachment: any) => textValue(attachment?.filename, ""))
+    .filter(Boolean);
+  const source = [...messageIds, ...attachmentNames, fallback].join("|");
+  return stableThreeDigitHash(source || textValue(thread?.id, ""));
+}
+
+function buildArchiveKey(thread: any, signal: any, documentDate: string, displayCaseId: string, fallback = "") {
+  const summaries = Array.isArray(thread?.messages) ? thread.messages.map(gmailMessageSummary) : [];
+  return buildArchiveKeyFromParts({
+    threadId: textValue(thread?.id, ""),
+    messageIds: summaries.map((message) => textValue(message?.id, "")).filter(Boolean),
+    attachmentNames: summaries
+      .flatMap((message) => Array.isArray(message?.attachments) ? message.attachments : [])
+      .map((attachment: any) => textValue(attachment?.filename, ""))
+      .filter(Boolean),
+    category: textValue(signal?.category, ""),
+    documentType: textValue(signal?.documentType, ""),
+    documentDate,
+    displayCaseId,
+    fallback,
+  });
+}
+
+function archiveManifestEntry(state: any, archiveKey = "") {
+  if (!archiveKey) return null;
+  const syncState = ensureGmailSyncState(state);
+  return syncState.archiveManifest?.[archiveKey] || null;
+}
+
+function registerArchiveManifest(state: any, archiveKey: string, payload: Record<string, unknown>) {
+  if (!archiveKey) return null;
+  const syncState = ensureGmailSyncState(state);
+  const previous = syncState.archiveManifest[archiveKey] || {};
+  const next = {
+    ...previous,
+    archiveKey,
+    updatedAt: new Date().toISOString(),
+    ...payload,
+  };
+  syncState.archiveManifest[archiveKey] = next;
+  const entries = Object.entries(syncState.archiveManifest);
+  if (entries.length > 2000) {
+    syncState.archiveManifest = Object.fromEntries(entries.slice(-2000));
+  }
+  return next;
 }
 
 function isFinalLedgerStatus(status = "") {
@@ -663,6 +722,8 @@ function findOrCreateKnownCase(state: any, signal: any, text = "") {
   if (isGadesvejArchiveThread(signal, text)) return findOrCreateGadesvejCase(state);
   if (isGadesvejMaterialThread(signal, text)) return findOrCreateGadesvejCase(state);
   const entries = Array.isArray(state?.sager) ? state.sager : [];
+  const strongKnownMatch = resolveKnownCaseByText(entries, text, signal);
+  if (strongKnownMatch) return ensureCaseShape(strongKnownMatch);
   const findByMarker = (patterns: RegExp[]) => entries.find((entry: any) => {
     const marker = plainCompactText(`${entry?.kunde || ""} ${entry?.adr || ""} ${entry?.opg || ""} ${entry?.sid || ""} ${entry?.nr || ""} ${entry?.fak || ""} ${entry?.docs?.drive || entry?.drive || ""}`);
     return patterns.some((pattern) => pattern.test(marker));
@@ -2740,6 +2801,8 @@ function repairDocsFromActivityLog(state: any) {
       const fileName = textValue(activity?.fileName, "");
       const driveUrl = textValue(activity?.driveUrl, "");
       const documentDate = textValue(activity?.documentDate, textValue(activity?.createdAt, "").slice(0, 10));
+      const archiveKey = textValue(activity?.archiveKey, "");
+      const threadId = textValue(activity?.threadId, "");
       const title = fileName
         ? fileName.replace(/\.md$/i, "")
         : textValue(activity?.subject || activity?.documentType, "Dokument");
@@ -2750,6 +2813,8 @@ function repairDocsFromActivityLog(state: any) {
         url: driveUrl,
         fileName,
         mimeType: "text/markdown",
+        archiveKey,
+        threadId,
         notes: textValue(activity?.notes, ""),
       }]);
       if (entry.docs[category].length > before) repaired += 1;
@@ -2761,6 +2826,8 @@ function repairDocsFromActivityLog(state: any) {
           url: driveUrl,
           fileName,
           mimeType: "text/markdown",
+          archiveKey,
+          threadId,
           notes: textValue(activity?.notes, ""),
         }]);
         if (entry.docs.byggereferater.length > referatBefore) repaired += 1;
@@ -2768,6 +2835,39 @@ function repairDocsFromActivityLog(state: any) {
     }
   }
   return repaired;
+}
+
+function rebuildArchiveManifestFromActivities(state: any) {
+  const entries = Array.isArray(state?.sager) ? state.sager : [];
+  let changed = 0;
+  for (const entry of entries) {
+    ensureCaseShape(entry);
+    const caseId = formatCaseIdForDisplay(entry);
+    const activities = Array.isArray(entry.activityLog) ? entry.activityLog : [];
+    for (const activity of activities) {
+      if (textValue(activity?.type, "") !== "gmail_archive") continue;
+      const archiveKey = textValue(activity?.archiveKey, "");
+      if (!archiveKey) continue;
+      if (archiveManifestEntry(state, archiveKey)) continue;
+      registerArchiveManifest(state, archiveKey, {
+        threadId: textValue(activity?.threadId, ""),
+        caseId,
+        customerName: textValue(entry?.kunde, ""),
+        category: textValue(activity?.archiveCategory || activity?.category, ""),
+        documentType: textValue(activity?.documentType, ""),
+        documentDate: textValue(activity?.documentDate, textValue(activity?.createdAt, "").slice(0, 10)),
+        title: textValue(activity?.fileName, "").replace(/\.md$/i, "") || textValue(activity?.subject || activity?.documentType, "Dokument"),
+        fileName: textValue(activity?.fileName, ""),
+        driveUrl: textValue(activity?.driveUrl, ""),
+        fileId: textValue(activity?.fileId, ""),
+        mimeType: "text/markdown",
+        status: "archived",
+        restoredFromActivityLog: true,
+      });
+      changed += 1;
+    }
+  }
+  return changed;
 }
 
 function removeDocsWhere(entry: any, category: string, predicate: (doc: any) => boolean) {
@@ -2944,19 +3044,43 @@ async function archiveQualifiedThread(thread: any, item: any, state: any, integr
   }
   const documentDate = extractDocumentDate(item?.subject, combined || item?.body, item?.date);
   const displayCaseId = formatCaseIdForDisplay(matched) || textValue(matched?.nr, "");
+  const currentThreadId = textValue(item?.threadId || thread?.id, "");
+  const archiveKey = buildArchiveKey(thread, signal, documentDate, displayCaseId, item?.subject || archiveText);
+  const fileTitle = buildArchiveFileTitle(documentDate, signal, displayCaseId, item?.subject);
+  const fileName = `${fileTitle}.md`;
+  const existingManifest = archiveManifestEntry(state, archiveKey);
+  if (existingManifest?.driveUrl || existingManifest?.fileName) {
+    const repairedDocument = {
+      title: textValue(existingManifest.title, fileTitle),
+      fileName: textValue(existingManifest.fileName, fileName),
+      mimeType: textValue(existingManifest.mimeType, "text/markdown"),
+      date: textValue(existingManifest.documentDate, documentDate),
+      url: textValue(existingManifest.driveUrl, ""),
+      fileId: textValue(existingManifest.fileId, ""),
+      archiveKey,
+      threadId: currentThreadId,
+      notes: `Automatisk arkiveret fra Gmail-sync. Tråd: ${currentThreadId}`,
+    };
+    pushDocs(matched.docs[signal.category] || [], [repairedDocument]);
+    if (signal.category === "referater") {
+      pushDocs(matched.docs.byggereferater, [repairedDocument]);
+    }
+    return {
+      ok: true,
+      skipped: true,
+      archiveKey,
+      category: signal.category,
+      matchedCaseId: displayCaseId,
+      customerName: textValue(matched?.kunde, item?.kunde || ""),
+      documentType: signal.documentType,
+      documentDate,
+      driveUrl: textValue(existingManifest.driveUrl, ""),
+      fileName: textValue(existingManifest.fileName, fileName),
+    };
+  }
   applyArchiveSideEffects(matched, signal, archiveText, documentDate);
   ensureOfferFollowupTask(matched, signal, archiveText, documentDate);
   applyKnownCaseActions(matched, signal, archiveText, documentDate);
-  const archiveKey = [
-    textValue(item?.threadId || thread?.id, ""),
-    signal.category,
-    signal.documentType,
-    documentDate,
-    normalizeCaseKey(displayCaseId || matched?.kunde),
-  ].join(":");
-  const fileTitle = buildArchiveFileTitle(documentDate, signal, displayCaseId, item?.subject);
-  const fileName = `${fileTitle}.md`;
-  const currentThreadId = textValue(item?.threadId || thread?.id, "");
   const normalizedDocumentType = normalizeCaseKey(signal.documentType);
 
   const alreadyArchived = (matched.activityLog || []).some((entry: any) => {
@@ -2984,8 +3108,25 @@ async function archiveQualifiedThread(thread: any, item: any, state: any, integr
       mimeType: "text/markdown",
       date: documentDate,
       url: textValue(existingEntry?.driveUrl, ""),
+      fileId: textValue(existingEntry?.fileId, ""),
+      archiveKey,
+      threadId: currentThreadId,
       notes: `Automatisk arkiveret fra Gmail-sync. Tråd: ${textValue(item?.threadId || thread?.id, "")}`,
     };
+    registerArchiveManifest(state, archiveKey, {
+      threadId: currentThreadId,
+      caseId: displayCaseId,
+      customerName: textValue(matched?.kunde, item?.kunde || ""),
+      category: signal.category,
+      documentType: signal.documentType,
+      documentDate,
+      title: fileTitle,
+      fileName,
+      driveUrl: textValue(existingEntry?.driveUrl, ""),
+      fileId: textValue(existingEntry?.fileId, ""),
+      mimeType: "text/markdown",
+      status: "archived",
+    });
     pushDocs(matched.docs[signal.category] || [], [repairedDocument]);
     if (signal.category === "referater") {
       pushDocs(matched.docs.byggereferater, [repairedDocument]);
@@ -3010,6 +3151,8 @@ async function archiveQualifiedThread(thread: any, item: any, state: any, integr
     mimeType: "text/markdown",
     contentText: buildArchiveMarkdown(thread, item, matched, signal, documentDate),
     date: documentDate,
+    archiveKey,
+    threadId: currentThreadId,
     notes: `Automatisk arkiveret fra Gmail-sync. Tråd: ${textValue(item?.threadId || thread?.id, "")}`,
   };
 
@@ -3049,6 +3192,21 @@ async function archiveQualifiedThread(thread: any, item: any, state: any, integr
       attachmentCount: attachmentContext.documents.length,
       skippedUpload: true,
     });
+    registerArchiveManifest(state, archiveKey, {
+      threadId: currentThreadId,
+      caseId: displayCaseId,
+      customerName: textValue(matched?.kunde, item?.kunde || ""),
+      category: signal.category,
+      documentType: signal.documentType,
+      documentDate,
+      title: fileTitle,
+      fileName: document.fileName,
+      driveUrl: textValue(document.url, ""),
+      fileId: textValue(document.fileId, ""),
+      mimeType: textValue(document.mimeType, "text/markdown"),
+      status: "archived",
+      skippedUpload: true,
+    });
     return {
       ok: true,
       skipped: true,
@@ -3080,6 +3238,20 @@ async function archiveQualifiedThread(thread: any, item: any, state: any, integr
     driveUrl: textValue(document.url, ""),
     sourceType: signal.sourceType,
     attachmentCount: attachmentContext.documents.length,
+  });
+  registerArchiveManifest(state, archiveKey, {
+    threadId: currentThreadId,
+    caseId: displayCaseId,
+    customerName: textValue(matched?.kunde, item?.kunde || ""),
+    category: signal.category,
+    documentType: signal.documentType,
+    documentDate,
+    title: fileTitle,
+    fileName: document.fileName,
+    driveUrl: textValue(document.url, ""),
+    fileId: textValue(document.fileId, ""),
+    mimeType: textValue(document.mimeType, "text/markdown"),
+    status: "archived",
   });
 
   return {
@@ -3134,6 +3306,7 @@ export default async (request: Request) => {
   const archivedResults: any[] = [];
   const archiveErrors: any[] = [];
   const ensuredFolders: any[] = [];
+  const manifestBackfilled = rebuildArchiveManifestFromActivities(state);
 
   try {
     const lundebjergvejCustomerCreated = ensureKnownLundebjergvejCustomer(state);
@@ -3193,7 +3366,7 @@ export default async (request: Request) => {
       { lane: "archive", priority: 60, threads: archiveThreads },
       { lane: "inbox", priority: 30, threads: inboxThreads },
     ]);
-    const queuedThreads = selectQueuedThreads(state, 8);
+    const queuedThreads = selectQueuedThreads(state, 16);
     const threads = queuedThreads.map((thread: any) => ({ id: thread.id, historyId: thread.historyId }));
     const fullThreadResults = await Promise.allSettled(
       threads.map((thread: any) => getGmailThread(String(thread.id))),
@@ -3587,6 +3760,7 @@ export default async (request: Request) => {
       lundebjergvejCustomerCreated: lundebjergvejCustomerCreated ? 1 : 0,
       lundebjergvejBackfillPrepared: lundebjergvejBackfillPrepared ? 1 : 0,
       lundebjergvejReferatHandled: lundebjergvejReferatHandled?.ok ? 1 : 0,
+      manifestBackfilled,
       repairedDocs,
       gadesvejOfferRoutingRepaired,
       migratedSyncLogEntries: migratedSyncLogEntries + sanitizedSyncLogEntries,
@@ -3633,6 +3807,7 @@ export default async (request: Request) => {
       unhandled: 0,
       archived: 0,
       ensuredFolders: ensuredFolders.length,
+      manifestBackfilled,
       migratedSyncLogEntries: migratedSyncLogEntries + sanitizedSyncLogEntries,
       syncDiagnostics: syncLogDiagnostics(state),
       archiveErrors: [{
@@ -3655,6 +3830,21 @@ function signalCategoryFromResult(result: any) {
   if (type.includes("mail")) return "mails";
   return "";
 }
+
+export const __test = {
+  applyArchiveSideEffects,
+  buildArchiveFileTitle,
+  buildArchiveKey,
+  extractEnterpriseAmount,
+  extractInvoiceAmount,
+  findOrCreateKnownCase,
+  inferArchiveSignal,
+  matchCaseFromText,
+  plainCompactText,
+  registerArchiveManifest,
+  repairDocsFromActivityLog,
+  rebuildArchiveManifestFromActivities,
+};
 
 export const config = {
   path: "/api/gmail-sync",

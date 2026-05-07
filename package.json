@@ -2,6 +2,10 @@
   "name": "nstsf-dashboard",
   "private": true,
   "type": "module",
+  "scripts": {
+    "test": "node --experimental-strip-types tests/gmail-sync.test.mts",
+    "check": "node --experimental-strip-types --check netlify/functions/gmail-sync.mts && node --experimental-strip-types --check netlify/functions/_lib/dashboard.mts && node --experimental-strip-types --check netlify/functions/_lib/sync-core.mts"
+  },
   "dependencies": {
     "@netlify/blobs": "^9.1.0"
   }
