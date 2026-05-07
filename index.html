@@ -2153,6 +2153,27 @@ function dedupeSyncLogEntries(entries=[]){
   });
   return result;
 }
+function reviewQueueItemKey(item={}){
+  const threadId = textValue(item.threadId, '');
+  if(threadId) return `thread:${threadId}`;
+  const archiveKey = textValue(item.archiveKey, '');
+  if(archiveKey) return `archive:${archiveKey}`;
+  return `review:${textValue(item.subject, '').toLowerCase()}:${textValue(item.documentType, '').toLowerCase()}:${textValue(item.category, '').toLowerCase()}`;
+}
+function collectOpenReviewQueueItems(){
+  const queue = Array.isArray(syncState?.reviewQueue) ? syncState.reviewQueue : [];
+  const seen = new Set();
+  const result = [];
+  queue.forEach((raw)=>{
+    const item = raw && typeof raw === 'object' ? raw : {};
+    if(textValue(item.status, 'open') !== 'open') return;
+    const key = reviewQueueItemKey(item);
+    if(seen.has(key)) return;
+    seen.add(key);
+    result.push(item);
+  });
+  return result;
+}
 function addLocalSyncLogEntries(entries=[]){
   if(!Array.isArray(entries) || !entries.length) return;
   entries.map(normalizeSyncLogEntry).forEach((entry)=>{
@@ -3560,6 +3581,26 @@ function renderPriorityArchive(){
 function collectPriorityUpdates(){
   const entries = [];
   const seenSync = new Set();
+  collectOpenReviewQueueItems().forEach((item)=>{
+    const caseId = textValue(item.caseId || item.possibleCaseId, '');
+    const caseIndex = findCaseIndexByCaseId(caseId);
+    const hasCase = caseIndex >= 0;
+    const driveUrl = textValue(item.driveUrl, '');
+    const targetLabel = caseId
+      ? formatCustomerIdDisplay(String(caseId).match(/(\d+)/)?.[1] || caseId)
+      : textValue(item.customerName || item.possibleCustomerName, 'Ukendt sag');
+    const createdAt = textValue(item.updatedAt || item.createdAt, new Date().toISOString());
+    entries.push({
+      id:`review-${reviewQueueItemKey(item)}`,
+      createdAt,
+      title:`Afklaring · ${textValue(item.subject || item.documentType, 'Mailtråd')}`,
+      meta:`${displayDateTime(createdAt)} · ${targetLabel}${item.documentType ? ` · ${item.documentType}` : ''}${item.category ? ` · ${item.category}` : ''}`,
+      body:textValue(item.notes || item.error, 'Kræver manuelt match før arkivering.'),
+      targetType:driveUrl ? 'drive' : hasCase ? 'case' : 'tasks',
+      driveUrl,
+      caseIndex:hasCase ? caseIndex : -1,
+    });
+  });
   syncLog.forEach((item)=>{
     if(!item || !item.createdAt) return;
     const syncKey = syncLogDedupeKey(item);
