@@ -25,10 +25,12 @@ import {
 import {
   buildArchiveKeyFromParts,
   resolveKnownCaseByText,
+  sourceSignatureFromParts,
 } from "./_lib/sync-core.mts";
 
-const GMAIL_SYNC_BUILD_VERSION = "2026-05-07-robust-sync-manifest-v2";
-const RESOLVER_VERSION = "2026-05-07-resolver-v2";
+const GMAIL_SYNC_BUILD_VERSION = "2026-05-07-pipeline-v3";
+const RESOLVER_VERSION = "2026-05-07-resolver-v3";
+const PIPELINE_VERSION = "2026-05-07-pipeline-v1";
 const INTERNAL_PATTERNS = [/@nstsf\.dk/i, /gemini-notes@google\.com/i];
 const MAILBOX_OWNER = "christian@nstsf.dk";
 const NSTSF_QUERY = `(from:${MAILBOX_OWNER} OR from:smg@nstsf.dk OR from:nstsf.dk OR to:${MAILBOX_OWNER} OR cc:${MAILBOX_OWNER})`;
@@ -212,6 +214,19 @@ function ensureGmailSyncState(state: any) {
   state.syncState.migrations = state.syncState.migrations && typeof state.syncState.migrations === "object" && !Array.isArray(state.syncState.migrations)
     ? state.syncState.migrations
     : {};
+  state.syncState.ingestion = state.syncState.ingestion && typeof state.syncState.ingestion === "object" && !Array.isArray(state.syncState.ingestion)
+    ? state.syncState.ingestion
+    : {};
+  state.syncState.classification = state.syncState.classification && typeof state.syncState.classification === "object" && !Array.isArray(state.syncState.classification)
+    ? state.syncState.classification
+    : {};
+  state.syncState.resolution = state.syncState.resolution && typeof state.syncState.resolution === "object" && !Array.isArray(state.syncState.resolution)
+    ? state.syncState.resolution
+    : {};
+  state.syncState.projectionLog = state.syncState.projectionLog && typeof state.syncState.projectionLog === "object" && !Array.isArray(state.syncState.projectionLog)
+    ? state.syncState.projectionLog
+    : {};
+  state.syncState.reviewQueue = Array.isArray(state.syncState.reviewQueue) ? state.syncState.reviewQueue : [];
   return state.syncState;
 }
 
@@ -265,6 +280,167 @@ function registerArchiveManifest(state: any, archiveKey: string, payload: Record
     syncState.archiveManifest = Object.fromEntries(entries.slice(-2000));
   }
   return next;
+}
+
+function trimObjectMap(map: Record<string, any>, max = 1500) {
+  const entries = Object.entries(map || {});
+  if (entries.length <= max) return map;
+  return Object.fromEntries(entries.slice(-max));
+}
+
+function compactThreadRecord(thread: any) {
+  const summaries = Array.isArray(thread?.messages) ? thread.messages.map(gmailMessageSummary) : [];
+  const latest = latestThreadSummary(thread);
+  const attachmentNames = summaries
+    .flatMap((message) => Array.isArray(message?.attachments) ? message.attachments : [])
+    .map((attachment: any) => textValue(attachment?.filename, ""))
+    .filter(Boolean);
+  const text = fullThreadText(thread);
+  return {
+    threadId: textValue(thread?.id, ""),
+    historyId: textValue(thread?.historyId, ""),
+    latestMessageId: textValue(latest?.id, ""),
+    latestMessageAt: textValue(latest?.isoDate, ""),
+    subject: textValue(latest?.subject, ""),
+    from: textValue(latest?.from, ""),
+    messageCount: summaries.length,
+    attachmentNames,
+    bodyHash: sourceSignatureFromParts(textValue(thread?.id, ""), summaries.map((message) => textValue(message?.id, "")).filter(Boolean), attachmentNames, text),
+    ingestedAt: new Date().toISOString(),
+    pipelineVersion: PIPELINE_VERSION,
+  };
+}
+
+function recordIngestion(state: any, thread: any) {
+  const syncState = ensureGmailSyncState(state);
+  const record = compactThreadRecord(thread);
+  if (!record.threadId) return null;
+  syncState.ingestion[record.threadId] = {
+    ...(syncState.ingestion[record.threadId] || {}),
+    ...record,
+  };
+  syncState.ingestion = trimObjectMap(syncState.ingestion);
+  return syncState.ingestion[record.threadId];
+}
+
+function recordClassification(state: any, thread: any, item: any, intent: any) {
+  const syncState = ensureGmailSyncState(state);
+  const threadId = textValue(thread?.id || item?.threadId || item?.id, "");
+  if (!threadId) return null;
+  const latest = latestThreadSummary(thread);
+  const archiveSignal = intent?.archiveSignal || inferArchiveSignal(item?.subject || latest?.subject, fullThreadText(thread) || item?.body, latest?.from || item?.from);
+  const record = {
+    threadId,
+    subject: textValue(item?.subject || latest?.subject, ""),
+    intent: textValue(intent?.intent, "unknown"),
+    lane: textValue(intent?.lane, ""),
+    reason: textValue(intent?.reason, ""),
+    archiveSignal: archiveSignal ? {
+      category: textValue(archiveSignal.category, ""),
+      documentType: textValue(archiveSignal.documentType, ""),
+      sourceType: textValue(archiveSignal.sourceType, ""),
+      fileLabel: textValue(archiveSignal.fileLabel, ""),
+      invoiceNumber: textValue(archiveSignal.invoiceNumber, ""),
+    } : null,
+    classifiedAt: new Date().toISOString(),
+    pipelineVersion: PIPELINE_VERSION,
+  };
+  syncState.classification[threadId] = record;
+  syncState.classification = trimObjectMap(syncState.classification);
+  return record;
+}
+
+function recordResolution(state: any, threadId = "", payload: Record<string, unknown>) {
+  if (!threadId) return null;
+  const syncState = ensureGmailSyncState(state);
+  const record = {
+    ...(syncState.resolution[threadId] || {}),
+    threadId,
+    resolvedAt: new Date().toISOString(),
+    resolverVersion: RESOLVER_VERSION,
+    ...payload,
+  };
+  syncState.resolution[threadId] = record;
+  syncState.resolution = trimObjectMap(syncState.resolution);
+  return record;
+}
+
+function reviewQueueKey(payload: any) {
+  const threadId = textValue(payload?.threadId, "");
+  if (threadId) return `thread:${threadId}`;
+  const archiveKey = textValue(payload?.archiveKey, "");
+  if (archiveKey) return `archive:${archiveKey}`;
+  return [
+    textValue(payload?.subject, "").toLowerCase(),
+    textValue(payload?.documentType, "").toLowerCase(),
+    textValue(payload?.category, "").toLowerCase(),
+  ].join("|");
+}
+
+function upsertReviewQueueItem(state: any, payload: Record<string, unknown>) {
+  const syncState = ensureGmailSyncState(state);
+  const key = reviewQueueKey(payload);
+  if (!key) return null;
+  const existingIndex = syncState.reviewQueue.findIndex((item: any) => reviewQueueKey(item) === key);
+  const previous = existingIndex >= 0 ? syncState.reviewQueue[existingIndex] : {};
+  const next = {
+    ...previous,
+    id: textValue(previous?.id, `review-${stableThreeDigitHash(key)}`),
+    status: textValue(payload.status, textValue(previous?.status, "open")),
+    createdAt: textValue(previous?.createdAt, new Date().toISOString()),
+    updatedAt: new Date().toISOString(),
+    pipelineVersion: PIPELINE_VERSION,
+    ...payload,
+  };
+  if (existingIndex >= 0) syncState.reviewQueue.splice(existingIndex, 1);
+  syncState.reviewQueue.unshift(next);
+  syncState.reviewQueue = syncState.reviewQueue.slice(0, 200);
+  return next;
+}
+
+function recordProjection(state: any, archiveKey: string, payload: Record<string, unknown>) {
+  if (!archiveKey) return null;
+  const syncState = ensureGmailSyncState(state);
+  const record = {
+    ...(syncState.projectionLog[archiveKey] || {}),
+    archiveKey,
+    projectedAt: new Date().toISOString(),
+    pipelineVersion: PIPELINE_VERSION,
+    ...payload,
+  };
+  syncState.projectionLog[archiveKey] = record;
+  syncState.projectionLog = trimObjectMap(syncState.projectionLog);
+  return record;
+}
+
+function closeReviewQueueItem(state: any, threadId = "", archiveKey = "") {
+  const syncState = ensureGmailSyncState(state);
+  syncState.reviewQueue = syncState.reviewQueue.map((item: any) => {
+    const sameThread = threadId && textValue(item?.threadId, "") === threadId;
+    const sameArchive = archiveKey && textValue(item?.archiveKey, "") === archiveKey;
+    if (!sameThread && !sameArchive) return item;
+    return {
+      ...item,
+      status: "resolved",
+      resolvedAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      pipelineVersion: PIPELINE_VERSION,
+    };
+  });
+}
+
+function pipelineSnapshot(state: any) {
+  const syncState = ensureGmailSyncState(state);
+  const reviewItems = Array.isArray(syncState.reviewQueue) ? syncState.reviewQueue : [];
+  return {
+    pipelineVersion: PIPELINE_VERSION,
+    resolverVersion: RESOLVER_VERSION,
+    ingestedThreads: Object.keys(syncState.ingestion || {}).length,
+    classifiedThreads: Object.keys(syncState.classification || {}).length,
+    resolvedThreads: Object.keys(syncState.resolution || {}).length,
+    projectedDocuments: Object.keys(syncState.projectionLog || {}).length,
+    openReviewItems: reviewItems.filter((item: any) => textValue(item?.status, "open") === "open").length,
+  };
 }
 
 async function runMigrationOnce(state: any, key: string, migration: () => Promise<any> | any) {
@@ -3104,6 +3280,19 @@ async function archiveQualifiedThread(thread: any, item: any, state: any, integr
     if (signal.category === "referater") {
       pushDocs(matched.docs.byggereferater, [repairedDocument]);
     }
+    recordProjection(state, archiveKey, {
+      status: "skipped_existing_manifest",
+      threadId: currentThreadId,
+      caseId: displayCaseId,
+      customerName: textValue(matched?.kunde, item?.kunde || ""),
+      category: signal.category,
+      documentType: signal.documentType,
+      documentDate,
+      fileName: textValue(existingManifest.fileName, fileName),
+      driveUrl: textValue(existingManifest.driveUrl, ""),
+      fileId: textValue(existingManifest.fileId, ""),
+    });
+    closeReviewQueueItem(state, currentThreadId, archiveKey);
     return {
       ok: true,
       skipped: true,
@@ -3170,6 +3359,19 @@ async function archiveQualifiedThread(thread: any, item: any, state: any, integr
     if (signal.category === "referater") {
       pushDocs(matched.docs.byggereferater, [repairedDocument]);
     }
+    recordProjection(state, archiveKey, {
+      status: "skipped_existing_activity",
+      threadId: currentThreadId,
+      caseId: displayCaseId,
+      customerName: textValue(matched?.kunde, item?.kunde || ""),
+      category: signal.category,
+      documentType: signal.documentType,
+      documentDate,
+      fileName,
+      driveUrl: textValue(existingEntry?.driveUrl, ""),
+      fileId: textValue(existingEntry?.fileId, ""),
+    });
+    closeReviewQueueItem(state, currentThreadId, archiveKey);
     return {
       ok: true,
       skipped: true,
@@ -3246,6 +3448,19 @@ async function archiveQualifiedThread(thread: any, item: any, state: any, integr
       status: "archived",
       skippedUpload: true,
     });
+    recordProjection(state, archiveKey, {
+      status: "skipped_existing_drive_file",
+      threadId: currentThreadId,
+      caseId: displayCaseId,
+      customerName: textValue(matched?.kunde, item?.kunde || ""),
+      category: signal.category,
+      documentType: signal.documentType,
+      documentDate,
+      fileName: document.fileName,
+      driveUrl: textValue(document.url, ""),
+      fileId: textValue(document.fileId, ""),
+    });
+    closeReviewQueueItem(state, currentThreadId, archiveKey);
     return {
       ok: true,
       skipped: true,
@@ -3292,6 +3507,19 @@ async function archiveQualifiedThread(thread: any, item: any, state: any, integr
     mimeType: textValue(document.mimeType, "text/markdown"),
     status: "archived",
   });
+  recordProjection(state, archiveKey, {
+    status: "projected",
+    threadId: currentThreadId,
+    caseId: displayCaseId,
+    customerName: textValue(matched?.kunde, item?.kunde || ""),
+    category: signal.category,
+    documentType: signal.documentType,
+    documentDate,
+    fileName: document.fileName,
+    driveUrl: textValue(document.url, ""),
+    fileId: textValue(document.fileId, ""),
+  });
+  closeReviewQueueItem(state, currentThreadId, archiveKey);
 
   return {
     ok: true,
@@ -3417,6 +3645,9 @@ export default async (request: Request) => {
     const fullThreads = fullThreadResults
       .filter((result): result is PromiseFulfilledResult<any> => result.status === "fulfilled")
       .map((result) => result.value);
+    for (const thread of fullThreads) {
+      recordIngestion(state, thread);
+    }
     const processableFullThreads: any[] = [];
     for (const thread of fullThreads) {
       if (isLedgerFinalWithoutNewMessage(state, thread)) {
@@ -3458,6 +3689,11 @@ export default async (request: Request) => {
       if (result.status === "fulfilled") return;
       const threadId = textValue(threads[index]?.id, "");
       const errorText = formatSyncError(result.reason);
+      recordResolution(state, threadId, {
+        status: "fetch_failed",
+        intent: "gmail_fetch",
+        error: errorText,
+      });
       archiveErrors.push({
         ok: false,
         threadId,
@@ -3489,6 +3725,7 @@ export default async (request: Request) => {
       const item = itemByThreadId.get(threadId);
       const intent = classifyThreadIntent(thread, item);
       intentByThreadId.set(threadId, intent);
+      recordClassification(state, thread, item, intent);
       updateThreadLedger(state, thread, {
         intent: intent.intent,
         lane: intent.lane,
@@ -3498,6 +3735,16 @@ export default async (request: Request) => {
       });
       if (intent.intent !== "task_candidate") continue;
       const result = ensureTaskCandidateFromThread(state, thread);
+      recordResolution(state, threadId, {
+        status: result.created ? "task_created" : "processed",
+        intent: "task_candidate",
+        lane: textValue(intent.lane, ""),
+        caseId: textValue(result.caseId, ""),
+        customerName: textValue(result.customerName, ""),
+        taskId: textValue(result.taskId, ""),
+        linked: Boolean(result.linked),
+        reason: textValue(result.reason, intent.reason),
+      });
       updateThreadLedger(state, thread, {
         intent: intent.intent,
         lane: intent.lane,
@@ -3564,6 +3811,12 @@ export default async (request: Request) => {
       try {
         const result = await archiveQualifiedThread(thread, item, state, integration, auth.actor);
         if (!result) {
+          recordResolution(state, threadId, {
+            status: "ignored",
+            intent: "archive_candidate",
+            lane: textValue(intent.lane, "archive"),
+            reason: "Ingen arkivsignal efter fuld trådlæsning.",
+          });
           updateThreadLedger(state, thread, {
             intent: textValue(intent.intent, "ignore"),
             lane: textValue(intent.lane, "inbox"),
@@ -3573,6 +3826,20 @@ export default async (request: Request) => {
           continue;
         }
         if (result.ok) {
+          recordResolution(state, threadId, {
+            status: result.skipped ? "already_projected" : "projected",
+            intent: "archive_candidate",
+            lane: textValue(intent.lane, "archive"),
+            caseId: textValue(result.matchedCaseId, ""),
+            customerName: textValue(result.customerName, ""),
+            documentType: textValue(result.documentType, ""),
+            documentDate: textValue(result.documentDate, ""),
+            category: textValue(result.category || signalCategoryFromResult(result), ""),
+            archiveKey: textValue(result.archiveKey, ""),
+            fileName: textValue(result.fileName, ""),
+            driveUrl: textValue(result.driveUrl, ""),
+            reason: result.skipped ? "Allerede arkiveret." : "Arkiveret i Drive.",
+          });
           updateThreadLedger(state, thread, {
             intent: "archive_candidate",
             lane: textValue(intent.lane, "archive"),
@@ -3609,6 +3876,33 @@ export default async (request: Request) => {
           const errorText = formatSyncError(result.error);
           const taskCreated = ensureUnmatchedMailTask(state, result, item, errorText, result.possibleCase);
           const isMatchReview = ["case_not_matched", "invoice_match_low_confidence", "invoice_match_ambiguous"].includes(textValue(result.error, ""));
+          recordResolution(state, threadId, {
+            status: isMatchReview ? "needs_review" : "failed_retryable",
+            intent: "archive_candidate",
+            lane: textValue(intent.lane, "archive"),
+            caseId: textValue(result.matchedCaseId, ""),
+            customerName: textValue(result.customerName, ""),
+            documentType: textValue(result.documentType, ""),
+            category: textValue(result.category, ""),
+            error: errorText,
+            possibleCaseId: textValue(result.possibleCase?.sid || result.possibleCase?.nr, ""),
+            possibleCustomerName: textValue(result.possibleCase?.kunde, ""),
+          });
+          if (isMatchReview) {
+            upsertReviewQueueItem(state, {
+              status: "open",
+              threadId: textValue(result.threadId || item?.threadId || thread?.id, ""),
+              subject: textValue(item?.subject, ""),
+              customerName: textValue(result.customerName, ""),
+              caseId: textValue(result.matchedCaseId, ""),
+              documentType: textValue(result.documentType, ""),
+              category: textValue(result.category, ""),
+              error: errorText,
+              notes: taskCreated ? "Oprettet som opgave uden dato, indtil den matches manuelt." : "Kræver manuelt match før arkivering.",
+              possibleCaseId: textValue(result.possibleCase?.sid || result.possibleCase?.nr, ""),
+              possibleCustomerName: textValue(result.possibleCase?.kunde, ""),
+            });
+          }
           updateThreadLedger(state, thread, {
             intent: "archive_candidate",
             lane: textValue(intent.lane, "archive"),
@@ -3633,6 +3927,13 @@ export default async (request: Request) => {
       } catch (error) {
         const errorText = formatSyncError(error);
         const attempts = Number(ledgerEntryForThread(state, threadId)?.attempts || 0) + 1;
+        recordResolution(state, threadId, {
+          status: attempts >= 3 ? "failed_final" : "failed_retryable",
+          intent: "archive_candidate",
+          lane: textValue(intent.lane, "archive"),
+          error: errorText,
+          attempts,
+        });
         updateThreadLedger(state, thread, {
           intent: "archive_candidate",
           lane: textValue(intent.lane, "archive"),
@@ -3787,10 +4088,13 @@ export default async (request: Request) => {
     }
     const sanitizedSyncLogEntries = normalizeExistingSyncLog(state);
     const savedAt = await saveDashboardState(state);
+    const pipeline = pipelineSnapshot(state);
 
     return json({
       ok: true,
       gmailSyncBuild: GMAIL_SYNC_BUILD_VERSION,
+      pipelineVersion: PIPELINE_VERSION,
+      resolverVersion: RESOLVER_VERSION,
       savedAt,
       synced: items.length,
       unhandled: items.filter((item: any) => !item.handled).length,
@@ -3814,6 +4118,7 @@ export default async (request: Request) => {
       migrations: migrationResults,
       migratedSyncLogEntries: migratedSyncLogEntries + sanitizedSyncLogEntries,
       syncDiagnostics: syncLogDiagnostics(state),
+      pipeline,
       ensuredFolders: ensuredFolders.length,
       archiveErrors,
       archivedCases: archivedResults.map((entry) => ({
@@ -3848,9 +4153,12 @@ export default async (request: Request) => {
     });
     const sanitizedSyncLogEntries = normalizeExistingSyncLog(state);
     const savedAt = await saveDashboardState(state);
+    const pipeline = pipelineSnapshot(state);
     return json({
       ok: true,
       gmailSyncBuild: GMAIL_SYNC_BUILD_VERSION,
+      pipelineVersion: PIPELINE_VERSION,
+      resolverVersion: RESOLVER_VERSION,
       savedAt,
       synced: 0,
       unhandled: 0,
@@ -3859,6 +4167,7 @@ export default async (request: Request) => {
       manifestBackfilled,
       migratedSyncLogEntries: migratedSyncLogEntries + sanitizedSyncLogEntries,
       syncDiagnostics: syncLogDiagnostics(state),
+      pipeline,
       archiveErrors: [{
         ok: false,
         threadId: "",

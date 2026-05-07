@@ -38,11 +38,21 @@ Arkiveringen skriver tilbage:
 - `docs.byggereferater`
 - `activityLog` med type `gmail_archive`
 - `syncLog` med `driveUrl`, når Drive-filen findes
+- `syncState.ingestion`
+- `syncState.classification`
+- `syncState.resolution`
+- `syncState.projectionLog`
+- `syncState.reviewQueue`
+- `syncState.archiveManifest`
 
 ## Dedupe-nøgle
 Agenten skal stoppe dubletter via to kontroller:
-1. `activityLog.archiveKey` for samme tråd, sag, dokumenttype og dokumentdato
-2. Drive-opslag efter samme `fileName` i målmappe før upload
+1. `archiveManifest.archiveKey`
+2. `activityLog.archiveKey` for samme tråd, sag, dokumenttype og dokumentdato
+3. Drive-opslag efter samme `fileName` i målmappe før upload
+4. `syncState.projectionLog`, så samme projection ikke behandles som ny
 
-## Begrænsning
-PDF-indhold er ikke en stabil kilde i denne løsning. Agenten må ikke være afhængig af PDF-tekst for at matche en sag sikkert.
+## PDF-regel
+PDF-indhold må bruges som evidens for adresse, fakturanr., dato, dokumenttype og beløb.
+
+PDF-indhold må ikke alene overstyre et stærkere match, og hvis PDF/mailtekst peger på flere nærliggende sager, skal tråden i `reviewQueue` i stedet for at blive arkiveret forkert.

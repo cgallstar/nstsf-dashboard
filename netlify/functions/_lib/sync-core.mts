@@ -13,6 +13,15 @@ export function stableThreeDigitHash(value = "") {
   return String(100 + hash).padStart(3, "0").slice(-3);
 }
 
+export function stableHash(value = "") {
+  let hash = 2166136261;
+  for (const char of String(value || "")) {
+    hash ^= char.charCodeAt(0);
+    hash = Math.imul(hash, 16777619);
+  }
+  return (hash >>> 0).toString(16).padStart(8, "0");
+}
+
 export function plainCompactText(value = "") {
   return String(value || "")
     .replace(/\bN\s*\.?\s*V\s*\.?\s*Gadesvej/gi, "NV Gadesvej")
@@ -76,7 +85,7 @@ export function resolveKnownCaseByText(entries: any[], text = "", signal: any = 
 
 export function sourceSignatureFromParts(threadId = "", messageIds: string[] = [], attachmentNames: string[] = [], fallback = "") {
   const source = [...messageIds, ...attachmentNames, fallback].filter(Boolean).join("|");
-  return stableThreeDigitHash(source || threadId);
+  return stableHash(source || threadId).slice(0, 12);
 }
 
 export function buildArchiveKeyFromParts(input: {

@@ -9,17 +9,32 @@ Sikre at NSTSF's dokumentation bliver gemt rigtigt og kan findes igen direkte fr
 - forbinde filer og links til den rigtige kunde
 - holde dokumentation opdateret og søgbar
 
-## MVP der er bygget nu
-- kører ved `Synk Gmail`
-- læser nye Gmail-tråde
-- genkender mails der ligner `byggemødereferat`
-- genkender fejl-/mangelmøder og afslutningsmøder, fx Pladebutik / Blågårdsgade 14
-- matcher mailen til en konkret sag via `S-` sag, `K-` kunde + adresse, kundenavn, sagsopgave, mailtekst, PDF-tekst og filnavne
-- bruger ikke PDF-tekstlæsning som automatisk matchgrundlag
-- arkiverer mailindholdet som markdown i `02 Referater`
-- bruger datostempel + `K-` kundenr. og `S-` sag i filnavnet, når begge findes
-- tjekker Drive-mappen for samme filnavn før upload, så samme arkivfil ikke oprettes igen
-- logger i dashboard-state at mailen er arkiveret
+## Runtime der er bygget nu
+Agenten kører som en lagdelt sync-pipeline i `netlify/functions/gmail-sync.mts`.
+
+1. Ingestion
+- henter prioriterede Gmail-tråde
+- gemmer kompakt trådrecord i `syncState.ingestion`
+- bruger tråd-id, message-id'er, vedhæftningsnavne og body hash som stabil kildeidentitet
+
+2. Klassifikation
+- klassificerer tråden som opgave, arkivkandidat eller irrelevant
+- gemmer intent, lane, årsag og dokumenttype i `syncState.classification`
+
+3. Resolution
+- matcher til konkret kunde/sag via `S-`, `K-` + adresse, adresse, kundedata, sagsopgave, mailtekst, filnavne og PDF-tekst som evidens
+- gemmer resultat i `syncState.resolution`
+- usikre matches lægges i `syncState.reviewQueue` og oprettes som opgave uden dato, hvis de kræver handling
+
+4. Projection
+- arkiverer kun når match er sikkert
+- skriver markdown til korrekt Drive-mappe
+- linker dokumentet tilbage til kunden
+- gemmer projection i `syncState.projectionLog`
+
+5. Idempotens
+- bruger `archiveManifest`, `archiveKey`, activityLog og Drive-filnavn som stopklodser mod dubletter
+- hvis filen allerede findes, bruges eksisterende fil og sync-loggen støjer ikke med ny arkivering
 
 ## Output
 - filnavn: `YYYY-MM-DD - K-kundenr - S-sag - Byggemodereferat.md`
@@ -27,10 +42,10 @@ Sikre at NSTSF's dokumentation bliver gemt rigtigt og kan findes igen direkte fr
 - aktivitet: `gmail_archive`
 - opdateringskort: linker til Drive-filen når der findes `driveUrl`, ellers til sagen
 
-## Afgrænsning i første version
-- kun regelstyret arkivering
-- kun mails der matcher en dokumentregel sikkert
-- ingen automatisk oprettelse af opgaver ud fra action points endnu
+## Afgrænsning
+- automatisk arkivering kræver sikkert match
+- manuel review bruges ved tvivl i stedet for forkert arkivering
+- PDF-tekst må bruges som evidens, men ikke som eneste gæt ved konkurrerende matches
 
 ## Tilknyttede dokumenter
 - `ks-archive-operating-rules.md`

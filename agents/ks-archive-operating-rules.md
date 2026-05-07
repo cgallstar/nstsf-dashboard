@@ -3,6 +3,30 @@
 ## Trigger
 - kører ved `Synk Gmail`
 - vurderer hver ny Gmail-tråd
+- kører også ved scheduled morgensync, når automation/Netlify-schedule kalder samme endpoint
+
+## Pipeline-lag
+Agenten må ikke behandle Gmail som en løs liste af mails. Hver tråd skal gennem disse lag:
+
+1. `ingestion`
+- gem tråd-id, history-id, seneste message-id, afsender, emne, vedhæftningsnavne og body-hash
+- samme tråd uden ny besked må ikke behandles igen som ny hændelse
+
+2. `classification`
+- afgør om tråden er `task_candidate`, `archive_candidate` eller `ignore`
+- gem begrundelsen, så fejl kan spores
+
+3. `resolution`
+- match til kunde/sag eller marker som `needs_review`
+- usikkert match må ikke arkiveres automatisk
+
+4. `projection`
+- skriv først til kunde/Drive/state, når resolution er sikker
+- gem `archiveKey`, `fileName`, `driveUrl`, `caseId` og dokumenttype
+
+5. `reviewQueue`
+- usikre eller tvetydige sager dedupes på thread-id
+- samme fejl må kun stå én gang, selvom sync køres igen
 
 ## Matcher
 - `byggemødereferat`
@@ -37,6 +61,7 @@ Samme mailtråd må ikke blive arkiveret to gange for:
 - samme sag
 - samme dokumenttype
 - samme dokumentdato
+- samme `archiveKey`
 
 Derudover skal agenten kontrollere Drive-mappen for samme filnavn før upload. Hvis filen allerede findes, skal eksisterende fil bruges og linkes i state i stedet for at uploade en ny kopi.
 
@@ -59,4 +84,4 @@ Klik på et opdateringskort skal åbne Drive-filen, hvis `driveUrl` findes. Elle
 
 ## Ikke i første version
 - bred AI-klassifikation af alle dokumenttyper
-- automatisk udledning af action points til `Sager`
+- fuld automatisk løsning af manuelle review-items uden brugerbeslutning
