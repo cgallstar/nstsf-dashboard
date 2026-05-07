@@ -23,13 +23,15 @@ import {
   uploadDriveFile,
 } from "./_lib/google.mts";
 
-const GMAIL_SYNC_BUILD_VERSION = "2026-05-07-doc-list-repair-v1";
+const GMAIL_SYNC_BUILD_VERSION = "2026-05-07-gadesvej-offer-routing-v1";
 const INTERNAL_PATTERNS = [/@nstsf\.dk/i, /gemini-notes@google\.com/i];
 const MAILBOX_OWNER = "christian@nstsf.dk";
 const NSTSF_QUERY = `(from:${MAILBOX_OWNER} OR from:smg@nstsf.dk OR from:nstsf.dk OR to:${MAILBOX_OWNER} OR cc:${MAILBOX_OWNER})`;
 const EXCLUDED_MAIL_QUERY = "-from:cgallstar@gmail.com -from:christian@scventures.vc -to:christian@scventures.vc -cc:christian@scventures.vc -werkhaus";
 const OWNER_QUERY = `${NSTSF_QUERY} ${EXCLUDED_MAIL_QUERY}`;
 const GADESVEJ_DRIVE_URL = "https://drive.google.com/drive/folders/1IPXK472x8-Peasfv7kKU-JrG9oUNb6-4";
+const SIGNE_TAM_OFFER_REPLY_THREAD_ID = "19e01f71f5d758d8";
+const MATHIAS_ANNA_FACADE_OFFER_THREAD_ID = "19e01e573bd6f410";
 const KNOWN_INVOICE_CASES: Record<string, string> = {
   "1158": "1009",
 };
@@ -615,6 +617,11 @@ function isNvGadesvej10Thread(text = "") {
   return compact.includes("nv gadesvej") && /\b10\b/.test(compact);
 }
 
+function isNvGadesvej12Thread(text = "") {
+  const compact = plainCompactText(text);
+  return compact.includes("nv gadesvej") && /\b12a?\b/.test(compact);
+}
+
 function findOrCreateGadesvejCase(state: any) {
   const entries = Array.isArray(state?.sager) ? state.sager : [];
   const existing = entries.find((entry: any) => {
@@ -719,6 +726,10 @@ function findOrCreateKnownCase(state: any, signal: any, text = "") {
       b: "600000",
       status: signal?.category === "tilbud" ? "Tilbud sendt" : "Oprettet fra Gmail",
     });
+  }
+
+  if (signal?.category === "tilbud" && isNvGadesvej12Thread(text)) {
+    return findOrCreateGadesvejCase(state);
   }
 
   if (compact.includes("bulowsvej 9")) {
@@ -1562,7 +1573,7 @@ function inferArchiveSignal(subject = "", body = "", from = "") {
       category: "tilbud",
       documentType: "Tilbud",
       sourceType: isInternalSender(from) ? "internal" : "external",
-      fileLabel: "",
+      fileLabel: rawSubject || "Tilbud",
     };
   }
   if (/tilbud|overslagspris|prisgrundlag/.test(subjectSource)) {
@@ -1570,7 +1581,7 @@ function inferArchiveSignal(subject = "", body = "", from = "") {
       category: "tilbud",
       documentType: "Tilbud",
       sourceType: isInternalSender(from) ? "internal" : "external",
-      fileLabel: "",
+      fileLabel: rawSubject || "Tilbud",
     };
   }
   if (/tilbud|overslagspris|prisgrundlag/.test(source)) {
@@ -1578,7 +1589,7 @@ function inferArchiveSignal(subject = "", body = "", from = "") {
       category: "tilbud",
       documentType: "Tilbud",
       sourceType: isInternalSender(from) ? "internal" : "external",
-      fileLabel: "",
+      fileLabel: rawSubject || "Tilbud",
     };
   }
   if (invoiceMatch) {
@@ -2759,6 +2770,82 @@ function repairDocsFromActivityLog(state: any) {
   return repaired;
 }
 
+function removeDocsWhere(entry: any, category: string, predicate: (doc: any) => boolean) {
+  if (!Array.isArray(entry?.docs?.[category])) return 0;
+  const before = entry.docs[category].length;
+  entry.docs[category] = entry.docs[category].filter((doc: any) => !predicate(doc));
+  return before - entry.docs[category].length;
+}
+
+function repairKnownGadesvejOfferRouting(state: any) {
+  let changed = 0;
+  const hasOfferDoc = (entry: any, terms: string[]) => {
+    if (!entry) return false;
+    ensureCaseShape(entry);
+    return (entry.docs?.tilbud || []).some((doc: any) => {
+      const hay = plainCompactText(`${doc?.titel || ""} ${doc?.title || ""} ${doc?.fileName || ""} ${doc?.notes || ""} ${doc?.url || ""}`);
+      return terms.every((term) => hay.includes(plainCompactText(term)));
+    });
+  };
+  const signeCase = findCaseByCustomerNumber(state, "1015", (entry: any) => {
+    const marker = plainCompactText(`${entry?.kunde || ""} ${entry?.adr || ""}`);
+    return marker.includes("signe") || marker.includes("tam") || (marker.includes("gadesvej") && marker.includes("10"));
+  });
+  const facadeCase = findCaseByCustomerNumber(state, "1006", (entry: any) => {
+    const marker = plainCompactText(`${entry?.kunde || ""} ${entry?.adr || ""}`);
+    return marker.includes("mathias") || marker.includes("gadesvej");
+  });
+  const needsSigneRepair = !hasOfferDoc(signeCase, ["svar", "tilbud", "gadesvej", "10"]);
+  const needsFacadeRepair = !hasOfferDoc(facadeCase, ["facaderenovering"]);
+  if (!needsSigneRepair && !needsFacadeRepair) return 0;
+
+  const syncState = ensureGmailSyncState(state);
+  if (needsSigneRepair) delete syncState.threadLedger[SIGNE_TAM_OFFER_REPLY_THREAD_ID];
+  if (needsFacadeRepair) delete syncState.threadLedger[MATHIAS_ANNA_FACADE_OFFER_THREAD_ID];
+
+  state.syncLog = Array.isArray(state?.syncLog)
+    ? state.syncLog.filter((entry: any) => {
+      const threadId = textValue(entry?.threadId, "");
+      if (needsSigneRepair && threadId === SIGNE_TAM_OFFER_REPLY_THREAD_ID) return false;
+      if (needsFacadeRepair && threadId === MATHIAS_ANNA_FACADE_OFFER_THREAD_ID) return false;
+      return true;
+    })
+    : [];
+
+  const wrongCase = facadeCase;
+  if (wrongCase) {
+    ensureCaseShape(wrongCase);
+    const activityBefore = wrongCase.activityLog.length;
+    wrongCase.activityLog = wrongCase.activityLog.filter((activity: any) => {
+      const hay = plainCompactText(`${activity?.threadId || ""} ${activity?.subject || ""} ${activity?.fileName || ""} ${activity?.notes || ""}`);
+      return !(
+        textValue(activity?.threadId, "") === SIGNE_TAM_OFFER_REPLY_THREAD_ID ||
+        hay.includes("svar pa sporgsmal vedr tilbud nv gadesvej 10") ||
+        hay.includes("signe tam")
+      );
+    });
+    changed += activityBefore - wrongCase.activityLog.length;
+    const removeWrongSigneDoc = (doc: any) => {
+      const hay = plainCompactText(`${doc?.titel || ""} ${doc?.title || ""} ${doc?.fileName || ""} ${doc?.notes || ""} ${doc?.url || ""}`);
+      return hay.includes(SIGNE_TAM_OFFER_REPLY_THREAD_ID) ||
+        hay.includes("svar pa sporgsmal vedr tilbud nv gadesvej 10") ||
+        (hay.includes("2026 05 07 1006 a tilbud") && !hay.includes("facaderenovering"));
+    };
+    changed += removeDocsWhere(wrongCase, "tilbud", removeWrongSigneDoc);
+    changed += removeDocsWhere(wrongCase, "mails", removeWrongSigneDoc);
+  }
+
+  const targetCase = signeCase || findOrCreateKnownCase(state, { category: "tilbud", documentType: "Tilbud" }, "Signe Tam NV Gadesvej 10 tilbud");
+  if (targetCase) {
+    ensureCaseShape(targetCase);
+    targetCase.k = Number(targetCase.k || 4) === 5 ? 4 : targetCase.k;
+    targetCase.status = textValue(targetCase.status, "Tilbud sendt") || "Tilbud sendt";
+  }
+
+  changed += Number(needsSigneRepair) + Number(needsFacadeRepair);
+  return changed;
+}
+
 async function archiveQualifiedThread(thread: any, item: any, state: any, integration: any, actor: any) {
   const summaries = Array.isArray(thread?.messages) ? thread.messages.map(gmailMessageSummary) : [];
   const threadText = summaries
@@ -3006,6 +3093,7 @@ export default async (request: Request) => {
   try {
     const lundebjergvejCustomerCreated = ensureKnownLundebjergvejCustomer(state);
     const lundebjergvejBackfillPrepared = prepareLundebjergvejBackfill(state);
+    const gadesvejOfferRoutingRepaired = repairKnownGadesvejOfferRouting(state);
     const dkeQuestionThreads = await listRecentGmailThreads(DKE_QUESTION_QUERY, 6).catch((error) => {
       appendSyncLog(state, {
         status: "error",
@@ -3337,6 +3425,17 @@ export default async (request: Request) => {
         notes: `${offerFollowupsCreated} action point${offerFollowupsCreated === 1 ? "" : "s"} for tilbud er sikret på kundesager.`,
       });
     }
+    if (gadesvejOfferRoutingRepaired) {
+      appendSyncLog(state, {
+        status: "updated",
+        subject: "Gadesvej tilbudsmatch repareret",
+        customerName: "K-1006 / K-1015",
+        caseId: "",
+        documentType: "Tilbud",
+        category: "sync",
+        notes: "NV Gadesvej 10 behandles som K-1015, og NV/NW Gadesvej 12 behandles som K-1006. Tidligere forkert route er nulstillet til ny arkivering.",
+      });
+    }
     const materialDocumentation = await ensureKnownMaterialDocumentation(state, integration, auth.actor);
     const invoice1152Handled = await ensureKnownInvoice1152Handling(state, integration, auth.actor);
     const bookkeepingTaskBackfilled = ensureKnownBookkeepingTask(state);
@@ -3410,6 +3509,7 @@ export default async (request: Request) => {
       lundebjergvejBackfillPrepared: lundebjergvejBackfillPrepared ? 1 : 0,
       lundebjergvejReferatHandled: lundebjergvejReferatHandled?.ok ? 1 : 0,
       repairedDocs,
+      gadesvejOfferRoutingRepaired,
       migratedSyncLogEntries: migratedSyncLogEntries + sanitizedSyncLogEntries,
       syncDiagnostics: syncLogDiagnostics(state),
       ensuredFolders: ensuredFolders.length,
