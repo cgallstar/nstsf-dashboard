@@ -23,7 +23,7 @@ import {
   uploadDriveFile,
 } from "./_lib/google.mts";
 
-const GMAIL_SYNC_BUILD_VERSION = "2026-05-07-lundebjergvej-customer-archive-v1";
+const GMAIL_SYNC_BUILD_VERSION = "2026-05-07-doc-list-repair-v1";
 const INTERNAL_PATTERNS = [/@nstsf\.dk/i, /gemini-notes@google\.com/i];
 const MAILBOX_OWNER = "christian@nstsf.dk";
 const NSTSF_QUERY = `(from:${MAILBOX_OWNER} OR from:smg@nstsf.dk OR from:nstsf.dk OR to:${MAILBOX_OWNER} OR cc:${MAILBOX_OWNER})`;
@@ -2716,6 +2716,49 @@ function backfillOfferFollowupsFromState(state: any) {
   return created;
 }
 
+function repairDocsFromActivityLog(state: any) {
+  const entries = Array.isArray(state?.sager) ? state.sager : [];
+  let repaired = 0;
+  for (const entry of entries) {
+    ensureCaseShape(entry);
+    const activities = Array.isArray(entry.activityLog) ? entry.activityLog : [];
+    for (const activity of activities) {
+      if (textValue(activity?.type, "") !== "gmail_archive") continue;
+      const category = textValue(activity?.archiveCategory || activity?.category, "");
+      if (!category || !Array.isArray(entry.docs?.[category])) continue;
+      const fileName = textValue(activity?.fileName, "");
+      const driveUrl = textValue(activity?.driveUrl, "");
+      const documentDate = textValue(activity?.documentDate, textValue(activity?.createdAt, "").slice(0, 10));
+      const title = fileName
+        ? fileName.replace(/\.md$/i, "")
+        : textValue(activity?.subject || activity?.documentType, "Dokument");
+      const before = entry.docs[category].length;
+      pushDocs(entry.docs[category], [{
+        titel: title,
+        dato: documentDate,
+        url: driveUrl,
+        fileName,
+        mimeType: "text/markdown",
+        notes: textValue(activity?.notes, ""),
+      }]);
+      if (entry.docs[category].length > before) repaired += 1;
+      if (category === "referater" && Array.isArray(entry.docs.byggereferater)) {
+        const referatBefore = entry.docs.byggereferater.length;
+        pushDocs(entry.docs.byggereferater, [{
+          titel: title,
+          dato: documentDate,
+          url: driveUrl,
+          fileName,
+          mimeType: "text/markdown",
+          notes: textValue(activity?.notes, ""),
+        }]);
+        if (entry.docs.byggereferater.length > referatBefore) repaired += 1;
+      }
+    }
+  }
+  return repaired;
+}
+
 async function archiveQualifiedThread(thread: any, item: any, state: any, integration: any, actor: any) {
   const summaries = Array.isArray(thread?.messages) ? thread.messages.map(gmailMessageSummary) : [];
   const threadText = summaries
@@ -2803,6 +2846,18 @@ async function archiveQualifiedThread(thread: any, item: any, state: any, integr
       const sameFile = textValue(entry?.fileName, "") === fileName;
       return sameFile || (sameThread && sameType && sameDate);
     }) || {};
+    const repairedDocument = {
+      title: fileTitle,
+      fileName,
+      mimeType: "text/markdown",
+      date: documentDate,
+      url: textValue(existingEntry?.driveUrl, ""),
+      notes: `Automatisk arkiveret fra Gmail-sync. Tråd: ${textValue(item?.threadId || thread?.id, "")}`,
+    };
+    pushDocs(matched.docs[signal.category] || [], [repairedDocument]);
+    if (signal.category === "referater") {
+      pushDocs(matched.docs.byggereferater, [repairedDocument]);
+    }
     return {
       ok: true,
       skipped: true,
@@ -3320,6 +3375,18 @@ export default async (request: Request) => {
     }
 
     state.emails = items;
+    const repairedDocs = repairDocsFromActivityLog(state);
+    if (repairedDocs) {
+      appendSyncLog(state, {
+        status: "updated",
+        subject: "Dokumentlister repareret",
+        customerName: "",
+        caseId: "",
+        documentType: "Dokumentliste",
+        category: "sync",
+        notes: `${repairedDocs} arkiverede dokument${repairedDocs === 1 ? "" : "er"} blev genskabt på kundernes dokumentlister ud fra activityLog.`,
+      });
+    }
     const sanitizedSyncLogEntries = normalizeExistingSyncLog(state);
     const savedAt = await saveDashboardState(state);
 
@@ -3342,6 +3409,7 @@ export default async (request: Request) => {
       lundebjergvejCustomerCreated: lundebjergvejCustomerCreated ? 1 : 0,
       lundebjergvejBackfillPrepared: lundebjergvejBackfillPrepared ? 1 : 0,
       lundebjergvejReferatHandled: lundebjergvejReferatHandled?.ok ? 1 : 0,
+      repairedDocs,
       migratedSyncLogEntries: migratedSyncLogEntries + sanitizedSyncLogEntries,
       syncDiagnostics: syncLogDiagnostics(state),
       ensuredFolders: ensuredFolders.length,
