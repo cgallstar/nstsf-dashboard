@@ -27,7 +27,8 @@ import {
   resolveKnownCaseByText,
 } from "./_lib/sync-core.mts";
 
-const GMAIL_SYNC_BUILD_VERSION = "2026-05-07-robust-sync-manifest-v1";
+const GMAIL_SYNC_BUILD_VERSION = "2026-05-07-robust-sync-manifest-v2";
+const RESOLVER_VERSION = "2026-05-07-resolver-v2";
 const INTERNAL_PATTERNS = [/@nstsf\.dk/i, /gemini-notes@google\.com/i];
 const MAILBOX_OWNER = "christian@nstsf.dk";
 const NSTSF_QUERY = `(from:${MAILBOX_OWNER} OR from:smg@nstsf.dk OR from:nstsf.dk OR to:${MAILBOX_OWNER} OR cc:${MAILBOX_OWNER})`;
@@ -208,6 +209,9 @@ function ensureGmailSyncState(state: any) {
   state.syncState.archiveManifest = state.syncState.archiveManifest && typeof state.syncState.archiveManifest === "object" && !Array.isArray(state.syncState.archiveManifest)
     ? state.syncState.archiveManifest
     : {};
+  state.syncState.migrations = state.syncState.migrations && typeof state.syncState.migrations === "object" && !Array.isArray(state.syncState.migrations)
+    ? state.syncState.migrations
+    : {};
   return state.syncState;
 }
 
@@ -263,6 +267,34 @@ function registerArchiveManifest(state: any, archiveKey: string, payload: Record
   return next;
 }
 
+async function runMigrationOnce(state: any, key: string, migration: () => Promise<any> | any) {
+  const syncState = ensureGmailSyncState(state);
+  const current = syncState.migrations[key] || {};
+  if (current.status === "completed") return { ran: false, result: current.result || null };
+  const attempts = Number(current.attempts || 0) + 1;
+  try {
+    const result = await migration();
+    syncState.migrations[key] = {
+      key,
+      status: "completed",
+      attempts,
+      completedAt: new Date().toISOString(),
+      result: result ?? null,
+    };
+    return { ran: true, result };
+  } catch (error) {
+    const errorText = formatSyncError(error);
+    syncState.migrations[key] = {
+      key,
+      status: "failed",
+      attempts,
+      failedAt: new Date().toISOString(),
+      error: errorText,
+    };
+    return { ran: true, result: null, error: errorText };
+  }
+}
+
 function isFinalLedgerStatus(status = "") {
   return ["processed", "task_created", "archived", "updated", "needs_manual_match", "ignored", "failed_final"].includes(textValue(status, ""));
 }
@@ -275,6 +307,9 @@ function ledgerEntryForThread(state: any, threadId = "") {
 function shouldSkipThreadByLedger(state: any, threadId = "", historyId = "") {
   if (!threadId || !historyId) return false;
   const entry = ledgerEntryForThread(state, threadId);
+  if (entry && textValue(entry.status, "") === "needs_manual_match" && textValue(entry.resolverVersion, "") !== RESOLVER_VERSION) {
+    return false;
+  }
   return Boolean(entry && textValue(entry.historyId, "") === historyId && isFinalLedgerStatus(entry.status));
 }
 
@@ -292,6 +327,7 @@ function updateThreadLedger(state: any, thread: any, payload: Record<string, unk
     latestMessageId: textValue(payload.latestMessageId || latest?.id || previous.latestMessageId || ""),
     latestMessageAt: textValue(payload.latestMessageAt || latest?.isoDate || previous.latestMessageAt, ""),
     lastSeenAt: new Date().toISOString(),
+    resolverVersion: textValue(payload.resolverVersion, RESOLVER_VERSION),
     ...payload,
   };
   syncState.threadLedger[threadId] = next;
@@ -2352,6 +2388,9 @@ function isLedgerFinalWithoutNewMessage(state: any, thread: any) {
   const threadId = textValue(thread?.id, "");
   const previous = ledgerEntryForThread(state, threadId);
   if (!previous || !isFinalLedgerStatus(previous.status)) return false;
+  if (textValue(previous.status, "") === "needs_manual_match" && textValue(previous.resolverVersion, "") !== RESOLVER_VERSION) {
+    return false;
+  }
   const latest = latestThreadSummary(thread);
   if (!latest) return false;
   const previousMessageId = textValue(previous.latestMessageId, "");
@@ -3302,16 +3341,20 @@ export default async (request: Request) => {
   if (!state) return json({ ok: false, error: "no_state" }, 404);
   const migratedSyncLogEntries = normalizeExistingSyncLog(state);
   const syncStartedAt = Date.now();
-  const isNearFunctionTimeout = () => Date.now() - syncStartedAt > 6500;
+  const isNearFunctionTimeout = () => Date.now() - syncStartedAt > 18000;
   const archivedResults: any[] = [];
   const archiveErrors: any[] = [];
   const ensuredFolders: any[] = [];
   const manifestBackfilled = rebuildArchiveManifestFromActivities(state);
+  const migrationResults: Record<string, any> = {};
 
   try {
-    const lundebjergvejCustomerCreated = ensureKnownLundebjergvejCustomer(state);
-    const lundebjergvejBackfillPrepared = prepareLundebjergvejBackfill(state);
-    const gadesvejOfferRoutingRepaired = repairKnownGadesvejOfferRouting(state);
+    const lundebjergvejCustomerMigration = await runMigrationOnce(state, "2026-05-07-lundebjergvej-customer", () => ensureKnownLundebjergvejCustomer(state));
+    const lundebjergvejBackfillMigration = await runMigrationOnce(state, "2026-05-07-lundebjergvej-backfill-reset", () => prepareLundebjergvejBackfill(state));
+    const gadesvejOfferRoutingMigration = await runMigrationOnce(state, "2026-05-07-gadesvej-offer-routing-repair", () => repairKnownGadesvejOfferRouting(state));
+    migrationResults.lundebjergvejCustomerCreated = lundebjergvejCustomerMigration.result ? 1 : 0;
+    migrationResults.lundebjergvejBackfillPrepared = lundebjergvejBackfillMigration.result ? 1 : 0;
+    migrationResults.gadesvejOfferRoutingRepaired = gadesvejOfferRoutingMigration.result ? 1 : 0;
     const dkeQuestionThreads = await listRecentGmailThreads(DKE_QUESTION_QUERY, 6).catch((error) => {
       appendSyncLog(state, {
         status: "error",
@@ -3339,7 +3382,7 @@ export default async (request: Request) => {
       return [];
     });
     const archiveThreadBatches = await Promise.allSettled(
-      ARCHIVE_QUERIES.map((query) => listRecentGmailThreads(query, 5)),
+      ARCHIVE_QUERIES.map((query) => listRecentGmailThreads(query, 10)),
     );
     const archiveThreads = dedupeThreads(archiveThreadBatches
       .filter((result): result is PromiseFulfilledResult<any[]> => result.status === "fulfilled")
@@ -3357,8 +3400,8 @@ export default async (request: Request) => {
         notes: `Gmail-søgning ${index + 1} svarede ikke korrekt. Sync fortsatte med de øvrige søgninger.`,
       });
     });
-    const internalInboxThreads = isNearFunctionTimeout() ? [] : await listRecentGmailThreads(INTERNAL_ACTION_INBOX_QUERY, 8);
-    const inboxThreads = isNearFunctionTimeout() ? [] : await listRecentGmailThreads(SYNC_QUERY, 6);
+    const internalInboxThreads = isNearFunctionTimeout() ? [] : await listRecentGmailThreads(INTERNAL_ACTION_INBOX_QUERY, 12);
+    const inboxThreads = isNearFunctionTimeout() ? [] : await listRecentGmailThreads(SYNC_QUERY, 10);
     queueDiscoveredThreads(state, [
       { lane: "archive", priority: 110, threads: lundebjergvejThreads },
       { lane: "dke_questions", priority: 100, threads: dkeQuestionThreads },
@@ -3643,7 +3686,7 @@ export default async (request: Request) => {
         notes: `${offerFollowupsCreated} action point${offerFollowupsCreated === 1 ? "" : "s"} for tilbud er sikret på kundesager.`,
       });
     }
-    if (gadesvejOfferRoutingRepaired) {
+    if (migrationResults.gadesvejOfferRoutingRepaired) {
       appendSyncLog(state, {
         status: "updated",
         subject: "Gadesvej tilbudsmatch repareret",
@@ -3654,12 +3697,16 @@ export default async (request: Request) => {
         notes: "NV Gadesvej 10 behandles som K-1015, og NV/NW Gadesvej 12 behandles som K-1006. Tidligere forkert route er nulstillet til ny arkivering.",
       });
     }
-    const materialDocumentation = await ensureKnownMaterialDocumentation(state, integration, auth.actor);
-    const invoice1152Handled = await ensureKnownInvoice1152Handling(state, integration, auth.actor);
-    const bookkeepingTaskBackfilled = ensureKnownBookkeepingTask(state);
+    const materialDocumentationMigration = await runMigrationOnce(state, "2026-05-07-material-documentation-microcement", () => ensureKnownMaterialDocumentation(state, integration, auth.actor));
+    const invoice1152Migration = await runMigrationOnce(state, "2026-05-07-invoice-1152-lykkeholmsalle", () => ensureKnownInvoice1152Handling(state, integration, auth.actor));
+    const bookkeepingTaskMigration = await runMigrationOnce(state, "2026-05-07-bookkeeping-task", () => ensureKnownBookkeepingTask(state));
+    const materialDocumentation = materialDocumentationMigration.result;
+    const invoice1152Handled = invoice1152Migration.result;
+    const bookkeepingTaskBackfilled = bookkeepingTaskMigration.result;
     let knownGadesvejOfferArchives: any[] = [];
     try {
-      knownGadesvejOfferArchives = await ensureKnownGadesvejOfferArchives(state, integration, auth.actor);
+      const knownGadesvejOfferMigration = await runMigrationOnce(state, "2026-05-07-gadesvej-known-offer-archives", () => ensureKnownGadesvejOfferArchives(state, integration, auth.actor));
+      knownGadesvejOfferArchives = Array.isArray(knownGadesvejOfferMigration.result) ? knownGadesvejOfferMigration.result : [];
       for (const result of knownGadesvejOfferArchives) {
         if (!result?.ok || result?.skipped) continue;
         archivedResults.push(result);
@@ -3692,7 +3739,8 @@ export default async (request: Request) => {
     }
     let lundebjergvejReferatHandled = null;
     try {
-      lundebjergvejReferatHandled = await ensureKnownLundebjergvejReferat(state, integration, auth.actor);
+      const lundebjergvejReferatMigration = await runMigrationOnce(state, "2026-05-07-lundebjergvej-referat-archive", () => ensureKnownLundebjergvejReferat(state, integration, auth.actor));
+      lundebjergvejReferatHandled = lundebjergvejReferatMigration.result;
       if (lundebjergvejReferatHandled?.ok && !lundebjergvejReferatHandled?.skipped) {
         archivedResults.push(lundebjergvejReferatHandled);
         appendSyncLog(state, {
@@ -3757,12 +3805,13 @@ export default async (request: Request) => {
       invoice1152Handled: invoice1152Handled ? 1 : 0,
       bookkeepingTaskBackfilled: bookkeepingTaskBackfilled ? 1 : 0,
       knownGadesvejOfferArchives: knownGadesvejOfferArchives.filter((result) => result?.ok).length,
-      lundebjergvejCustomerCreated: lundebjergvejCustomerCreated ? 1 : 0,
-      lundebjergvejBackfillPrepared: lundebjergvejBackfillPrepared ? 1 : 0,
+      lundebjergvejCustomerCreated: migrationResults.lundebjergvejCustomerCreated || 0,
+      lundebjergvejBackfillPrepared: migrationResults.lundebjergvejBackfillPrepared || 0,
       lundebjergvejReferatHandled: lundebjergvejReferatHandled?.ok ? 1 : 0,
       manifestBackfilled,
       repairedDocs,
-      gadesvejOfferRoutingRepaired,
+      gadesvejOfferRoutingRepaired: migrationResults.gadesvejOfferRoutingRepaired || 0,
+      migrations: migrationResults,
       migratedSyncLogEntries: migratedSyncLogEntries + sanitizedSyncLogEntries,
       syncDiagnostics: syncLogDiagnostics(state),
       ensuredFolders: ensuredFolders.length,
