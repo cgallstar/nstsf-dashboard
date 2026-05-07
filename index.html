@@ -2093,9 +2093,11 @@ function inferInternalTaskCustomerId(task={}){
   return '';
 }
 function internalTaskReference(task={}){
-  const customerId = textValue(task.customerId || task.kundeId || task.customerRef || inferInternalTaskCustomerId(task), '').replace(/^K-/i, '');
+  const explicitUnlinkedRef = textValue(task.unlinkedRef || task.sagId, '');
+  const explicitCustomerId = textValue(task.customerId || task.kundeId || task.customerRef, '');
+  const customerId = textValue(explicitCustomerId || (explicitUnlinkedRef ? '' : inferInternalTaskCustomerId(task)), '').replace(/^K-/i, '');
   if(customerId) return formatCustomerIdDisplay(customerId);
-  const sagId = textValue(task.sagId || task.unlinkedRef, '').replace(/^S-/i, '').replace(/^K-/i, '');
+  const sagId = explicitUnlinkedRef.replace(/^S-/i, '').replace(/^K-/i, '');
   return formatLooseSagRef(sagId || stableThreeDigitHash(task.id || task.title || task.createdAt));
 }
 function compactDisplayRef(ref=''){

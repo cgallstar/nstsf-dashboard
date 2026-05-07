@@ -1420,13 +1420,27 @@ function ensureKnownBookkeepingTask(state: any) {
   state.internalTasks = Array.isArray(state.internalTasks) ? state.internalTasks : [];
   const threadId = "19dfd63df6e105f8";
   const title = "Bogføring: manglende bilag og leverandørfakturaer";
-  const existing = state.internalTasks.some((task: any) => {
+  const unlinkedRef = `S-${stableThreeDigitHash(`${title}|${threadId}`)}`;
+  const existing = state.internalTasks.find((task: any) => {
     const sameThread = textValue(task?.threadId, "") === threadId;
     const sameTitle = normalizeCaseKey(task?.title) === normalizeCaseKey(title) ||
       normalizeCaseKey(task?.title) === normalizeCaseKey("Bogføring");
     return (sameThread || sameTitle) && String(task?.status || "").toLowerCase() !== "fuldført";
   });
-  if (existing) return false;
+  if (existing) {
+    existing.title = title;
+    existing.threadId = threadId;
+    existing.customerId = "";
+    existing.kundeId = "";
+    existing.customerRef = "";
+    existing.sagId = "";
+    existing.unlinkedRef = unlinkedRef;
+    existing.source = textValue(existing.source, "gmail_task_backfill");
+    existing.domain = textValue(existing.domain, "økonomi");
+    existing.bucket = textValue(existing.bucket, "today");
+    existing.owner = textValue(existing.owner, "Søren");
+    return false;
+  }
   state.internalTasks.unshift(normalizeInternalTask({
     id: `gmail-task-${threadId}`,
     title,
@@ -1438,7 +1452,7 @@ function ensureKnownBookkeepingTask(state: any) {
     bucket: "today",
     threadId,
     customerId: "",
-    unlinkedRef: `S-${stableThreeDigitHash(`${title}|${threadId}`)}`,
+    unlinkedRef,
     notes: [
       "Claus har sendt ugens bogføring og vedhæftet opgørelse over manglende bilag.",
       "- Fremskaff manglende bilag jf. vedhæftet opgørelse.",
