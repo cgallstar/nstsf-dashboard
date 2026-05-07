@@ -2139,11 +2139,15 @@ function isActionableInternalInboxMail(thread: any) {
   const compact = plainCompactText(source);
   if (!compact) return false;
   if (/\b(til orientering|fyi|noteret|ingen kommentar|tak for info|bare til info)\b/i.test(source)) return false;
+  const hasRequestSignal = /\?/.test(source) ||
+    /\b(kan|vil|skal|ma|må)\s+(du|i|vi)\b/.test(compact) ||
+    /\b(kan du|kan i|vil du|vil i|ma du|må du|ma i|må i|har du mulighed|har i mulighed)\b/.test(compact);
   const hasInstruction =
     /\b(skal|husk|afklar|aftal|send|ring|opret|folg op|lav|ryd|flyt|tjek|undersog|svar|book|planlaeg)\b/.test(compact) ||
-    /\?/.test(source);
+    hasRequestSignal;
   const hasConcreteSignal =
-    /\b(dato|deadline|frist|billeder|foto|ks|dokumentation|mangler|mangel|skade|fejl|udbedr|tilbud|faktura|betaling|kontrakt|lon|loen|køkken|kokken|aflevering|godkend|underskrift)\b/.test(compact);
+    hasRequestSignal ||
+    /\b(dato|deadline|frist|billeder|foto|ks|dokumentation|mangler|mangel|skade|fejl|udbedr|tilbud|faktura|betaling|bogforing|bogføring|kontrakt|lon|loen|køkken|kokken|aflevering|godkend|underskrift)\b/.test(compact);
   const isSmgInstruction = isSmgSender(latest.from) && hasConcreteSignal;
   return Boolean((hasInstruction && hasConcreteSignal) || isSmgInstruction);
 }
@@ -2265,8 +2269,11 @@ function threadIntentSignals(thread: any) {
   const source = `${latest?.subject || ""}\n${latest?.snippet || ""}\n${latest?.body || ""}`;
   const hasFyi = /\b(til orientering|fyi|noteret|ingen kommentar|tak for info|bare til info)\b/i.test(source);
   const hasQuestion = /\?/.test(source);
+  const hasRequestSignal = hasQuestion ||
+    /\b(kan|vil|skal|ma|må)\s+(du|i|vi)\b/.test(compact) ||
+    /\b(kan du|kan i|vil du|vil i|ma du|må du|ma i|må i|har du mulighed|har i mulighed)\b/.test(compact);
   const hasInstruction = /\b(skal|husk|afklar|aftal|send|ring|opret|folg op|lav|ryd|flyt|tjek|undersog|svar|book|planlaeg|kan du|ma du gerne|må du gerne|vend venligst retur|giv besked)\b/.test(compact);
-  const hasConcreteSignal = /\b(status|dato|deadline|frist|billeder|foto|ks|dokumentation|mangler|mangel|skade|fejl|udbedr|tilbud|faktura|betaling|kontrakt|lon|loen|kokken|køkken|aflevering|godkend|underskrift|plan)\b/.test(compact);
+  const hasConcreteSignal = /\b(status|dato|deadline|frist|billeder|foto|ks|dokumentation|mangler|mangel|skade|fejl|udbedr|tilbud|faktura|betaling|bogforing|bogføring|kontrakt|lon|loen|kokken|køkken|aflevering|godkend|underskrift|plan)\b/.test(compact);
   const hasCustomerTaskSignal =
     compact.includes("bulowsvej") ||
     compact.includes("blaagardsgade") ||
@@ -2282,6 +2289,7 @@ function threadIntentSignals(thread: any) {
     compact,
     hasFyi,
     hasQuestion,
+    hasRequestSignal,
     hasInstruction,
     hasConcreteSignal,
     hasCustomerTaskSignal,
@@ -2304,6 +2312,9 @@ function classifyThreadIntent(thread: any, item: any = null) {
   }
   if (signals.hasFyi && !signals.hasQuestion && !signals.hasInstruction) {
     return { intent: "ignore", lane: "inbox", reason: "FYI/orientering uden konkret handling." };
+  }
+  if (signals.hasRequestSignal) {
+    return { intent: "task_candidate", lane: signals.isInternal ? "internal" : "inbox", reason: "Mailen indeholder et spørgsmål eller en direkte anmodning." };
   }
   if ((signals.hasInstruction || signals.hasQuestion || signals.isInternal) && signals.hasConcreteSignal) {
     return { intent: "task_candidate", lane: signals.isInternal ? "internal" : "inbox", reason: "Mailen indeholder konkret handling eller afklaring." };
