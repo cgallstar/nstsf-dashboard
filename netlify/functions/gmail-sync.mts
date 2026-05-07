@@ -23,7 +23,7 @@ import {
   uploadDriveFile,
 } from "./_lib/google.mts";
 
-const GMAIL_SYNC_BUILD_VERSION = "2026-05-07-gadesvej-offer-routing-v1";
+const GMAIL_SYNC_BUILD_VERSION = "2026-05-07-gadesvej-offer-backfill-v2";
 const INTERNAL_PATTERNS = [/@nstsf\.dk/i, /gemini-notes@google\.com/i];
 const MAILBOX_OWNER = "christian@nstsf.dk";
 const NSTSF_QUERY = `(from:${MAILBOX_OWNER} OR from:smg@nstsf.dk OR from:nstsf.dk OR to:${MAILBOX_OWNER} OR cc:${MAILBOX_OWNER})`;
@@ -2797,7 +2797,6 @@ function repairKnownGadesvejOfferRouting(state: any) {
   });
   const needsSigneRepair = !hasOfferDoc(signeCase, ["svar", "tilbud", "gadesvej", "10"]);
   const needsFacadeRepair = !hasOfferDoc(facadeCase, ["facaderenovering"]);
-  if (!needsSigneRepair && !needsFacadeRepair) return 0;
 
   const syncState = ensureGmailSyncState(state);
   if (needsSigneRepair) delete syncState.threadLedger[SIGNE_TAM_OFFER_REPLY_THREAD_ID];
@@ -2844,6 +2843,52 @@ function repairKnownGadesvejOfferRouting(state: any) {
 
   changed += Number(needsSigneRepair) + Number(needsFacadeRepair);
   return changed;
+}
+
+async function ensureKnownGadesvejOfferArchives(state: any, integration: any, actor: any) {
+  const targets = [
+    {
+      threadId: SIGNE_TAM_OFFER_REPLY_THREAD_ID,
+      subject: "Svar på spørgsmål vedr. tilbud – NV Gadesvej 10",
+      expectedCaseId: "1015 A",
+    },
+    {
+      threadId: MATHIAS_ANNA_FACADE_OFFER_THREAD_ID,
+      subject: "Tilbud på facaderenovering N W gadesvej 12",
+      expectedCaseId: "1006 A",
+    },
+  ];
+  const results: any[] = [];
+  for (const target of targets) {
+    const thread = await getGmailThread(target.threadId);
+    const latest = latestThreadSummary(thread);
+    const item = toEmailEntry(thread, state.sager || []) || {
+      id: target.threadId,
+      threadId: target.threadId,
+      subject: target.subject,
+      from: textValue(latest?.from, ""),
+      date: textValue(latest?.isoDate || latest?.date, ""),
+      body: textValue(latest?.body, ""),
+      snippet: textValue(latest?.snippet, ""),
+    };
+    item.threadId = target.threadId;
+    item.subject = target.subject;
+    const result = await archiveQualifiedThread(thread, item, state, integration, actor);
+    if (result?.ok) {
+      updateThreadLedger(state, thread, {
+        intent: "archive_candidate",
+        lane: "archive",
+        status: result.skipped ? "processed" : "archived",
+        caseId: textValue(result.matchedCaseId, target.expectedCaseId),
+        customerId: textValue(result.matchedCaseId, target.expectedCaseId).match(/(\d+)/)?.[1] || "",
+        driveUrl: textValue(result.driveUrl, ""),
+        reason: result.skipped ? "Allerede arkiveret." : "Arkiveret i Drive.",
+        subject: target.subject,
+      });
+    }
+    results.push({ ...result, expectedCaseId: target.expectedCaseId, subject: target.subject, threadId: target.threadId });
+  }
+  return results;
 }
 
 async function archiveQualifiedThread(thread: any, item: any, state: any, integration: any, actor: any) {
@@ -3439,6 +3484,39 @@ export default async (request: Request) => {
     const materialDocumentation = await ensureKnownMaterialDocumentation(state, integration, auth.actor);
     const invoice1152Handled = await ensureKnownInvoice1152Handling(state, integration, auth.actor);
     const bookkeepingTaskBackfilled = ensureKnownBookkeepingTask(state);
+    let knownGadesvejOfferArchives: any[] = [];
+    try {
+      knownGadesvejOfferArchives = await ensureKnownGadesvejOfferArchives(state, integration, auth.actor);
+      for (const result of knownGadesvejOfferArchives) {
+        if (!result?.ok || result?.skipped) continue;
+        archivedResults.push(result);
+        appendSyncLog(state, {
+          status: "archived",
+          archiveKey: textValue(result.archiveKey, ""),
+          threadId: textValue(result.threadId, ""),
+          subject: textValue(result.subject, ""),
+          customerName: textValue(result.customerName, ""),
+          caseId: textValue(result.matchedCaseId, result.expectedCaseId || ""),
+          documentType: textValue(result.documentType, "Tilbud"),
+          documentDate: textValue(result.documentDate, ""),
+          category: "tilbud",
+          fileName: textValue(result.fileName, ""),
+          driveUrl: textValue(result.driveUrl, ""),
+          notes: `Arkiveret i Drive som ${textValue(result.fileName, "tilbud")}.`,
+        });
+      }
+    } catch (error) {
+      appendSyncLog(state, {
+        status: "error",
+        subject: "Gadesvej tilbudsarkivering",
+        customerName: "K-1006 / K-1015",
+        caseId: "",
+        documentType: "Tilbud",
+        category: "tilbud",
+        error: formatSyncError(error),
+        notes: "De kendte Gadesvej-tilbud kunne ikke backfill-arkiveres.",
+      });
+    }
     let lundebjergvejReferatHandled = null;
     try {
       lundebjergvejReferatHandled = await ensureKnownLundebjergvejReferat(state, integration, auth.actor);
@@ -3505,6 +3583,7 @@ export default async (request: Request) => {
       materialDocumentation: materialDocumentation ? 1 : 0,
       invoice1152Handled: invoice1152Handled ? 1 : 0,
       bookkeepingTaskBackfilled: bookkeepingTaskBackfilled ? 1 : 0,
+      knownGadesvejOfferArchives: knownGadesvejOfferArchives.filter((result) => result?.ok).length,
       lundebjergvejCustomerCreated: lundebjergvejCustomerCreated ? 1 : 0,
       lundebjergvejBackfillPrepared: lundebjergvejBackfillPrepared ? 1 : 0,
       lundebjergvejReferatHandled: lundebjergvejReferatHandled?.ok ? 1 : 0,
