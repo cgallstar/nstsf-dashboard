@@ -2050,6 +2050,64 @@ function prepareLundebjergvejBackfill(state: any) {
   return true;
 }
 
+function ensureKnownLundebjergvejCustomer(state: any) {
+  const entries = Array.isArray(state?.sager) ? state.sager : [];
+  const existing = entries.find((entry: any) => {
+    const marker = plainCompactText(`${entry?.kunde || ""} ${entry?.adr || ""} ${entry?.opg || ""} ${entry?.sid || ""} ${entry?.nr || ""}`);
+    return marker.includes("lundebjergvej") || marker.includes("core property");
+  });
+  const entry = existing || {
+    k: 2,
+    sid: "1018a",
+    nr: "1018",
+    kunde: "Core Property / John Bødker",
+    adr: "Lundebjergvej 2-6, 3600 Frederikssund",
+    opg: "Afklaring af fuger, brandfugning og værn",
+    b: "0",
+    u: "0",
+    dato: "",
+    status: "Oprettet fra Gmail",
+    sort: entries.length,
+  };
+  ensureCaseShape(entry);
+  entry.k = Number(entry.k || 0) === 0 ? 2 : entry.k;
+  entry.sid = "1018a";
+  entry.nr = "1018";
+  entry.kunde = "Core Property / John Bødker";
+  entry.adr = "Lundebjergvej 2-6, 3600 Frederikssund";
+  entry.opg = "Afklaring af fuger, brandfugning og værn";
+  entry.workflow.currentStage = textValue(entry.workflow.currentStage, "Afklaring efter gennemgang");
+  entry.workflow.latestMeetingDate = textValue(entry.workflow.latestMeetingDate, "2026-05-07");
+  entry.workflow.nextAction = "Afvent specifikation fra købers rådgiver og planlæg eventuel udbedring.";
+  ensureTask(entry, "Afvent specifikation fra købers rådgiver", {
+    dueDate: "2026-05-09",
+    owner: "Søren",
+    notes: "Core Property afventer nærmere specifikation fra købers rådgiver, så placeringer vedr. fuger kan identificeres.",
+  });
+  ensureTask(entry, "Planlæg udbedring af brandfugning og værn", {
+    dueDate: "2026-05-14",
+    owner: "Søren",
+    notes: "Der er registreret manglende brandfugning omkring installationer/gennemføringer og værn på svalegang, som skal stabiliseres.",
+  });
+  if (!existing) {
+    entries.push(entry);
+    state.sager = entries;
+    appendSyncLog(state, {
+      status: "updated",
+      archiveKey: "known-customer-lundebjergvej-1018",
+      threadId: "19e01514500b08bc",
+      subject: "Lundebjergvej 2-6",
+      customerName: "Core Property / John Bødker",
+      caseId: "1018 A",
+      documentType: "Kunde",
+      category: "kunder",
+      notes: "K-1018 er oprettet fra Gmail-tråden om møde/referat på Lundebjergvej 2-6.",
+    });
+    return true;
+  }
+  return false;
+}
+
 function hasBlaagaardsgade14Signal(compact: string) {
   return compact.includes("blagardsgade 14") ||
     compact.includes("blaagardsgade 14") ||
@@ -2852,6 +2910,22 @@ async function archiveQualifiedThread(thread: any, item: any, state: any, integr
   };
 }
 
+async function ensureKnownLundebjergvejReferat(state: any, integration: any, actor: any) {
+  if (hasArchivedLundebjergvejReferat(state)) return null;
+  const thread = await getGmailThread("19e01514500b08bc");
+  const latest = latestThreadSummary(thread);
+  const item = toEmailEntry(thread, state.sager || []) || {
+    id: "19e01514500b08bc",
+    threadId: "19e01514500b08bc",
+    subject: "Re: Lundebjergvej 2-6, møde torsdag kl 9",
+    from: textValue(latest?.from, ""),
+    date: textValue(latest?.isoDate || latest?.date, "2026-05-07"),
+    body: textValue(latest?.body, ""),
+    snippet: textValue(latest?.snippet, ""),
+  };
+  return archiveQualifiedThread(thread, item, state, integration, actor);
+}
+
 export default async (request: Request) => {
   const auth = authorizeDashboardRequest(request);
   if (!auth.ok) return auth.response;
@@ -2875,6 +2949,7 @@ export default async (request: Request) => {
   const ensuredFolders: any[] = [];
 
   try {
+    const lundebjergvejCustomerCreated = ensureKnownLundebjergvejCustomer(state);
     const lundebjergvejBackfillPrepared = prepareLundebjergvejBackfill(state);
     const dkeQuestionThreads = await listRecentGmailThreads(DKE_QUESTION_QUERY, 6).catch((error) => {
       appendSyncLog(state, {
@@ -3210,6 +3285,39 @@ export default async (request: Request) => {
     const materialDocumentation = await ensureKnownMaterialDocumentation(state, integration, auth.actor);
     const invoice1152Handled = await ensureKnownInvoice1152Handling(state, integration, auth.actor);
     const bookkeepingTaskBackfilled = ensureKnownBookkeepingTask(state);
+    let lundebjergvejReferatHandled = null;
+    try {
+      lundebjergvejReferatHandled = await ensureKnownLundebjergvejReferat(state, integration, auth.actor);
+      if (lundebjergvejReferatHandled?.ok && !lundebjergvejReferatHandled?.skipped) {
+        archivedResults.push(lundebjergvejReferatHandled);
+        appendSyncLog(state, {
+          status: "archived",
+          archiveKey: textValue(lundebjergvejReferatHandled.archiveKey, ""),
+          threadId: textValue(lundebjergvejReferatHandled.threadId, "19e01514500b08bc"),
+          subject: "Re: Lundebjergvej 2-6, møde torsdag kl 9",
+          customerName: textValue(lundebjergvejReferatHandled.customerName, "Core Property / John Bødker"),
+          caseId: textValue(lundebjergvejReferatHandled.matchedCaseId, "1018 A"),
+          documentType: textValue(lundebjergvejReferatHandled.documentType, "Referat"),
+          documentDate: textValue(lundebjergvejReferatHandled.documentDate, "2026-05-07"),
+          category: "referater",
+          fileName: textValue(lundebjergvejReferatHandled.fileName, ""),
+          driveUrl: textValue(lundebjergvejReferatHandled.driveUrl, ""),
+          notes: `Arkiveret i Drive som ${textValue(lundebjergvejReferatHandled.fileName, "referat")}.`,
+        });
+      }
+    } catch (error) {
+      appendSyncLog(state, {
+        status: "error",
+        threadId: "19e01514500b08bc",
+        subject: "Re: Lundebjergvej 2-6, møde torsdag kl 9",
+        customerName: "Core Property / John Bødker",
+        caseId: "1018 A",
+        documentType: "Referat",
+        category: "referater",
+        error: formatSyncError(error),
+        notes: "Kunden er sikret, men referatet kunne ikke arkiveres automatisk i Drive.",
+      });
+    }
 
     state.emails = items;
     const sanitizedSyncLogEntries = normalizeExistingSyncLog(state);
@@ -3231,7 +3339,9 @@ export default async (request: Request) => {
       materialDocumentation: materialDocumentation ? 1 : 0,
       invoice1152Handled: invoice1152Handled ? 1 : 0,
       bookkeepingTaskBackfilled: bookkeepingTaskBackfilled ? 1 : 0,
+      lundebjergvejCustomerCreated: lundebjergvejCustomerCreated ? 1 : 0,
       lundebjergvejBackfillPrepared: lundebjergvejBackfillPrepared ? 1 : 0,
+      lundebjergvejReferatHandled: lundebjergvejReferatHandled?.ok ? 1 : 0,
       migratedSyncLogEntries: migratedSyncLogEntries + sanitizedSyncLogEntries,
       syncDiagnostics: syncLogDiagnostics(state),
       ensuredFolders: ensuredFolders.length,
