@@ -28,9 +28,10 @@ import {
   sourceSignatureFromParts,
 } from "./_lib/sync-core.mts";
 
-const GMAIL_SYNC_BUILD_VERSION = "2026-05-07-pipeline-v3";
+const GMAIL_SYNC_BUILD_VERSION = "2026-05-07-pipeline-v4-no-legacy-default";
 const RESOLVER_VERSION = "2026-05-07-resolver-v3";
 const PIPELINE_VERSION = "2026-05-07-pipeline-v2";
+const LEGACY_BACKFILLS_ENABLED = process.env.ENABLE_LEGACY_GMAIL_BACKFILLS === "true";
 const INTERNAL_PATTERNS = [/@nstsf\.dk/i, /gemini-notes@google\.com/i];
 const MAILBOX_OWNER = "christian@nstsf.dk";
 const NSTSF_QUERY = `(from:${MAILBOX_OWNER} OR from:smg@nstsf.dk OR from:nstsf.dk OR to:${MAILBOX_OWNER} OR cc:${MAILBOX_OWNER})`;
@@ -57,6 +58,10 @@ const ARCHIVE_QUERIES = [
   LUNDEBJERGVEJ_QUERY,
   DKE_QUESTION_QUERY,
 ];
+function shouldRunLegacyBackfills(body: any) {
+  return LEGACY_BACKFILLS_ENABLED || body?.runLegacyBackfills === true || body?.legacyBackfills === true;
+}
+
 const DANISH_MONTHS: Record<string, string> = {
   januar: "01",
   februar: "02",
@@ -1001,11 +1006,12 @@ function findOrCreateGadesvejCase(state: any) {
 
 function findOrCreateKnownCase(state: any, signal: any, text = "") {
   const compact = plainCompactText(text);
-  if (isGadesvejArchiveThread(signal, text)) return findOrCreateGadesvejCase(state);
-  if (isGadesvejMaterialThread(signal, text)) return findOrCreateGadesvejCase(state);
   const entries = Array.isArray(state?.sager) ? state.sager : [];
+  if (!LEGACY_BACKFILLS_ENABLED) return null;
   const strongKnownMatch = resolveKnownCaseByText(entries, text, signal);
   if (strongKnownMatch) return ensureCaseShape(strongKnownMatch);
+  if (isGadesvejArchiveThread(signal, text)) return findOrCreateGadesvejCase(state);
+  if (isGadesvejMaterialThread(signal, text)) return findOrCreateGadesvejCase(state);
   const findByMarker = (patterns: RegExp[]) => entries.find((entry: any) => {
     const marker = plainCompactText(`${entry?.kunde || ""} ${entry?.adr || ""} ${entry?.opg || ""} ${entry?.sid || ""} ${entry?.nr || ""} ${entry?.fak || ""} ${entry?.docs?.drive || entry?.drive || ""}`);
     return patterns.some((pattern) => pattern.test(marker));
@@ -1392,7 +1398,7 @@ function scoreInvoiceCase(entry: any, invoiceText: string, invoiceNumber = "") {
 }
 
 function matchInvoiceToCase(state: any, invoiceText: string, invoiceNumber = "") {
-  const knownCustomerNumber = textValue(KNOWN_INVOICE_CASES[invoiceNumber], "");
+  const knownCustomerNumber = LEGACY_BACKFILLS_ENABLED ? textValue(KNOWN_INVOICE_CASES[invoiceNumber], "") : "";
   if (knownCustomerNumber) {
     const known = findCaseByCustomerNumber(state, knownCustomerNumber);
     if (known) {
@@ -1550,27 +1556,29 @@ async function ensureDriveFoldersForLinkedCases(state: any) {
     });
   };
 
-  const forcedGadesvejCase = {
-    k: 2,
-    sid: "",
-    nr: "",
-    kunde: "N. V. Gadesvej 12, 1. sal",
-    adr: "N. V. Gadesvej 12, 1. sal, Fredensborg",
-    docs: { drive: GADESVEJ_DRIVE_URL },
-  };
-  try {
-    await ensureOne(forcedGadesvejCase);
-  } catch (error) {
-    appendSyncLog(state, {
-      status: "error",
-      subject: "Drive-mapper",
-      customerName: forcedGadesvejCase.kunde,
-      caseId: "",
-      documentType: "Mappestruktur",
-      category: "drive",
-      error: formatSyncError(error),
-      notes: "Kunne ikke sikre standardmapper for Gadesvej-mappen.",
-    });
+  if (LEGACY_BACKFILLS_ENABLED) {
+    const forcedGadesvejCase = {
+      k: 2,
+      sid: "",
+      nr: "",
+      kunde: "N. V. Gadesvej 12, 1. sal",
+      adr: "N. V. Gadesvej 12, 1. sal, Fredensborg",
+      docs: { drive: GADESVEJ_DRIVE_URL },
+    };
+    try {
+      await ensureOne(forcedGadesvejCase);
+    } catch (error) {
+      appendSyncLog(state, {
+        status: "error",
+        subject: "Drive-mapper",
+        customerName: forcedGadesvejCase.kunde,
+        caseId: "",
+        documentType: "Mappestruktur",
+        category: "drive",
+        error: formatSyncError(error),
+        notes: "Kunne ikke sikre standardmapper for Gadesvej-mappen.",
+      });
+    }
   }
 
   for (const entry of entries) {
@@ -3360,7 +3368,7 @@ async function archiveQualifiedThread(thread: any, item: any, state: any, integr
   }
 
   ensureCaseShape(matched);
-  if (isGadesvejArchiveThread(signal, archiveText)) {
+  if (LEGACY_BACKFILLS_ENABLED && isGadesvejArchiveThread(signal, archiveText)) {
     matched.docs.drive = GADESVEJ_DRIVE_URL;
     matched.drive = GADESVEJ_DRIVE_URL;
   }
@@ -3414,7 +3422,7 @@ async function archiveQualifiedThread(thread: any, item: any, state: any, integr
   }
   applyArchiveSideEffects(matched, signal, archiveText, documentDate);
   ensureOfferFollowupTask(matched, signal, archiveText, documentDate);
-  applyKnownCaseActions(matched, signal, archiveText, documentDate);
+  if (LEGACY_BACKFILLS_ENABLED) applyKnownCaseActions(matched, signal, archiveText, documentDate);
   const normalizedDocumentType = normalizeCaseKey(signal.documentType);
 
   const alreadyArchived = (matched.activityLog || []).some((entry: any) => {
@@ -3677,6 +3685,7 @@ export default async (request: Request) => {
   } catch {
     requestBody = {};
   }
+  const runLegacyBackfills = shouldRunLegacyBackfills(requestBody);
   const state = await loadDashboardState();
   if (!state) return json({ ok: false, error: "no_state" }, 404);
   const syncRunId = startSyncRun(state, textValue(requestBody?.trigger, auth.actor?.type === "actions" ? "actions" : "manual"));
@@ -3690,12 +3699,20 @@ export default async (request: Request) => {
   const migrationResults: Record<string, any> = {};
 
   try {
-    const lundebjergvejCustomerMigration = await runMigrationOnce(state, "2026-05-07-lundebjergvej-customer", () => ensureKnownLundebjergvejCustomer(state));
-    const lundebjergvejBackfillMigration = await runMigrationOnce(state, "2026-05-07-lundebjergvej-backfill-reset", () => prepareLundebjergvejBackfill(state));
-    const gadesvejOfferRoutingMigration = await runMigrationOnce(state, "2026-05-07-gadesvej-offer-routing-repair-v2", () => repairKnownGadesvejOfferRouting(state));
-    migrationResults.lundebjergvejCustomerCreated = lundebjergvejCustomerMigration.result ? 1 : 0;
-    migrationResults.lundebjergvejBackfillPrepared = lundebjergvejBackfillMigration.result ? 1 : 0;
-    migrationResults.gadesvejOfferRoutingRepaired = gadesvejOfferRoutingMigration.result ? 1 : 0;
+    migrationResults.legacyBackfillsEnabled = runLegacyBackfills;
+    if (runLegacyBackfills) {
+      const lundebjergvejCustomerMigration = await runMigrationOnce(state, "2026-05-07-lundebjergvej-customer", () => ensureKnownLundebjergvejCustomer(state));
+      const lundebjergvejBackfillMigration = await runMigrationOnce(state, "2026-05-07-lundebjergvej-backfill-reset", () => prepareLundebjergvejBackfill(state));
+      const gadesvejOfferRoutingMigration = await runMigrationOnce(state, "2026-05-07-gadesvej-offer-routing-repair-v2", () => repairKnownGadesvejOfferRouting(state));
+      migrationResults.lundebjergvejCustomerCreated = lundebjergvejCustomerMigration.result ? 1 : 0;
+      migrationResults.lundebjergvejBackfillPrepared = lundebjergvejBackfillMigration.result ? 1 : 0;
+      migrationResults.gadesvejOfferRoutingRepaired = gadesvejOfferRoutingMigration.result ? 1 : 0;
+    } else {
+      migrationResults.lundebjergvejCustomerCreated = 0;
+      migrationResults.lundebjergvejBackfillPrepared = 0;
+      migrationResults.gadesvejOfferRoutingRepaired = 0;
+      migrationResults.legacyBackfillsSkipped = true;
+    }
     const dkeQuestionThreads = await listRecentGmailThreads(DKE_QUESTION_QUERY, 6).catch((error) => {
       appendSyncLog(state, {
         status: "error",
@@ -4076,8 +4093,8 @@ export default async (request: Request) => {
       markQueuedThreadProcessed(state, thread);
     }
 
-    const offerFollowupsCreated = backfillOfferFollowupsFromState(state);
-    const paidInvoicesBackfilled = backfillKnownPaidInvoices(state);
+    const offerFollowupsCreated = runLegacyBackfills ? backfillOfferFollowupsFromState(state) : 0;
+    const paidInvoicesBackfilled = runLegacyBackfills ? backfillKnownPaidInvoices(state) : 0;
     if (dkeQuestionTasksCreated) {
       appendSyncLog(state, {
         status: "archived",
@@ -4100,7 +4117,7 @@ export default async (request: Request) => {
         notes: `${offerFollowupsCreated} action point${offerFollowupsCreated === 1 ? "" : "s"} for tilbud er sikret på kundesager.`,
       });
     }
-    if (migrationResults.gadesvejOfferRoutingRepaired) {
+    if (runLegacyBackfills && migrationResults.gadesvejOfferRoutingRepaired) {
       appendSyncLog(state, {
         status: "updated",
         subject: "Gadesvej tilbudsmatch repareret",
@@ -4111,79 +4128,88 @@ export default async (request: Request) => {
         notes: "NV Gadesvej 10 behandles som K-1015, og NV/NW Gadesvej 12 behandles som K-1006. Tidligere forkert route er nulstillet til ny arkivering.",
       });
     }
-    const materialDocumentationMigration = await runMigrationOnce(state, "2026-05-07-material-documentation-microcement", () => ensureKnownMaterialDocumentation(state, integration, auth.actor));
-    const invoice1152Migration = await runMigrationOnce(state, "2026-05-07-invoice-1152-lykkeholmsalle", () => ensureKnownInvoice1152Handling(state, integration, auth.actor));
-    const bookkeepingTaskMigration = await runMigrationOnce(state, "2026-05-07-bookkeeping-task", () => ensureKnownBookkeepingTask(state));
-    const materialDocumentation = materialDocumentationMigration.result;
-    const invoice1152Handled = invoice1152Migration.result;
-    const bookkeepingTaskBackfilled = bookkeepingTaskMigration.result;
+    let materialDocumentation = null;
+    let invoice1152Handled = null;
+    let bookkeepingTaskBackfilled = null;
+    if (runLegacyBackfills) {
+      const materialDocumentationMigration = await runMigrationOnce(state, "2026-05-07-material-documentation-microcement", () => ensureKnownMaterialDocumentation(state, integration, auth.actor));
+      const invoice1152Migration = await runMigrationOnce(state, "2026-05-07-invoice-1152-lykkeholmsalle", () => ensureKnownInvoice1152Handling(state, integration, auth.actor));
+      const bookkeepingTaskMigration = await runMigrationOnce(state, "2026-05-07-bookkeeping-task", () => ensureKnownBookkeepingTask(state));
+      materialDocumentation = materialDocumentationMigration.result;
+      invoice1152Handled = invoice1152Migration.result;
+      bookkeepingTaskBackfilled = bookkeepingTaskMigration.result;
+    }
     let knownGadesvejOfferArchives: any[] = [];
-    try {
-      const knownGadesvejOfferMigration = await runMigrationOnce(state, "2026-05-07-gadesvej-known-offer-archives", () => ensureKnownGadesvejOfferArchives(state, integration, auth.actor));
-      knownGadesvejOfferArchives = Array.isArray(knownGadesvejOfferMigration.result) ? knownGadesvejOfferMigration.result : [];
-      for (const result of knownGadesvejOfferArchives) {
-        if (!result?.ok || result?.skipped) continue;
-        archivedResults.push(result);
+    if (runLegacyBackfills) {
+      try {
+        const knownGadesvejOfferMigration = await runMigrationOnce(state, "2026-05-07-gadesvej-known-offer-archives", () => ensureKnownGadesvejOfferArchives(state, integration, auth.actor));
+        knownGadesvejOfferArchives = Array.isArray(knownGadesvejOfferMigration.result) ? knownGadesvejOfferMigration.result : [];
+        for (const result of knownGadesvejOfferArchives) {
+          if (!result?.ok || result?.skipped) continue;
+          archivedResults.push(result);
+          appendSyncLog(state, {
+            status: "archived",
+            archiveKey: textValue(result.archiveKey, ""),
+            threadId: textValue(result.threadId, ""),
+            subject: textValue(result.subject, ""),
+            customerName: textValue(result.customerName, ""),
+            caseId: textValue(result.matchedCaseId, result.expectedCaseId || ""),
+            documentType: textValue(result.documentType, "Tilbud"),
+            documentDate: textValue(result.documentDate, ""),
+            category: "tilbud",
+            fileName: textValue(result.fileName, ""),
+            driveUrl: textValue(result.driveUrl, ""),
+            notes: `Arkiveret i Drive som ${textValue(result.fileName, "tilbud")}.`,
+          });
+        }
+      } catch (error) {
         appendSyncLog(state, {
-          status: "archived",
-          archiveKey: textValue(result.archiveKey, ""),
-          threadId: textValue(result.threadId, ""),
-          subject: textValue(result.subject, ""),
-          customerName: textValue(result.customerName, ""),
-          caseId: textValue(result.matchedCaseId, result.expectedCaseId || ""),
-          documentType: textValue(result.documentType, "Tilbud"),
-          documentDate: textValue(result.documentDate, ""),
+          status: "error",
+          subject: "Gadesvej tilbudsarkivering",
+          customerName: "K-1006 / K-1015",
+          caseId: "",
+          documentType: "Tilbud",
           category: "tilbud",
-          fileName: textValue(result.fileName, ""),
-          driveUrl: textValue(result.driveUrl, ""),
-          notes: `Arkiveret i Drive som ${textValue(result.fileName, "tilbud")}.`,
+          error: formatSyncError(error),
+          notes: "De kendte Gadesvej-tilbud kunne ikke backfill-arkiveres.",
         });
       }
-    } catch (error) {
-      appendSyncLog(state, {
-        status: "error",
-        subject: "Gadesvej tilbudsarkivering",
-        customerName: "K-1006 / K-1015",
-        caseId: "",
-        documentType: "Tilbud",
-        category: "tilbud",
-        error: formatSyncError(error),
-        notes: "De kendte Gadesvej-tilbud kunne ikke backfill-arkiveres.",
-      });
     }
     let lundebjergvejReferatHandled = null;
-    try {
-      const lundebjergvejReferatMigration = await runMigrationOnce(state, "2026-05-07-lundebjergvej-referat-archive", () => ensureKnownLundebjergvejReferat(state, integration, auth.actor));
-      lundebjergvejReferatHandled = lundebjergvejReferatMigration.result;
-      if (lundebjergvejReferatHandled?.ok && !lundebjergvejReferatHandled?.skipped) {
-        archivedResults.push(lundebjergvejReferatHandled);
+    if (runLegacyBackfills) {
+      try {
+        const lundebjergvejReferatMigration = await runMigrationOnce(state, "2026-05-07-lundebjergvej-referat-archive", () => ensureKnownLundebjergvejReferat(state, integration, auth.actor));
+        lundebjergvejReferatHandled = lundebjergvejReferatMigration.result;
+        if (lundebjergvejReferatHandled?.ok && !lundebjergvejReferatHandled?.skipped) {
+          archivedResults.push(lundebjergvejReferatHandled);
+          appendSyncLog(state, {
+            status: "archived",
+            archiveKey: textValue(lundebjergvejReferatHandled.archiveKey, ""),
+            threadId: textValue(lundebjergvejReferatHandled.threadId, "19e01514500b08bc"),
+            subject: "Re: Lundebjergvej 2-6, møde torsdag kl 9",
+            customerName: textValue(lundebjergvejReferatHandled.customerName, "Core Property / John Bødker"),
+            caseId: textValue(lundebjergvejReferatHandled.matchedCaseId, "1018 A"),
+            documentType: textValue(lundebjergvejReferatHandled.documentType, "Referat"),
+            documentDate: textValue(lundebjergvejReferatHandled.documentDate, "2026-05-07"),
+            category: "referater",
+            fileName: textValue(lundebjergvejReferatHandled.fileName, ""),
+            driveUrl: textValue(lundebjergvejReferatHandled.driveUrl, ""),
+            notes: `Arkiveret i Drive som ${textValue(lundebjergvejReferatHandled.fileName, "referat")}.`,
+          });
+        }
+      } catch (error) {
         appendSyncLog(state, {
-          status: "archived",
-          archiveKey: textValue(lundebjergvejReferatHandled.archiveKey, ""),
-          threadId: textValue(lundebjergvejReferatHandled.threadId, "19e01514500b08bc"),
+          status: "error",
+          threadId: "19e01514500b08bc",
           subject: "Re: Lundebjergvej 2-6, møde torsdag kl 9",
-          customerName: textValue(lundebjergvejReferatHandled.customerName, "Core Property / John Bødker"),
-          caseId: textValue(lundebjergvejReferatHandled.matchedCaseId, "1018 A"),
-          documentType: textValue(lundebjergvejReferatHandled.documentType, "Referat"),
-          documentDate: textValue(lundebjergvejReferatHandled.documentDate, "2026-05-07"),
+          customerName: "Core Property / John Bødker",
+          caseId: "1018 A",
+          documentType: "Referat",
           category: "referater",
-          fileName: textValue(lundebjergvejReferatHandled.fileName, ""),
-          driveUrl: textValue(lundebjergvejReferatHandled.driveUrl, ""),
-          notes: `Arkiveret i Drive som ${textValue(lundebjergvejReferatHandled.fileName, "referat")}.`,
+          error: formatSyncError(error),
+          notes: "Kunden er sikret, men referatet kunne ikke arkiveres automatisk i Drive.",
         });
       }
-    } catch (error) {
-      appendSyncLog(state, {
-        status: "error",
-        threadId: "19e01514500b08bc",
-        subject: "Re: Lundebjergvej 2-6, møde torsdag kl 9",
-        customerName: "Core Property / John Bødker",
-        caseId: "1018 A",
-        documentType: "Referat",
-        category: "referater",
-        error: formatSyncError(error),
-        notes: "Kunden er sikret, men referatet kunne ikke arkiveres automatisk i Drive.",
-      });
     }
 
     state.emails = items;
@@ -4216,6 +4242,7 @@ export default async (request: Request) => {
       gmailSyncBuild: GMAIL_SYNC_BUILD_VERSION,
       pipelineVersion: PIPELINE_VERSION,
       resolverVersion: RESOLVER_VERSION,
+      legacyBackfillsEnabled: runLegacyBackfills,
       syncRunId,
       savedAt,
       synced: items.length,
@@ -4286,6 +4313,7 @@ export default async (request: Request) => {
       gmailSyncBuild: GMAIL_SYNC_BUILD_VERSION,
       pipelineVersion: PIPELINE_VERSION,
       resolverVersion: RESOLVER_VERSION,
+      legacyBackfillsEnabled: runLegacyBackfills,
       syncRunId,
       savedAt,
       synced: 0,

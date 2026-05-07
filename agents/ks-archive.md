@@ -36,6 +36,10 @@ Agenten kører som en lagdelt sync-pipeline i `netlify/functions/gmail-sync.mts`
 - bruger `archiveManifest`, `archiveKey`, activityLog og Drive-filnavn som stopklodser mod dubletter
 - hvis filen allerede findes, bruges eksisterende fil og sync-loggen støjer ikke med ny arkivering
 
+6. Legacy-beskyttelse
+- gamle hardcodede backfills og kendte thread-id-reparationer er slået fra i normal drift
+- de kan kun køres eksplicit via legacy-flag, så de ikke overskriver den lagdelte pipeline
+
 ## Output
 - filnavn: `YYYY-MM-DD - K-kundenr - S-sag - Byggemodereferat.md`
 - mappe: kundens `02 Referater`
