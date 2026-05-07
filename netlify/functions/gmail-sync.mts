@@ -1502,7 +1502,7 @@ async function registerInvoicesFromThreads(state: any, threads: any[]) {
       appendActivity(matched, { name: "Gmail-sync", email: MAILBOX_OWNER }, {
         type: "task_created",
         title: "Kundesvar på faktura kræver handling",
-        summary: `Charlotte har svaret i fakturatråden for faktura ${invoiceMatch[1]}. Der er oprettet en opgave på sagen.`,
+        summary: `Kunden har svaret i fakturatråden for faktura ${invoiceMatch[1]}. Der er oprettet en opgave på sagen.`,
       });
       appendSyncLog(state, {
         status: "task_created",
@@ -1512,7 +1512,7 @@ async function registerInvoicesFromThreads(state: any, threads: any[]) {
         caseId: formatCaseIdForDisplay(matched),
         documentType: "Opgave",
         category: "sager",
-        notes: "Charlotte beder om udbedring af sidste detaljer, billeder efter udførelse og brændeovnsattest.",
+        notes: "Kunden beder om udbedring af sidste detaljer, billeder efter udførelse eller anden dokumentation.",
       });
     }
     if (didApply || didMarkPaid || didCreateReplyTask) {
@@ -2318,7 +2318,7 @@ function ensureCustomerReplyTasksFromInvoiceThread(matched: any, threadText = ""
   const needsFireplaceCertificate = compact.includes("braendeovnsattest") || compact.includes("brandeovnsattest");
   const needsPaint = compact.includes("botte maling") || compact.includes("bøtte maling") || compact.includes("maling til os");
   const notes = [
-    `Charlotte har svaret i fakturatråden${invoiceNumber ? ` for faktura ${invoiceNumber}` : ""} med konkrete udeståender.`,
+    `Kunden har svaret i fakturatråden${invoiceNumber ? ` for faktura ${invoiceNumber}` : ""} med konkrete udeståender.`,
     "- Udbedr de sidste detaljer/mangler jf. billedlinket.",
     needsPhotos ? "- Send billeder, når arbejdet er udført." : "",
     needsPaint ? "- Aftal/sæt en bøtte maling til drift pga. løbende facadeskader." : "",
@@ -2690,10 +2690,6 @@ function internalInboxTaskTitle(thread: any) {
   const subject = textValue(latest?.subject, "Intern mail kræver opfølgning")
     .replace(/^(re|sv|fw|fwd):\s*/i, "")
     .trim();
-  const compact = plainCompactText(`${subject}\n${latest?.body || latest?.snippet || ""}`);
-  if (compact.includes("billeder") && compact.includes("dj pult")) return "Send DJ-pult-billeder";
-  if (compact.includes("aflevering") && (compact.includes("blagardsgade 14") || compact.includes("blaagardsgade 14"))) return "Svar med dato for endelig aflevering";
-  if (compact.includes("uge 19") && compact.includes("bulowsvej 9")) return "Svar hvilken dag i uge 19 I kommer";
   return subject || "Intern mail kræver opfølgning";
 }
 
@@ -2718,10 +2714,7 @@ function ensureInternalInboxTask(state: any, thread: any) {
   state.internalTasks = Array.isArray(state.internalTasks) ? state.internalTasks : [];
   const threadId = textValue(thread?.id, "");
   const text = fullThreadText(thread);
-  const knownTaskCase = findKnownCaseForTask(state, text);
-  const matched = knownTaskCase
-    ? { entry: knownTaskCase, score: 99, reasons: ["kendt adresse"], confident: true }
-    : matchCaseWithConfidence(state.sager || [], text);
+  const matched = matchCaseWithConfidence(state.sager || [], text);
   const title = internalInboxTaskTitle(thread);
   const notes = internalInboxTaskNotes(thread);
   const existingInternal = state.internalTasks.some((task: any) =>
@@ -2863,12 +2856,6 @@ function taskTitleFromThread(thread: any) {
   const subject = textValue(latest?.subject, "Mail kræver opfølgning")
     .replace(/^(re|sv|fw|fwd|vs):\s*/i, "")
     .trim();
-  const compact = plainCompactText(`${subject}\n${latest?.body || latest?.snippet || ""}`);
-  if (compact.includes("bulowsvej") && compact.includes("mangler")) return "Afklar næste step for Bülowsvej 9 mangler";
-  if (compact.includes("billeder") && compact.includes("dj pult")) return "Send DJ-pult-billeder";
-  if (compact.includes("aflevering") && (compact.includes("blagardsgade 14") || compact.includes("blaagardsgade 14"))) return "Svar med dato for endelig aflevering";
-  if (compact.includes("uge 19") && compact.includes("bulowsvej 9")) return "Svar hvilken dag i uge 19 I kommer";
-  if (compact.includes("status") && compact.includes("igangvaerende sager")) return "Svar på status for igangværende sager";
   return subject || "Mail kræver opfølgning";
 }
 
@@ -2972,16 +2959,14 @@ function ensureOfferFollowupTask(matched: any, signal: any, archiveText: string,
     signal?.category === "tilbud" ||
     compact.includes("tilbud") ||
     compact.includes("overslagspris") ||
-    compact.includes("prisgrundlag") ||
-    isGadesvejArchiveThread(signal, archiveText);
+    compact.includes("prisgrundlag");
   if (!isRelevant) return;
   matched.workflow = matched.workflow && typeof matched.workflow === "object" ? matched.workflow : {};
   matched.workflow.offerDate = textValue(matched.workflow.offerDate, documentDate);
   matched.workflow.latestOfferDate = textValue(matched.workflow.latestOfferDate, documentDate);
   matched.workflow.nextAction = textValue(matched.workflow.nextAction, "Følg op på tilbud.");
-  const isNvGadesvej10 = isNvGadesvej10Thread(archiveText);
-  const isRevised = compact.includes("revideret") || compact.includes("revidere") || compact.includes("revision") || isGadesvejArchiveThread(signal, archiveText);
-  const title = isNvGadesvej10 ? "Svar på input til tilbud" : isRevised ? "Følg op på revideret tilbud" : "Følg op på tilbud";
+  const isRevised = compact.includes("revideret") || compact.includes("revidere") || compact.includes("revision");
+  const title = isRevised ? "Følg op på revideret tilbud" : "Følg op på tilbud";
   const existing = (matched.tasks || []).some((task: any) => {
     return normalizeCaseKey(task?.title) === normalizeCaseKey(title) && String(task?.status || "").toLowerCase() !== "fuldført";
   });
@@ -2991,11 +2976,9 @@ function ensureOfferFollowupTask(matched: any, signal: any, archiveText: string,
     id: randomUUID(),
     title,
     status: "Åben",
-    dueDate: isNvGadesvej10 ? "" : addDaysIso(documentDate, 7),
+    dueDate: addDaysIso(documentDate, 7),
     owner: "Søren",
-    notes: isNvGadesvej10
-      ? "Kunden har givet input til tilbud vedr. istandsættelse af 1. sal på NV Gadesvej 10. Budget er angivet til 500-600K. Svar kunden og opdater tilbudsgrundlaget."
-      : `${isRevised ? "Der er afgivet et revideret tilbud" : "Der er afgivet et tilbud"}. Følg op med kunden senest syv dage efter tilbudsdatoen.`,
+    notes: `${isRevised ? "Der er afgivet et revideret tilbud" : "Der er afgivet et tilbud"}. Følg op med kunden senest syv dage efter tilbudsdatoen.`,
     createdAt: new Date().toISOString(),
   });
 }
@@ -3796,9 +3779,10 @@ export default async (request: Request) => {
     const invoiceRegistration = await registerInvoicesFromThreads(state, processableFullThreads);
     const invoicesUpdated = Number(invoiceRegistration?.changed || 0);
     const taskCandidatesCreated: any[] = [];
-    const dkeQuestionTasksCreated =
-      ensureDkeCharlotteQuestionTasks(state, processableFullThreads) +
-      ensureDkeCharlotteQuestionTasksFromStateEmails(state);
+    const dkeQuestionTasksCreated = runLegacyBackfills
+      ? ensureDkeCharlotteQuestionTasks(state, processableFullThreads) +
+        ensureDkeCharlotteQuestionTasksFromStateEmails(state)
+      : 0;
     if (invoicesUpdated) {
       for (const entry of invoiceRegistration.changedCases || []) {
         appendSyncLog(state, {

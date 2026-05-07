@@ -57,6 +57,8 @@ Konsekvens:
 - kendte engangsrettelser må ikke overskrive resolverens resultat
 - sync må ikke oprette konkrete kunder som Lundebjergvej eller Gadesvej fra frontend/backend seed-logik
 - gamle mappings som fakturanummer -> kunde må ikke bruges i normal drift
+- mail-til-opgave må ikke bruge gamle konkrete tekstregler for DKE/Charlotte, Gadesvej, Lundebjergvej eller enkeltfakturaer
+- filarkivering må ikke bruge faste Drive-mapper eller kendte thread-id'er uden om resolver/projection
 - hvis generisk matching ikke er sikker, skal tråden i `reviewQueue`
 
 ## Outputregel
