@@ -51,7 +51,7 @@ En mail må kun arkiveres automatisk når:
 Kundenavn eller kundenummer alene er ikke nok til automatisk arkivering, når kunden har flere poster/sager. For porteføljekunder som DKE / Charlotte skal agenten ramme en konkret post via `S-` reference, adresse eller anden stærk post-identifikation. Rå tal uden prefix, fx `1002`, er uklare og må ikke alene styre arkivering.
 
 ## Legacy-regel
-Normal sync må ikke bruge gamle hardcodede backfills, kendte thread-id'er eller konkrete kundeoprettelser som genvej. Legacy-reparationer må kun køre, hvis `ENABLE_LEGACY_GMAIL_BACKFILLS=true` eller request body eksplicit sætter `runLegacyBackfills: true`.
+Normal sync må ikke bruge gamle hardcodede backfills, kendte thread-id'er, konkrete kundeoprettelser eller frontend-seeds som genvej. Legacy-reparationer må ikke ligge i `gmail-sync`; de skal bygges som separate review-/cleanup-funktioner, hvor systemet først viser hvad der vil ske, og først derefter udfører en eksplicit handling.
 
 Konsekvens:
 - kendte engangsrettelser må ikke overskrive resolverens resultat

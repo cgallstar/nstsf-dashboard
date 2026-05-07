@@ -46,7 +46,7 @@ Arkiveringen skriver tilbage:
 - `syncState.archiveManifest`
 
 ## Legacy-state
-Legacy-seeds og kendte engangsbackfills må ikke indgå i normal state-projektion. De er kun tilladt som eksplicit reparation og skal fremgå af sync-resultatet med `legacyBackfillsEnabled: true`.
+Legacy-seeds og kendte engangsbackfills må ikke indgå i normal state-projektion. Hvis en historisk reparation er nødvendig, skal den ligge uden for normal sync som en separat cleanup/review-action med tydelig preview, keeper-valg og audit-log.
 
 ## Dedupe-nøgle
 Agenten skal stoppe dubletter via to kontroller:

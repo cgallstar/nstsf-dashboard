@@ -37,8 +37,8 @@ Agenten kører som en lagdelt sync-pipeline i `netlify/functions/gmail-sync.mts`
 - hvis filen allerede findes, bruges eksisterende fil og sync-loggen støjer ikke med ny arkivering
 
 6. Legacy-beskyttelse
-- gamle hardcodede backfills og kendte thread-id-reparationer er slået fra i normal drift
-- de kan kun køres eksplicit via legacy-flag, så de ikke overskriver den lagdelte pipeline
+- gamle hardcodede backfills, kendte thread-id-reparationer og frontend-seeds er fjernet fra normal runtime
+- reparationer skal bygges som separate review-/cleanup-funktioner med liste-forst, keeper-valg og eksplicit handling
 - samme regel gælder mail-til-opgave og filarkivering: ingen faste kunde-/adresse-special cases må skrive uden om resolveren
 
 ## Output

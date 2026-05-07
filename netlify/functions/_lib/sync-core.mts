@@ -40,49 +40,6 @@ export function plainCompactText(value = "") {
     .toLowerCase();
 }
 
-function primaryCaseNumber(entry: any) {
-  const compact = textValue(entry?.sid || entry?.nr, "").replace(/\s+/g, "").trim();
-  const match = compact.match(/^(\d+)/);
-  return match ? match[1] : "";
-}
-
-function entryMarker(entry: any) {
-  return plainCompactText(`${entry?.kunde || ""} ${entry?.adr || ""} ${entry?.opg || ""} ${entry?.sid || ""} ${entry?.nr || ""} ${entry?.fak || ""} ${entry?.docs?.drive || entry?.drive || ""}`);
-}
-
-export function resolveKnownCaseByText(entries: any[], text = "", signal: any = null) {
-  const compact = plainCompactText(text);
-  const all = Array.isArray(entries) ? entries : [];
-  const find = (predicate: (entry: any, marker: string) => boolean) => all.find((entry) => predicate(entry, entryMarker(entry))) || null;
-  const hasNvGadesvej10 = compact.includes("nv gadesvej") && /\b10\b/.test(compact);
-  const hasNvGadesvej12 = compact.includes("nv gadesvej") && /\b12a?\b/.test(compact);
-
-  if (hasNvGadesvej10) {
-    return find((entry, marker) =>
-      primaryCaseNumber(entry) === "1015" ||
-      marker.includes("signe") ||
-      marker.includes("tam") ||
-      (marker.includes("nv gadesvej") && /\b10\b/.test(marker))
-    );
-  }
-
-  if (hasNvGadesvej12) {
-    return find((entry, marker) =>
-      primaryCaseNumber(entry) === "1006" ||
-      marker.includes("mathias") ||
-      (marker.includes("nv gadesvej") && /\b12a?\b/.test(marker))
-    );
-  }
-
-  if (compact.includes("bulowsvej 9")) return find((_entry, marker) => marker.includes("bulowsvej 9"));
-  if (compact.includes("blagardsgade 14") || compact.includes("blaagardsgade 14")) {
-    return find((_entry, marker) => marker.includes("blagardsgade 14") || marker.includes("blaagardsgade 14") || marker.includes("pladebutik"));
-  }
-  if (compact.includes("lundebjergvej")) return find((_entry, marker) => marker.includes("lundebjergvej") || marker.includes("core property"));
-  if (signal?.category === "tilbud" && compact.includes("kingosvej 1b")) return find((_entry, marker) => marker.includes("kingosvej 1b"));
-  return null;
-}
-
 export function sourceSignatureFromParts(threadId = "", messageIds: string[] = [], attachmentNames: string[] = [], fallback = "") {
   const source = [...messageIds, ...attachmentNames, fallback].filter(Boolean).join("|");
   return stableHash(source || threadId).slice(0, 12);
