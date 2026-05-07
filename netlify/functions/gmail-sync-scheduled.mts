@@ -41,7 +41,6 @@ export default async (_request: Request) => {
 };
 
 export const config = {
-  path: "/api/gmail-sync-scheduled",
   schedule: "0 4 * * *",
   maxDuration: 26,
 };
