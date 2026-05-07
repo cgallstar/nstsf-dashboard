@@ -1416,6 +1416,50 @@ async function ensureKnownInvoice1152Handling(state: any, integration: any, acto
   return true;
 }
 
+function ensureKnownBookkeepingTask(state: any) {
+  state.internalTasks = Array.isArray(state.internalTasks) ? state.internalTasks : [];
+  const threadId = "19dfd63df6e105f8";
+  const title = "Bogføring: manglende bilag og leverandørfakturaer";
+  const existing = state.internalTasks.some((task: any) => {
+    const sameThread = textValue(task?.threadId, "") === threadId;
+    const sameTitle = normalizeCaseKey(task?.title) === normalizeCaseKey(title) ||
+      normalizeCaseKey(task?.title) === normalizeCaseKey("Bogføring");
+    return (sameThread || sameTitle) && String(task?.status || "").toLowerCase() !== "fuldført";
+  });
+  if (existing) return false;
+  state.internalTasks.unshift(normalizeInternalTask({
+    id: `gmail-task-${threadId}`,
+    title,
+    status: "Åben",
+    dueDate: new Date().toISOString().slice(0, 10),
+    owner: "Søren",
+    source: "gmail_task_backfill",
+    domain: "økonomi",
+    bucket: "today",
+    threadId,
+    customerId: "",
+    unlinkedRef: `S-${stableThreeDigitHash(`${title}|${threadId}`)}`,
+    notes: [
+      "Claus har sendt ugens bogføring og vedhæftet opgørelse over manglende bilag.",
+      "- Fremskaff manglende bilag jf. vedhæftet opgørelse.",
+      "- Få sat system i godkendelse af leverandørfakturaer i Minuba og F-Boks.",
+      "- Der ligger snart for en måned i begge systemer, hvilket blokerer kreditorafstemning og rettidig betaling.",
+    ].join("\n"),
+  }));
+  appendSyncLog(state, {
+    status: "task_created",
+    archiveKey: `known-task-bogforing-${threadId}`,
+    threadId,
+    subject: "Bogføring",
+    customerName: "Intern opgave",
+    caseId: "",
+    documentType: "Opgave",
+    category: "sager",
+    notes: "Retrospektivt oprettet som opgave, fordi mailen indeholder en direkte anmodning fra Claus om manglende bilag og system i leverandørfakturagodkendelse.",
+  });
+  return true;
+}
+
 function extractDocumentDate(subject = "", body = "", fallbackIso = "") {
   const source = `${subject}\n${body}`;
   const monthPattern = new RegExp(`(\\d{1,2})\\.\\s*(${Object.keys(DANISH_MONTHS).join("|")})\\s*(\\d{4})`, "i");
@@ -3068,6 +3112,7 @@ export default async (request: Request) => {
     }
     const materialDocumentation = await ensureKnownMaterialDocumentation(state, integration, auth.actor);
     const invoice1152Handled = await ensureKnownInvoice1152Handling(state, integration, auth.actor);
+    const bookkeepingTaskBackfilled = ensureKnownBookkeepingTask(state);
 
     state.emails = items;
     const sanitizedSyncLogEntries = normalizeExistingSyncLog(state);
@@ -3088,6 +3133,7 @@ export default async (request: Request) => {
       invoicesUpdated,
       materialDocumentation: materialDocumentation ? 1 : 0,
       invoice1152Handled: invoice1152Handled ? 1 : 0,
+      bookkeepingTaskBackfilled: bookkeepingTaskBackfilled ? 1 : 0,
       migratedSyncLogEntries: migratedSyncLogEntries + sanitizedSyncLogEntries,
       syncDiagnostics: syncLogDiagnostics(state),
       ensuredFolders: ensuredFolders.length,
