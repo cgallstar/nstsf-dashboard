@@ -603,6 +603,8 @@
   }
   .priority-mini-item strong{font-size:13px;line-height:1.35}
   .priority-mini-item .meta{font-size:11px;color:var(--muted)}
+  .priority-review-actions{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
+  .priority-review-actions .side-btn{font-size:10px}
   .priority-mini-item .dotline{display:flex;gap:10px;align-items:flex-start}
   .priority-mini-item .dotline .dot{width:8px;height:8px;border-radius:50%;background:#8f7d2f;flex:none;margin-top:5px}
   .priority-sidebar-empty{font-size:12px;color:var(--muted)}
@@ -1692,6 +1694,8 @@ const AUTH_API = '/api/auth';
 const STATE_API = '/api/state';
 const USERS_API = '/api/users';
 const GMAIL_SYNC_API = '/api/gmail-sync';
+const REVIEW_ACTION_API = '/api/review-action';
+const DRIVE_CLEANUP_API = '/api/drive-cleanup';
 const BUILD_VERSION = '2026-05-06-0915-ks-docs-visible';
 let remoteSaveTimer = null;
 let isApplyingRemoteState = false;
@@ -2173,6 +2177,16 @@ function collectOpenReviewQueueItems(){
     result.push(item);
   });
   return result;
+}
+function pipelineStats(){
+  const state = syncState && typeof syncState === 'object' ? syncState : {};
+  return {
+    ingestion:Object.keys(state.ingestion || {}).length,
+    classification:Object.keys(state.classification || {}).length,
+    resolution:Object.keys(state.resolution || {}).length,
+    projection:Object.keys(state.projectionLog || {}).length,
+    review:collectOpenReviewQueueItems().length,
+  };
 }
 function addLocalSyncLogEntries(entries=[]){
   if(!Array.isArray(entries) || !entries.length) return;
@@ -3543,7 +3557,9 @@ function renderUpdatesInto(targetId){
   const updates = document.getElementById(targetId);
   if(!updates) return;
   const items = collectPriorityUpdates();
-  updates.innerHTML = items.length ? items.map((item)=>`<div class="priority-mini-item${item.targetType ? ' clickable' : ''}"${item.targetType ? ` data-update-id="${escapeAttr(item.id)}"` : ''}><strong>${escapeAttr(item.title)}</strong><div class="meta">${escapeAttr(item.meta)}</div><div class="meta">${escapeAttr(item.body)}</div></div>`).join('') : '<div class="priority-sidebar-empty">Ingen nyere opdateringer endnu.</div>';
+  const stats = pipelineStats();
+  const statsHtml = `<div class="priority-mini-item"><strong>Pipeline</strong><div class="meta">Ingestion ${stats.ingestion} · Klassifikation ${stats.classification} · Resolution ${stats.resolution}</div><div class="meta">Arkiveringer ${stats.projection} · Afklaringer ${stats.review}</div></div>`;
+  updates.innerHTML = statsHtml + (items.length ? items.map((item)=>`<div class="priority-mini-item${item.targetType ? ' clickable' : ''}"${item.targetType ? ` data-update-id="${escapeAttr(item.id)}"` : ''}><strong>${escapeAttr(item.title)}</strong><div class="meta">${escapeAttr(item.meta)}</div><div class="meta">${escapeAttr(item.body)}</div>${item.reviewKey ? `<div class="priority-review-actions"><button class="side-btn" data-review-action="match_case" data-review-key="${escapeAttr(item.reviewKey)}">Match</button><button class="side-btn" data-review-action="create_task" data-review-key="${escapeAttr(item.reviewKey)}">Opret opgave</button><button class="side-btn" data-review-action="ignore" data-review-key="${escapeAttr(item.reviewKey)}">Ignorér</button><button class="side-btn" data-review-action="resolve" data-review-key="${escapeAttr(item.reviewKey)}">Løst</button></div>` : ''}</div>`).join('') : '<div class="priority-sidebar-empty">Ingen nyere opdateringer endnu.</div>');
 }
 function openPriorityUpdate(updateId){
   const item = collectPriorityUpdates().find((entry)=>entry.id === updateId);
@@ -3561,6 +3577,52 @@ function openPriorityUpdate(updateId){
     setActiveTab('prioriteringer');
     priorityTaskScope = 'all';
     renderPriorities();
+  }
+}
+async function handleReviewAction(action='', reviewKey=''){
+  if(!authUser){ setSyncStatus('Du skal være logget ind for at håndtere afklaringer.', 'error'); return; }
+  let caseId = '';
+  if(action === 'match_case'){
+    caseId = prompt('Skriv K- eller sagsref, fx K-1006 eller 1006 A:') || '';
+    if(!caseId.trim()) return;
+  }
+  try{
+    setSyncStatus('Opdaterer afklaring...');
+    const res = await fetch(REVIEW_ACTION_API, {
+      method:'POST',
+      credentials:'include',
+      headers:{'content-type':'application/json'},
+      body:JSON.stringify({action, reviewKey, caseId}),
+    });
+    const data = await res.json().catch(()=>({}));
+    if(!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+    await loadRemoteState(false);
+    renderPriorities();
+    setSyncStatus(action === 'match_case' ? 'Afklaring matchet. Kør Opdatér Sager for at arkivere med match.' : 'Afklaring opdateret.', 'ok');
+  }catch(err){
+    setSyncStatus(`Kunne ikke opdatere afklaring: ${err.message}`, 'error');
+  }
+}
+async function runDriveCleanup(execute=false){
+  if(!authUser){ setSyncStatus('Du skal være logget ind for at køre Drive cleanup.', 'error'); return; }
+  if(execute && !confirm('Ryd dubletter i Drive? Der beholdes én keeper, og dubletter flyttes til papirkurv.')) return;
+  try{
+    setSyncStatus(execute ? 'Rydder Drive-dubletter...' : 'Scanner Drive-dubletter...');
+    const res = await fetch(DRIVE_CLEANUP_API, {
+      method:'POST',
+      credentials:'include',
+      headers:{'content-type':'application/json'},
+      body:JSON.stringify({execute}),
+    });
+    const data = await res.json().catch(()=>({}));
+    if(!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+    await loadRemoteState(false);
+    const msg = execute
+      ? `Drive cleanup færdig. ${data.trashed?.length || 0} dubletfiler flyttet til papirkurv.`
+      : `Drive scan færdig. ${data.duplicateGroups || 0} dubletgrupper · ${data.duplicateFiles || 0} dubletfiler.`;
+    setSyncStatus(msg, 'ok');
+  }catch(err){
+    setSyncStatus(`Drive cleanup fejlede: ${err.message}`, 'error');
   }
 }
 function renderPriorityArchive(){
@@ -3592,6 +3654,7 @@ function collectPriorityUpdates(){
     const createdAt = textValue(item.updatedAt || item.createdAt, new Date().toISOString());
     entries.push({
       id:`review-${reviewQueueItemKey(item)}`,
+      reviewKey:reviewQueueItemKey(item),
       createdAt,
       title:`Afklaring · ${textValue(item.subject || item.documentType, 'Mailtråd')}`,
       meta:`${displayDateTime(createdAt)} · ${targetLabel}${item.documentType ? ` · ${item.documentType}` : ''}${item.category ? ` · ${item.category}` : ''}`,
@@ -3815,6 +3878,8 @@ function priorityBoardTemplate(config){
         <span class="priority-updated" id="${c.stampId}"></span>
         <button class="btn primary" onclick="openPriorityTaskComposer()">Ny opgave</button>
         <button class="btn" id="${c.updateBtnId}" onclick="updatePriorities(true)">Opdatér Sager</button>
+        <button class="btn" onclick="runDriveCleanup(false)">Scan dubletter</button>
+        <button class="btn" onclick="runDriveCleanup(true)">Ryd dubletter</button>
         <div class="priority-toggle">
           <button class="active" id="priorityBtnTodos" onclick="setPriorityView('todos')">Aktive</button><button id="priorityBtnArchive" onclick="setPriorityView('archive')">Arkiv</button><button id="priorityBtnInbox" onclick="setPriorityView('indbakke')">Indbakke</button>
         </div>
@@ -4382,6 +4447,13 @@ document.getElementById('filterKat').addEventListener('change',render);
 document.getElementById('capacityHours').addEventListener('input', ()=>{ renderCapacity(); saveState(); });
 document.getElementById('konv').addEventListener('input', renderFinancials);
 document.addEventListener('click', (event)=>{
+  const reviewTarget = event.target.closest('[data-review-action]');
+  if(reviewTarget){
+    event.preventDefault();
+    event.stopPropagation();
+    handleReviewAction(reviewTarget.dataset.reviewAction || '', reviewTarget.dataset.reviewKey || '');
+    return;
+  }
   const target = event.target.closest('[data-update-id]');
   if(!target) return;
   openPriorityUpdate(target.dataset.updateId || '');

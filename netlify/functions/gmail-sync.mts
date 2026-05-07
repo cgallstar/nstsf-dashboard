@@ -227,6 +227,9 @@ function ensureGmailSyncState(state: any) {
     ? state.syncState.projectionLog
     : {};
   state.syncState.reviewQueue = Array.isArray(state.syncState.reviewQueue) ? state.syncState.reviewQueue : [];
+  state.syncState.manualReviewResolutions = state.syncState.manualReviewResolutions && typeof state.syncState.manualReviewResolutions === "object" && !Array.isArray(state.syncState.manualReviewResolutions)
+    ? state.syncState.manualReviewResolutions
+    : {};
   return state.syncState;
 }
 
@@ -427,6 +430,26 @@ function closeReviewQueueItem(state: any, threadId = "", archiveKey = "") {
       pipelineVersion: PIPELINE_VERSION,
     };
   });
+}
+
+function manualReviewResolutionForThread(state: any, threadId = "") {
+  if (!threadId) return null;
+  const syncState = ensureGmailSyncState(state);
+  return syncState.manualReviewResolutions?.[threadId] || null;
+}
+
+function findCaseByDisplayRef(state: any, ref = "") {
+  const raw = textValue(ref, "").trim();
+  if (!raw) return null;
+  const compact = normalizeCaseKey(raw.replace(/^[KS]-/i, ""));
+  const wantedCustomer = raw.match(/^K-?(\d+)$/i)?.[1] || "";
+  const wantedSag = raw.match(/^S-?(\d+)$/i)?.[1] || "";
+  const sager = Array.isArray(state?.sager) ? state.sager : [];
+  if (wantedCustomer) return findCaseByCustomerNumber(state, wantedCustomer);
+  if (wantedSag) {
+    return sager.find((entry: any) => normalizeCaseKey(textValue(entry?.sagId, "").replace(/^S-/i, "")) === wantedSag) || null;
+  }
+  return sager.find((entry: any) => normalizeCaseKey(entry?.sid || entry?.nr) === compact) || null;
 }
 
 function pipelineSnapshot(state: any) {
@@ -3219,7 +3242,12 @@ async function archiveQualifiedThread(thread: any, item: any, state: any, integr
 
   const archiveText = combined || `${item?.subject}\n${item?.body}`;
   let matched = null;
-  if (signal.category === "betaling") {
+  const currentThreadId = textValue(item?.threadId || thread?.id, "");
+  const manualResolution = manualReviewResolutionForThread(state, currentThreadId);
+  if (manualResolution?.action === "match_case" && manualResolution?.caseId) {
+    matched = findCaseByDisplayRef(state, textValue(manualResolution.caseId, ""));
+  }
+  if (!matched && signal.category === "betaling") {
     const invoiceMatch = archiveText.match(/\bfaktura\s*(?:nr\.?|nummer)?\s*[:#-]?\s*(\d{3,})\b/i);
     const invoiceCaseMatch = matchInvoiceToCase(state, archiveText, invoiceMatch?.[1] || "");
     if (!invoiceCaseMatch.matched) {
@@ -3236,7 +3264,7 @@ async function archiveQualifiedThread(thread: any, item: any, state: any, integr
       };
     }
     matched = invoiceCaseMatch.matched;
-  } else {
+  } else if (!matched) {
     matched = findOrCreateKnownCase(state, signal, archiveText) || matchCaseFromText(state.sager || [], archiveText);
   }
   if (!matched) {
@@ -3259,7 +3287,6 @@ async function archiveQualifiedThread(thread: any, item: any, state: any, integr
   }
   const documentDate = extractDocumentDate(item?.subject, combined || item?.body, item?.date);
   const displayCaseId = formatCaseIdForDisplay(matched) || textValue(matched?.nr, "");
-  const currentThreadId = textValue(item?.threadId || thread?.id, "");
   const archiveKey = buildArchiveKey(thread, signal, documentDate, displayCaseId, item?.subject || archiveText);
   const fileTitle = buildArchiveFileTitle(documentDate, signal, displayCaseId, item?.subject);
   const fileName = `${fileTitle}.md`;
