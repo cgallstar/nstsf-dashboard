@@ -27,8 +27,8 @@ import {
   sourceSignatureFromParts,
 } from "./_lib/sync-core.mts";
 
-const GMAIL_SYNC_BUILD_VERSION = "2026-05-07-pipeline-v5-legacy-removed";
-const RESOLVER_VERSION = "2026-05-07-resolver-v3";
+const GMAIL_SYNC_BUILD_VERSION = "2026-05-08-pipeline-v6-new-offer-customers";
+const RESOLVER_VERSION = "2026-05-08-resolver-v4";
 const PIPELINE_VERSION = "2026-05-07-pipeline-v2";
 const INTERNAL_PATTERNS = [/@nstsf\.dk/i, /gemini-notes@google\.com/i];
 const MAILBOX_OWNER = "christian@nstsf.dk";
@@ -517,6 +517,11 @@ function shouldSkipThreadByLedger(state: any, threadId = "", historyId = "") {
   return Boolean(entry && textValue(entry.historyId, "") === historyId && isFinalLedgerStatus(entry.status));
 }
 
+function shouldReprocessThreadForResolver(state: any, threadId = "") {
+  const entry = ledgerEntryForThread(state, threadId);
+  return Boolean(entry && textValue(entry.status, "") === "needs_manual_match" && textValue(entry.resolverVersion, "") !== RESOLVER_VERSION);
+}
+
 function updateThreadLedger(state: any, thread: any, payload: Record<string, unknown>) {
   const syncState = ensureGmailSyncState(state);
   const threadId = textValue(thread?.id || payload.threadId, "");
@@ -552,7 +557,7 @@ function queueDiscoveredThreads(state: any, groups: Array<{ lane: string; priori
       if (!id) continue;
       const historyId = textValue(thread?.historyId, "");
       if (shouldSkipThreadByLedger(state, id, historyId)) continue;
-      if (!["dke_questions", "internal_inbox"].includes(group.lane) && historyId && textValue(syncState.processedThreadHistory?.[id], "") === historyId) continue;
+      if (!["dke_questions", "internal_inbox"].includes(group.lane) && historyId && textValue(syncState.processedThreadHistory?.[id], "") === historyId && !shouldReprocessThreadForResolver(state, id)) continue;
       const existing: any = byId.get(id);
       if (existing) {
         const previousPriority = Number(existing.priority || 0);
@@ -587,7 +592,7 @@ function selectQueuedThreads(state: any, max = 14) {
       const id = textValue(item?.id, "");
       const historyId = textValue(item?.historyId, "");
       if (shouldSkipThreadByLedger(state, id, historyId)) return false;
-      return id && (["dke_questions", "internal_inbox"].includes(textValue(item?.lane, "")) || !historyId || textValue(syncState.processedThreadHistory?.[id], "") !== historyId);
+      return id && (["dke_questions", "internal_inbox"].includes(textValue(item?.lane, "")) || !historyId || textValue(syncState.processedThreadHistory?.[id], "") !== historyId || shouldReprocessThreadForResolver(state, id));
     })
     .sort((a: any, b: any) =>
       Number(b.priority || 0) - Number(a.priority || 0) ||
