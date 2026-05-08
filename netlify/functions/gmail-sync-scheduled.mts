@@ -42,5 +42,4 @@ export default async (_request: Request) => {
 
 export const config = {
   schedule: "0 4 * * *",
-  maxDuration: 26,
 };
