@@ -27,8 +27,8 @@ import {
   sourceSignatureFromParts,
 } from "./_lib/sync-core.mts";
 
-const GMAIL_SYNC_BUILD_VERSION = "2026-05-08-pipeline-v7-manual-archive";
-const RESOLVER_VERSION = "2026-05-08-resolver-v4";
+const GMAIL_SYNC_BUILD_VERSION = "2026-05-08-pipeline-v8-offer-token-match";
+const RESOLVER_VERSION = "2026-05-08-resolver-v5";
 const PIPELINE_VERSION = "2026-05-07-pipeline-v2";
 const INTERNAL_PATTERNS = [/@nstsf\.dk/i, /gemini-notes@google\.com/i];
 const MAILBOX_OWNER = "christian@nstsf.dk";
@@ -793,6 +793,44 @@ function matchCaseWithConfidence(sager: any[], haystack: string) {
     reasons: best.reasons,
     confident: Boolean(best.score >= 8 && hasStrongReason && !ambiguous),
   };
+}
+
+function tokenOverlapScore(sourceTokens: string[], target = "") {
+  const source = new Set(sourceTokens);
+  return meaningfulTokens(target).filter((token) => source.has(token)).length;
+}
+
+function matchOfferCaseFromText(sager: any[], haystack: string) {
+  const sourceTokens = meaningfulTokens(haystack);
+  const ranked = (Array.isArray(sager) ? sager : [])
+    .map((entry: any, index: number) => {
+      const base = scoreCaseFromText(entry, haystack);
+      const customerTokens = tokenOverlapScore(sourceTokens, textValue(entry?.kunde, ""));
+      const taskTokens = tokenOverlapScore(sourceTokens, textValue(entry?.opg, ""));
+      const addressTokens = tokenOverlapScore(sourceTokens, textValue(entry?.adr, ""));
+      const score = base.score + customerTokens * 4 + taskTokens * 2 + addressTokens * 3;
+      const reasons = [...new Set([
+        ...base.reasons,
+        customerTokens ? "kunde-token" : "",
+        taskTokens ? "opgave-token" : "",
+        addressTokens ? "adresse-token" : "",
+      ].filter(Boolean))];
+      return { entry, index, score, reasons, customerTokens, taskTokens, addressTokens };
+    })
+    .filter((result: any) => result.score > 0)
+    .sort((a: any, b: any) => b.score - a.score || a.index - b.index);
+  const best = ranked[0];
+  const second = ranked[1];
+  if (!best) return null;
+  const hasOfferSafeMatch =
+    best.reasons.includes("adresse") ||
+    best.reasons.includes("sagsID") ||
+    best.addressTokens >= 2 ||
+    (best.customerTokens >= 1 && best.taskTokens >= 1) ||
+    best.customerTokens >= 2;
+  const ambiguous = Boolean(second && second.score >= best.score - 2);
+  if (!hasOfferSafeMatch || ambiguous || best.score < 7) return null;
+  return best.entry;
 }
 
 function normalizeCaseKey(value: unknown) {
@@ -1654,9 +1692,14 @@ function extractEnterpriseAmount(text = "") {
     const high = Number(budgetRange[2]);
     if (Number.isFinite(high) && high > 0) return high * 1000;
   }
+  const amountRange = source.match(/(?:overslagspris|tilbudssum|samlet\s+pris|samlet\s+beløb|samlet\s+beloeb)[^\d]{0,120}(\d{1,3}(?:[.\s]\d{3})*(?:,\d{2})?|\d{4,})\s*[-–]\s*(\d{1,3}(?:[.\s]\d{3})*(?:,\d{2})?|\d{4,})\s*kr\.?/i);
+  if (amountRange) {
+    const high = parseMoneyValue(amountRange[2]);
+    if (high >= 1000) return amountAsVatInclusive(high, amountRange[0]);
+  }
   const patterns = [
-    /(?:samlet\s+)?(?:entreprisesum|entreprise|tilbudssum|samlet\s+beløb|samlet\s+beloeb|overslagspris)[^\d]{0,80}(\d{1,3}(?:[.\s]\d{3})*(?:,\d{2})?|\d{4,})(?:\s*kr\.?)?/gi,
-    /(\d{1,3}(?:[.\s]\d{3})*(?:,\d{2})?|\d{4,})\s*kr\.?[^\n\r]{0,80}(?:samlet\s+)?(?:entreprisesum|entreprise|tilbudssum|samlet\s+beløb|samlet\s+beloeb|overslagspris)/gi,
+    /(?:samlet\s+)?(?:entreprisesum|entreprise|tilbudssum|samlet\s+pris|samlet\s+beløb|samlet\s+beloeb|overslagspris)[^\d]{0,120}(\d{1,3}(?:[.\s]\d{3})*(?:,\d{2})?|\d{4,})(?:\s*kr\.?)?/gi,
+    /(\d{1,3}(?:[.\s]\d{3})*(?:,\d{2})?|\d{4,})\s*kr\.?[^\n\r]{0,120}(?:samlet\s+)?(?:entreprisesum|entreprise|tilbudssum|samlet\s+pris|samlet\s+beløb|samlet\s+beloeb|overslagspris)/gi,
   ];
   const values: number[] = [];
   for (const pattern of patterns) {
@@ -2442,6 +2485,9 @@ async function archiveQualifiedThread(thread: any, item: any, state: any, integr
     matched = invoiceCaseMatch.matched;
   } else if (!matched) {
     matched = matchCaseFromText(state.sager || [], archiveText);
+    if (!matched && signal.category === "tilbud") {
+      matched = matchOfferCaseFromText(state.sager || [], archiveText);
+    }
   }
   const documentDate = extractDocumentDate(item?.subject, combined || item?.body, item?.date);
   if (!matched && signal.category === "tilbud") {
@@ -3308,6 +3354,7 @@ export const __test = {
   registerArchiveManifest,
   repairDocsFromActivityLog,
   rebuildArchiveManifestFromActivities,
+  matchOfferCaseFromText,
 };
 
 export const config = {
