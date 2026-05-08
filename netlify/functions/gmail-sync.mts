@@ -810,6 +810,14 @@ function primaryCaseNumber(entry: any) {
   return primaryCaseNumberFromValue(entry?.sid) || primaryCaseNumberFromValue(entry?.nr);
 }
 
+function nextCustomerNumber(sager: any[]) {
+  const used = (Array.isArray(sager) ? sager : [])
+    .map((entry: any) => Number(primaryCaseNumber(entry)))
+    .filter((value: number) => Number.isFinite(value) && value >= 1000);
+  const max = used.length ? Math.max(...used) : 1000;
+  return String(max + 1);
+}
+
 function formatCaseIdForDisplay(entry: any) {
   const raw = textValue(entry?.sid || entry?.nr, "").trim();
   const compact = raw.replace(/\s+/g, "");
@@ -1656,6 +1664,114 @@ function extractEnterpriseAmount(text = "") {
   return values.length ? Math.max(...values) : 0;
 }
 
+function cleanExtractedAddress(value = "") {
+  return textValue(value, "")
+    .replace(/\s+/g, " ")
+    .replace(/\s+,/g, ",")
+    .replace(/\b(st|kl|kld)\b\.?/gi, (match) => `${match.replace(/\./g, "").toLowerCase()}.`)
+    .replace(/\b(tv|th|mf)\b\.?/gi, (match) => `${match.replace(/\./g, "").toLowerCase()}.`)
+    .replace(/\s+$/g, "")
+    .trim();
+}
+
+function extractDanishAddress(text = "") {
+  const source = textValue(text, "");
+  const pattern = /\b((?:(?:[A-ZÆØÅ]\.?\s*){1,3})?(?:[A-ZÆØÅ][A-Za-zÆØÅæøå.'-]*\s+){0,3}[A-ZÆØÅ][A-Za-zÆØÅæøå.'-]*(?:vej|gade|allé|alle|stræde|straede|plads|boulevard|vænge|vaenge|bakke|bakken)\s+\d+\s*[A-Za-z]?(?:\s*,?\s*(?:st\.?|kl\.?|kld\.?|\d+\.?)\s*(?:tv\.?|th\.?|mf\.?)?)?)/gu;
+  const matches = [...source.matchAll(pattern)]
+    .map((match) => cleanExtractedAddress(match[1]))
+    .filter((value) => value && /\d/.test(value));
+  return matches[0] || "";
+}
+
+function inferOfferCustomerName(text = "", messages: any[] = []) {
+  const source = textValue(text, "");
+  const greeting = source.match(/\bKære\s+([A-ZÆØÅ][A-Za-zÆØÅæøå'-]+(?:\s+[A-ZÆØÅ][A-Za-zÆØÅæøå'-]+){0,2})\b/);
+  if (greeting?.[1]) return greeting[1].trim();
+  const recipient = messages
+    .flatMap((message) => textValue(message?.to, "").split(/,/))
+    .map((value) => value.trim())
+    .find((value) => value && !/@nstsf\.dk/i.test(value));
+  const local = recipient?.match(/<?([^<@\s]+)@/)?.[1] || "";
+  const name = local
+    .split(/[._-]+/)
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1).toLowerCase())
+    .join(" ");
+  return name || "Ny kunde";
+}
+
+function inferOfferScope(text = "") {
+  const source = textValue(text, "");
+  const lines = source.split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
+  const numbered = lines
+    .map((line) => line.match(/^\d+[.)]\s+(.+)$/)?.[1]?.trim() || "")
+    .filter((line) => line && line.length <= 120)
+    .slice(0, 3);
+  if (numbered.length === 1) return numbered[0];
+  if (numbered.length > 1) {
+    const last = numbered.at(-1);
+    return `${numbered.slice(0, -1).join(", ")} og ${last}`;
+  }
+  return "Tilbud";
+}
+
+function findExistingCaseByAddress(sager: any[], address = "") {
+  const target = normalizeAddressForLooseMatch(address);
+  if (!target) return null;
+  return (Array.isArray(sager) ? sager : []).find((entry: any) => {
+    const current = normalizeAddressForLooseMatch(textValue(entry?.adr, ""));
+    return current && (current.includes(target) || target.includes(current));
+  }) || null;
+}
+
+function createCustomerCaseFromOffer(state: any, thread: any, signal: any, archiveText = "", documentDate = "") {
+  if (!state || signal?.category !== "tilbud" || signal?.sourceType !== "internal") return null;
+  const messages = Array.isArray(thread?.messages) ? thread.messages.map(gmailMessageSummary) : [];
+  const address = extractDanishAddress(archiveText);
+  if (!address) return null;
+  const existing = findExistingCaseByAddress(state.sager || [], address);
+  if (existing) return ensureCaseShape(existing);
+
+  const customerNumber = nextCustomerNumber(state.sager || []);
+  const customerName = inferOfferCustomerName(archiveText, messages);
+  const offerAmount = extractEnterpriseAmount(archiveText);
+  const created = ensureCaseShape({
+    k: 4,
+    sid: `${customerNumber}a`,
+    nr: customerNumber,
+    kunde: customerName,
+    adr: address,
+    opg: inferOfferScope(archiveText),
+    b: offerAmount ? formatAmount(offerAmount) : "0",
+    u: "0",
+    dato: "",
+    status: "Tilbud sendt",
+    start: "",
+    slut: "",
+    sort: Array.isArray(state.sager) ? state.sager.length : 0,
+    workflow: {
+      offerDate: documentDate,
+      latestOfferDate: documentDate,
+      nextAction: "Følg op på tilbud.",
+      currentStage: "Tilbud sendt",
+    },
+    docs: {},
+  });
+  state.sager = Array.isArray(state.sager) ? state.sager : [];
+  state.sager.push(created);
+  appendSyncLog(state, {
+    status: "updated",
+    threadId: textValue(thread?.id, ""),
+    subject: "Ny kunde oprettet fra tilbud",
+    customerName,
+    caseId: formatCaseIdForDisplay(created),
+    documentType: "Kunde",
+    category: "kunder",
+    notes: `${customerName} er oprettet som K-${customerNumber} med status Tilbud sendt ud fra tilbudsmailen.`,
+  });
+  return created;
+}
+
 function extractInvoiceAmount(text = "") {
   const source = String(text || "");
   const totalValues: number[] = [];
@@ -2322,6 +2438,10 @@ async function archiveQualifiedThread(thread: any, item: any, state: any, integr
   } else if (!matched) {
     matched = matchCaseFromText(state.sager || [], archiveText);
   }
+  const documentDate = extractDocumentDate(item?.subject, combined || item?.body, item?.date);
+  if (!matched && signal.category === "tilbud") {
+    matched = createCustomerCaseFromOffer(state, thread, signal, archiveText, documentDate);
+  }
   if (!matched) {
     return {
       ok: false,
@@ -2336,7 +2456,6 @@ async function archiveQualifiedThread(thread: any, item: any, state: any, integr
   }
 
   ensureCaseShape(matched);
-  const documentDate = extractDocumentDate(item?.subject, combined || item?.body, item?.date);
   const displayCaseId = formatCaseIdForDisplay(matched) || textValue(matched?.nr, "");
   const archiveKey = buildArchiveKey(thread, signal, documentDate, displayCaseId, item?.subject || archiveText);
   const fileTitle = buildArchiveFileTitle(documentDate, signal, displayCaseId, item?.subject);
