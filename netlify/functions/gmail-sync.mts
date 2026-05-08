@@ -27,7 +27,7 @@ import {
   sourceSignatureFromParts,
 } from "./_lib/sync-core.mts";
 
-const GMAIL_SYNC_BUILD_VERSION = "2026-05-08-pipeline-v6-new-offer-customers";
+const GMAIL_SYNC_BUILD_VERSION = "2026-05-08-pipeline-v7-manual-archive";
 const RESOLVER_VERSION = "2026-05-08-resolver-v4";
 const PIPELINE_VERSION = "2026-05-07-pipeline-v2";
 const INTERNAL_PATTERNS = [/@nstsf\.dk/i, /gemini-notes@google\.com/i];
@@ -2462,6 +2462,8 @@ async function archiveQualifiedThread(thread: any, item: any, state: any, integr
 
   ensureCaseShape(matched);
   const displayCaseId = formatCaseIdForDisplay(matched) || textValue(matched?.nr, "");
+  applyArchiveSideEffects(matched, signal, archiveText, documentDate);
+  ensureOfferFollowupTask(matched, signal, archiveText, documentDate);
   const archiveKey = buildArchiveKey(thread, signal, documentDate, displayCaseId, item?.subject || archiveText);
   const fileTitle = buildArchiveFileTitle(documentDate, signal, displayCaseId, item?.subject);
   const fileName = `${fileTitle}.md`;
@@ -2508,8 +2510,6 @@ async function archiveQualifiedThread(thread: any, item: any, state: any, integr
       fileName: textValue(existingManifest.fileName, fileName),
     };
   }
-  applyArchiveSideEffects(matched, signal, archiveText, documentDate);
-  ensureOfferFollowupTask(matched, signal, archiveText, documentDate);
   const normalizedDocumentType = normalizeCaseKey(signal.documentType);
 
   const alreadyArchived = (matched.activityLog || []).some((entry: any) => {
@@ -2735,6 +2735,64 @@ async function archiveQualifiedThread(thread: any, item: any, state: any, integr
     fileName: document.fileName,
     driveFolder,
   };
+}
+
+export async function archiveThreadToCase(state: any, payload: any, actor: any = {}) {
+  const threadId = textValue(payload?.threadId, "");
+  const caseRef = textValue(payload?.caseId || payload?.caseRef || payload?.caseNumber, "");
+  if (!threadId) return { ok: false, error: "thread_id_missing" };
+  if (!caseRef) return { ok: false, error: "case_ref_missing" };
+
+  const matched = findCaseByDisplayRef(state, caseRef);
+  if (!matched) return { ok: false, error: "case_not_found" };
+  const displayCaseId = formatCaseIdForDisplay(matched) || textValue(matched?.nr, caseRef);
+  const syncState = ensureGmailSyncState(state);
+  syncState.manualReviewResolutions[threadId] = {
+    action: "match_case",
+    caseId: displayCaseId,
+    customerName: textValue(matched.kunde, ""),
+    createdAt: new Date().toISOString(),
+    actor,
+  };
+  delete syncState.threadLedger[threadId];
+  delete syncState.processedThreadHistory[threadId];
+  syncState.gmailQueue = Array.isArray(syncState.gmailQueue)
+    ? syncState.gmailQueue.filter((entry: any) => textValue(entry?.id, "") !== threadId)
+    : [];
+
+  const thread = await getGmailThread(threadId);
+  const item = toEmailEntry(thread, state.sager || []);
+  if (!item) return { ok: false, error: "thread_empty" };
+  const result = await archiveQualifiedThread(thread, item, state, googleIntegrationStatus(), actor);
+  if (!result?.ok) return result || { ok: false, error: "not_archive_candidate" };
+
+  updateThreadLedger(state, thread, {
+    intent: "archive_candidate",
+    lane: "archive",
+    status: result.skipped ? "processed" : "archived",
+    caseId: textValue(result.matchedCaseId, displayCaseId),
+    customerId: textValue(result.matchedCaseId, displayCaseId).match(/(\d+)/)?.[1] || "",
+    driveUrl: textValue(result.driveUrl, ""),
+    reason: result.skipped ? "Allerede arkiveret." : "Manuelt matchet og arkiveret.",
+  });
+  markQueuedThreadProcessed(state, thread);
+  if (!result.skipped) {
+    appendSyncLog(state, {
+      status: "archived",
+      archiveKey: textValue(result.archiveKey, ""),
+      threadId,
+      subject: textValue(item.subject, ""),
+      customerName: textValue(result.customerName, ""),
+      caseId: textValue(result.matchedCaseId, displayCaseId),
+      documentType: textValue(result.documentType, ""),
+      documentDate: textValue(result.documentDate, ""),
+      category: signalCategoryFromResult(result),
+      fileName: textValue(result.fileName, ""),
+      driveUrl: textValue(result.driveUrl, ""),
+      notes: `Manuelt matchet til ${displayCaseId} og arkiveret i Drive som ${textValue(result.fileName, "dokument")}.`,
+    });
+  }
+  return result;
 }
 
 export default async (request: Request) => {

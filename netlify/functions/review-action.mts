@@ -8,6 +8,7 @@ import {
   saveDashboardState,
   textValue,
 } from "./_lib/dashboard.mts";
+import { archiveThreadToCase } from "./gmail-sync.mts";
 
 function ensureSyncState(state: any) {
   state.syncState = state.syncState && typeof state.syncState === "object" && !Array.isArray(state.syncState) ? state.syncState : {};
@@ -111,10 +112,11 @@ export default async (request: Request) => {
   if (!state) return json({ ok: false, error: "no_state" }, 404);
   const syncState = ensureSyncState(state);
   const item = findReviewItem(syncState, body);
-  if (!item) return json({ ok: false, error: "review_item_not_found" }, 404);
 
-  const threadId = textValue(item.threadId || body.threadId, "");
-  const subject = textValue(item.subject, "Mailtråd");
+  const threadId = textValue(item?.threadId || body.threadId, "");
+  if (!item && action !== "archive_to_case") return json({ ok: false, error: "review_item_not_found" }, 404);
+  if (!threadId) return json({ ok: false, error: "thread_id_missing" }, 400);
+  const subject = textValue(item?.subject || body.subject, "Mailtråd");
   const caseRef = textValue(body.caseId || body.caseRef, "");
 
   if (action === "ignore") {
@@ -204,6 +206,19 @@ export default async (request: Request) => {
       category: textValue(item.category, ""),
       notes: "Afklaringen er matchet til sagen. Næste Opdatér Sager arkiverer den med dette match.",
     });
+  } else if (action === "archive_to_case") {
+    const matched = findCaseByRef(state, caseRef);
+    if (!matched) return json({ ok: false, error: "case_not_found" }, 400);
+    const result = await archiveThreadToCase(state, { threadId, caseId: caseRef }, auth.actor);
+    if (!result?.ok) return json({ ok: false, error: result?.error || "archive_failed", result }, 400);
+    if (item) {
+      closeReview(syncState, item, "resolved", {
+        actionTaken: "archived_to_case",
+        caseId: textValue(result.matchedCaseId || matched.sid || matched.nr, caseRef),
+        customerName: textValue(matched.kunde, ""),
+        driveUrl: textValue(result.driveUrl, ""),
+      });
+    }
   } else if (action === "resolve") {
     closeReview(syncState, item, "resolved");
     appendSyncLog(state, {
