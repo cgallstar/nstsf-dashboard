@@ -1049,6 +1049,136 @@ function findCaseByCustomerNumber(state: any, customerNumber = "", matcher: ((en
   return matches[0] || null;
 }
 
+function applyManualCaseCorrections(state: any) {
+  const syncState = ensureGmailSyncState(state);
+  const migrationKey = "2026-05-09-k1013-overslagspris-tilbygning";
+  if (syncState.migrations[migrationKey]) return 0;
+
+  const threadId = "19da9fde83a10cdf";
+  let changed = 0;
+  let matched = findCaseByCustomerNumber(state, "1013");
+  if (!matched) {
+    state.sager = Array.isArray(state.sager) ? state.sager : [];
+    matched = ensureCaseShape({
+      k: 4,
+      sid: "1013a",
+      nr: "1013",
+      kunde: "Mikkel Munkholm Jensen",
+      adr: "",
+      opg: "Tilbygning",
+      b: "1750000",
+      u: "0",
+      dato: "",
+      status: "Tilbud sendt",
+      start: "",
+      slut: "",
+      sort: state.sager.length,
+      workflow: {},
+      docs: {},
+    });
+    state.sager.push(matched);
+    changed += 1;
+  }
+
+  ensureCaseShape(matched);
+  const displayCaseId = formatCaseIdForDisplay(matched) || "1013 A";
+  const before = JSON.stringify({
+    k: matched.k,
+    status: matched.status,
+    b: matched.b,
+    workflow: matched.workflow,
+    tilbud: matched.docs?.tilbud,
+  });
+
+  matched.k = 4;
+  matched.status = "Tilbud sendt";
+  matched.b = "1750000";
+  matched.workflow.offerDate = textValue(matched.workflow.offerDate, "2026-04-20");
+  matched.workflow.latestOfferDate = "2026-05-07";
+  matched.workflow.currentStage = "Tilbud sendt";
+  matched.workflow.nextAction = textValue(matched.workflow.nextAction, "Afventer kundens tilbagemelding på overslagspris.");
+  matched.workflow.enterpriseUpdatedAt = "2026-05-07";
+  pushDocs(matched.docs.tilbud, [{
+    titel: "2026-05-07 - 1013 A - Revideret overslagspris på tilbygning",
+    dato: "2026-05-07",
+    url: "https://mail.google.com/mail/#all/19e0254a05536bf1",
+    fileName: "2026-05-07 - 1013 A - Revideret overslagspris på tilbygning.md",
+    mimeType: "text/markdown",
+    notes: "Manuelt registreret fra Gmail-tråden Re: Overslagspris på tilbygning. Seneste overslagspris: 1.375.000 - 1.750.000 kr. inkl. moms.",
+    threadId,
+    archiveKey: migrationKey,
+  }]);
+
+  const after = JSON.stringify({
+    k: matched.k,
+    status: matched.status,
+    b: matched.b,
+    workflow: matched.workflow,
+    tilbud: matched.docs?.tilbud,
+  });
+  if (after !== before) changed += 1;
+
+  const alreadyLogged = (matched.activityLog || []).some((entry: any) => textValue(entry?.archiveKey, "") === migrationKey);
+  if (!alreadyLogged) {
+    appendActivity(matched, { name: "System", email: "system@nstsf.dk", type: "system" }, {
+      type: "case_update",
+      archiveKey: migrationKey,
+      threadId,
+      title: "Tilbud registreret manuelt",
+      summary: "Overslagspris på tilbygning er registreret på K-1013.",
+      notes: "Status sat til Tilbud sendt. Est. entreprisesum sat til 1.750.000 kr. inkl. moms fra seneste overslagspris.",
+    });
+    changed += 1;
+  }
+
+  syncState.manualReviewResolutions[threadId] = {
+    action: "match_case",
+    caseId: displayCaseId,
+    customerName: textValue(matched.kunde, ""),
+    createdAt: new Date().toISOString(),
+    actor: { name: "System", email: "system@nstsf.dk", type: "system" },
+    reason: "Manuel korrektion: Overslagspris på tilbygning hører til K-1013.",
+  };
+  delete syncState.threadLedger[threadId];
+  delete syncState.processedThreadHistory[threadId];
+  syncState.gmailQueue = Array.isArray(syncState.gmailQueue) ? syncState.gmailQueue : [];
+  if (!syncState.gmailQueue.some((entry: any) => textValue(entry?.id, "") === threadId)) {
+    syncState.gmailQueue.unshift({
+      id: threadId,
+      historyId: "",
+      lane: "archive",
+      priority: 95,
+      attempts: 0,
+      discoveredAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      reason: "Manuel korrektion: arkivér tilbud på K-1013.",
+    });
+    changed += 1;
+  }
+
+  appendSyncLog(state, {
+    status: "updated",
+    archiveKey: migrationKey,
+    threadId,
+    subject: "Overslagspris på tilbygning",
+    customerName: textValue(matched.kunde, "K-1013"),
+    caseId: displayCaseId,
+    documentType: "Tilbud",
+    documentDate: "2026-05-07",
+    category: "tilbud",
+    fileName: "2026-05-07 - 1013 A - Revideret overslagspris på tilbygning.md",
+    driveUrl: "https://mail.google.com/mail/#all/19e0254a05536bf1",
+    notes: "K-1013 er manuelt opdateret til Tilbud sendt med est. entreprisesum 1.750.000 kr. inkl. moms. Gmail-tråden er køet til Drive-arkivering.",
+  });
+
+  syncState.migrations[migrationKey] = {
+    appliedAt: new Date().toISOString(),
+    caseId: displayCaseId,
+    threadId,
+  };
+  return changed;
+}
+
 function invoicePaidConfirmed(text = "") {
   const compact = plainCompactText(text);
   if (!compact) return false;
@@ -2896,6 +3026,7 @@ export default async (request: Request) => {
   if (!state) return json({ ok: false, error: "no_state" }, 404);
   const syncRunId = startSyncRun(state, textValue(requestBody?.trigger, auth.actor?.type === "actions" ? "actions" : "manual"));
   const migratedSyncLogEntries = normalizeExistingSyncLog(state);
+  const manualCorrections = applyManualCaseCorrections(state);
   const syncStartedAt = Date.now();
   const isNearFunctionTimeout = () => Date.now() - syncStartedAt > 18000;
   const archivedResults: any[] = [];
@@ -3293,6 +3424,7 @@ export default async (request: Request) => {
       taskCandidatesCreated: taskCandidatesCreated.length,
       internalInboxTasksCreated: taskCandidatesCreated.length,
       invoicesUpdated,
+      manualCorrections,
       manifestBackfilled,
       repairedDocs,
       migratedSyncLogEntries: migratedSyncLogEntries + sanitizedSyncLogEntries,
