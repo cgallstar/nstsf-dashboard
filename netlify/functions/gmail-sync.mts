@@ -27,9 +27,9 @@ import {
   sourceSignatureFromParts,
 } from "./_lib/sync-core.mts";
 
-const GMAIL_SYNC_BUILD_VERSION = "2026-05-08-pipeline-v8-offer-token-match";
+const GMAIL_SYNC_BUILD_VERSION = "2026-05-09-pipeline-v9-reproject-archives";
 const RESOLVER_VERSION = "2026-05-08-resolver-v5";
-const PIPELINE_VERSION = "2026-05-07-pipeline-v2";
+const PIPELINE_VERSION = "2026-05-09-pipeline-v3";
 const INTERNAL_PATTERNS = [/@nstsf\.dk/i, /gemini-notes@google\.com/i];
 const MAILBOX_OWNER = "christian@nstsf.dk";
 const NSTSF_QUERY = `(from:${MAILBOX_OWNER} OR from:smg@nstsf.dk OR from:nstsf.dk OR to:${MAILBOX_OWNER} OR cc:${MAILBOX_OWNER})`;
@@ -514,12 +514,30 @@ function shouldSkipThreadByLedger(state: any, threadId = "", historyId = "") {
   if (entry && textValue(entry.status, "") === "needs_manual_match" && textValue(entry.resolverVersion, "") !== RESOLVER_VERSION) {
     return false;
   }
+  if (
+    entry &&
+    textValue(entry.intent, "") === "archive_candidate" &&
+    isFinalLedgerStatus(entry.status) &&
+    textValue(entry.pipelineVersion, "") !== PIPELINE_VERSION
+  ) {
+    return false;
+  }
   return Boolean(entry && textValue(entry.historyId, "") === historyId && isFinalLedgerStatus(entry.status));
 }
 
 function shouldReprocessThreadForResolver(state: any, threadId = "") {
   const entry = ledgerEntryForThread(state, threadId);
   return Boolean(entry && textValue(entry.status, "") === "needs_manual_match" && textValue(entry.resolverVersion, "") !== RESOLVER_VERSION);
+}
+
+function shouldReprocessThreadForPipeline(state: any, threadId = "") {
+  const entry = ledgerEntryForThread(state, threadId);
+  return Boolean(
+    entry &&
+    textValue(entry.intent, "") === "archive_candidate" &&
+    isFinalLedgerStatus(entry.status) &&
+    textValue(entry.pipelineVersion, "") !== PIPELINE_VERSION,
+  );
 }
 
 function updateThreadLedger(state: any, thread: any, payload: Record<string, unknown>) {
@@ -537,6 +555,8 @@ function updateThreadLedger(state: any, thread: any, payload: Record<string, unk
     latestMessageAt: textValue(payload.latestMessageAt || latest?.isoDate || previous.latestMessageAt, ""),
     lastSeenAt: new Date().toISOString(),
     resolverVersion: textValue(payload.resolverVersion, RESOLVER_VERSION),
+    pipelineVersion: PIPELINE_VERSION,
+    gmailSyncBuild: GMAIL_SYNC_BUILD_VERSION,
     ...payload,
   };
   syncState.threadLedger[threadId] = next;
@@ -557,7 +577,13 @@ function queueDiscoveredThreads(state: any, groups: Array<{ lane: string; priori
       if (!id) continue;
       const historyId = textValue(thread?.historyId, "");
       if (shouldSkipThreadByLedger(state, id, historyId)) continue;
-      if (!["dke_questions", "internal_inbox"].includes(group.lane) && historyId && textValue(syncState.processedThreadHistory?.[id], "") === historyId && !shouldReprocessThreadForResolver(state, id)) continue;
+      if (
+        !["dke_questions", "internal_inbox"].includes(group.lane) &&
+        historyId &&
+        textValue(syncState.processedThreadHistory?.[id], "") === historyId &&
+        !shouldReprocessThreadForResolver(state, id) &&
+        !shouldReprocessThreadForPipeline(state, id)
+      ) continue;
       const existing: any = byId.get(id);
       if (existing) {
         const previousPriority = Number(existing.priority || 0);
@@ -592,7 +618,13 @@ function selectQueuedThreads(state: any, max = 14) {
       const id = textValue(item?.id, "");
       const historyId = textValue(item?.historyId, "");
       if (shouldSkipThreadByLedger(state, id, historyId)) return false;
-      return id && (["dke_questions", "internal_inbox"].includes(textValue(item?.lane, "")) || !historyId || textValue(syncState.processedThreadHistory?.[id], "") !== historyId || shouldReprocessThreadForResolver(state, id));
+      return id && (
+        ["dke_questions", "internal_inbox"].includes(textValue(item?.lane, "")) ||
+        !historyId ||
+        textValue(syncState.processedThreadHistory?.[id], "") !== historyId ||
+        shouldReprocessThreadForResolver(state, id) ||
+        shouldReprocessThreadForPipeline(state, id)
+      );
     })
     .sort((a: any, b: any) =>
       Number(b.priority || 0) - Number(a.priority || 0) ||
